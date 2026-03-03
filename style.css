@@ -6,12 +6,14 @@
 
 body {
     background-color: #0f0f0f;
+    /* Dark background */
     color: #ffffff;
     font-family: 'Roboto', sans-serif;
     overflow: hidden;
+    /* Prevent scrolling for a full-screen app feel */
 }
 
-/* Typography */
+/* Typography Specifics */
 h2,
 .username,
 .label,
@@ -21,7 +23,7 @@ button {
     text-transform: uppercase;
 }
 
-/* Overlay (username entry) */
+/* --- OVERLAY STYLES --- */
 .overlay {
     position: fixed;
     top: 0;
@@ -86,7 +88,7 @@ button {
     background-color: #ff1e1e;
 }
 
-/* Main layout */
+/* --- MAIN APP LAYOUT --- */
 #app-container {
     display: flex;
     width: 100vw;
@@ -97,9 +99,10 @@ button {
     display: none;
 }
 
-/* Video grid */
+/* --- VIDEO GRID --- */
 .video-grid {
     flex: 1;
+    /* Takes up remaining space */
     display: flex;
     padding: 10px;
     gap: 10px;
@@ -118,7 +121,7 @@ button {
     flex-direction: column;
 }
 
-/* Stream info overlay */
+/* Stream Info Overlay */
 .stream-info {
     position: absolute;
     top: 20px;
@@ -157,6 +160,7 @@ button {
     display: none !important;
 }
 
+/* Video Stream Element */
 video {
     width: 100%;
     height: 100%;
@@ -164,7 +168,7 @@ video {
     background-color: #000;
 }
 
-/* Vote buttons */
+/* Vote Buttons Overlay */
 .vote-btn {
     position: absolute;
     bottom: 20px;
@@ -190,10 +194,10 @@ video {
     transform: translateX(-50%) scale(0.95);
 }
 
-/* Timer / status */
+/* Timer Overlay */
 .battle-status {
     position: absolute;
-    top: 4px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
     background-color: rgba(0, 0, 0, 0.7);
@@ -210,7 +214,7 @@ video {
     letter-spacing: 2px;
 }
 
-/* Sidebar */
+/* --- SIDEBAR --- */
 .sidebar {
     width: 350px;
     background-color: #111;
@@ -309,7 +313,7 @@ video {
     border-color: #d11111;
 }
 
-/* Scrollbar */
+/* Scrollbar Styling for Chat */
 .chat-messages::-webkit-scrollbar {
     width: 6px;
 }
@@ -326,45 +330,3 @@ video {
 .chat-messages::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
-
-/* ────────────────────────────────────────────────
-   SOLO PREVIEW MODE – big centered camera when alone
-   ──────────────────────────────────────────────── */
-.video-grid.solo-preview {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-    background: #000;
-}
-
-.video-grid.solo-preview .video-container {
-    flex: none;
-    width: 90vw;
-    max-width: 1400px;
-    aspect-ratio: 16 / 9;
-    margin: 0 auto;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 0 40px rgba(209, 17, 17, 0.6);
-}
-
-.video-grid.solo-preview #player2-container,
-.video-grid.solo-preview #p2Video,
-.video-grid.solo-preview #p2-username,
-.video-grid.solo-preview #p2-stats,
-.video-grid.solo-preview #vote-p2 {
-    display: none !important;
-}
-
-.video-grid.solo-preview .stream-info {
-    top: 40px;
-    left: 40px;
-    font-size: 2.5rem;
-}
-
-.video-grid.solo-preview .battle-status {
-    font-size: 5rem;
-    padding: 30px 60px;
-}
-

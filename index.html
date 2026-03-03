@@ -61,7 +61,9 @@
         <!-- Sidebar (Chat & Queue) -->
         <div class="sidebar">
             <button id="queue-btn" class="action-btn">JOIN BATTLE CHAT QUEUE</button>
-      
+
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
                     <!-- Messages will appear here -->
                     <div class="message system">Welcome to BattleChat Live!</div>
                 </div>
@@ -72,12 +74,14 @@
         </div>
     </div>
 
-    <!-- Firebase Modular SDK (CDN) -->
+    <!-- Firebase Modular SDK (CDN) - Loads first so app.js can use it -->
     <script type="module">
       import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js';
       import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js';
       import { getDatabase, ref, set, onValue, push, remove, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js';
 
+      // === PASTE YOUR REAL FIREBASE CONFIG HERE ===
+      // Go to Firebase console > Project Overview > Your apps > Web app > SDK setup > Copy the config object
       const firebaseConfig = {
         apiKey: "AIzaSyDwudK0Z8VPQh4okgzAXBpq1BQJwRqiDTI",
         authDomain: "battlechat-e988c.firebaseapp.com",
@@ -92,6 +96,7 @@
       const auth = getAuth(app);
       const db = getDatabase(app);
 
+      // Expose to global scope for app.js (no imports needed there)
       window.firebaseAuth = auth;
       window.firebaseDb = db;
       window.firebaseRef = ref;
@@ -108,4 +113,7 @@
     <script src="app.js"></script>
 </body>
 </html>
+
+
+
 
