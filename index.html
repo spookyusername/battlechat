@@ -8,6 +8,10 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Roboto:wght@400;700&display=swap"
         rel="stylesheet">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-database.js"></script>
 </head>
 
 <body>
@@ -29,34 +33,34 @@
             <div class="video-container" id="player1-container">
                 <div class="stream-info">
                     <h2 class="username" id="p1-username">WAITING...</h2>
-                    <div class="stats hidden" id="p1-stats">
+                    <div class="stats" id="p1-stats">
                         <span class="label">WINSTREAK</span>
                         <span class="value" id="p1-streak">0</span>
                     </div>
                 </div>
                 <!-- Video Element -->
-                <video id="localVideo" autoplay muted playsinline></video>
+                <video id="p1Video" autoplay muted playsinline></video>
                 <!-- Vote Button Overlay -->
-                <button class="vote-btn hidden" id="vote-p1">VOTE P1</button>
+                <button class="vote-btn" id="vote-p1">VOTE P1</button>
             </div>
 
             <!-- Player 2 (Right) -->
             <div class="video-container" id="player2-container">
                 <div class="stream-info">
                     <h2 class="username" id="p2-username">WAITING...</h2>
-                    <div class="stats hidden" id="p2-stats">
+                    <div class="stats" id="p2-stats">
                         <span class="label">WINSTREAK</span>
                         <span class="value" id="p2-streak">0</span>
                     </div>
                 </div>
                 <!-- Video Element -->
-                <video id="remoteVideo" autoplay playsinline></video>
+                <video id="p2Video" autoplay playsinline></video>
                 <!-- Vote Button Overlay -->
-                <button class="vote-btn hidden" id="vote-p2">VOTE P2</button>
+                <button class="vote-btn" id="vote-p2">VOTE P2</button>
             </div>
 
             <!-- Timer / Status Overlay (Center) -->
-            <div class="battle-status hidden" id="battle-status">
+            <div class="battle-status" id="battle-status">
                 <div class="timer" id="timer">2:00</div>
             </div>
         </div>
