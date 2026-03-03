@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BattleChat Live</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #000; color: #fff; height: 1080px; display: flex; overflow: hidden; }
+    #battle { width: 1600px; height: 1080px; position: relative; display: flex; justify-content: center; align-items: center; background: #111; }
+    .video-container { position: relative; width: 45%; height: 80%; }
+    video { width: 100%; height: 100%; object-fit: cover; border: 3px solid #444; }
+    .label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 10px; font-weight: bold; border-radius: 4px; font-size: 18px; }
+    #current .label { background: #800; } /* Dark red */
+    #challenger .label { background: #004; } /* Dark blue */
+    #timer { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); background: #222; padding: 10px 20px; font-size: 28px; border: 2px solid #f00; border-radius: 8px; }
+    #vote-bar { position: absolute; bottom: 20px; left: 10%; right: 10%; height: 30px; background: #333; border: 2px solid #555; border-radius: 4px; overflow: hidden; display: flex; }
+    #vote-left { height: 100%; background: #0c0; width: 50%; transition: width 0.5s; }
+    #vote-right { height: 100%; background: #c00; width: 50%; transition: width 0.5s; }
+    #votes { position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%); display: flex; gap: 60px; }
+    .vote-btn { font-size: 48px; background: none; border: none; cursor: pointer; color: #ddd; }
+    .vote-btn:hover { color: #ff0; transform: scale(1.1); }
+    #chat { width: 320px; height: 1080px; background: #1a1a1a; overflow-y: auto; border-left: 2px solid #333; }
+    #messages { list-style: none; padding: 10px; margin: 0; }
+    #messages li { padding: 8px 0; border-bottom: 1px solid #222; word-wrap: break-word; font-size: 14px; }
+    #messages strong { color: #eee; }
+    #send-message { position: sticky; bottom: 0; width: 100%; display: flex; background: #111; padding: 10px; box-sizing: border-box; }
+    #chat-txt { flex: 1; padding: 10px; background: #222; color: #fff; border: 1px solid #444; border-radius: 4px 0 0 4px; }
+    #send-message button { padding: 10px 15px; background: #004; color: #fff; border: none; cursor: pointer; border-radius: 0 4px 4px 0; }
+    #queueBtn { position: absolute; top: 20px; left: 20px; padding: 12px 24px; background: #800; color: #fff; border: none; font-size: 16px; cursor: pointer; border-radius: 6px; z-index: 10; }
+  </style>
+</head>
+<body>
+  <div id="battle">
+    <button id="queueBtn">Queue for Battle</button>
+    
+    <div class="video-container" id="current">
+      <div class="label">CURRENT</div>
+      <video id="localVideo" autoplay playsinline muted></video>
+    </div>
+    
+    <div class="video-container" id="challenger">
+      <div class="label">CHALLENGER</div>
+      <video id="remoteVideo" autoplay playsinline></video>
+    </div>
+    
+    <div id="timer">TIME REMAINING: 2:00</div>
+    
+    <div id="votes">
+      <button class="vote-btn" id="voteCurrent">❤️</button>
+      <button class="vote-btn" id="voteChallenger">❤️</button>
+    </div>
+    
+    <div id="vote-bar">
+      <div id="vote-left"></div>
+      <div id="vote-right"></div>
+    </div>
+  </div>
+  
+  <div id="chat">
+    <ul id="messages"></ul>
+    <form id="send-message">
+      <input id="chat-txt" type="text" placeholder="Type your message...">
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+  <script>
+    // === REPLACE WITH YOUR FIREBASE CONFIG ===
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const firestore = firebase.firestore();
+
+    // Username validation loop
+    let username = prompt("Pick a username (3-20 characters):");
+    while (!username || username.length < 3 || username.length > 20) {
+      alert("Username must be 3-20 characters.");
+      username = prompt("Pick a username (3-20 characters):");
+    }
+
+    // Simple community chat - plain usernames only
+    document.getElementById("send-message").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const msg = document.getElementById("chat-txt").value.trim();
+      if (!msg) return;
+      const ts = Date.now();
+      db.ref("messages/" + ts).set({ usr: username, msg });
+      document.getElementById("chat-txt").value = "";
+    });
+
+    db.ref("messages/").on("child_added", (snap) => {
+      const data = snap.val();
+      const li = document.createElement("li");
+      li.innerHTML = `<strong>${data.usr}:</strong> ${data.msg}`;
+      document.getElementById("messages").appendChild(li);
+      const chatDiv = document.getElementById("chat");
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+    });
+
+    // WebRTC + Battle (simplified, no extra stats)
+    const iceConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+    let peerConn, roomRef, localStream;
+    let isCurrent = true; // Creator starts as current
+
+    document.getElementById("queueBtn").addEventListener("click", async () => {
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        document.getElementById("localVideo").srcObject = localStream;
+
+        const choice = prompt("Type 'create' to start a battle, or 'join' to enter a room ID:");
+        if (choice?.toLowerCase() === "create") {
+          peerConn = new RTCPeerConnection(iceConfig);
+          localStream.getTracks().forEach(t => peerConn.addTrack(t, localStream));
+
+          const offer = await peerConn.createOffer();
+          await peerConn.setLocalDescription(offer);
+
+          roomRef = await firestore.collection('rooms').add({
+            offer: { type: offer.type, sdp: offer.sdp },
+            votesCurrent: 0,
+            votesChallenger: 0
+          });
+          const rid = roomRef.id;
+          alert(`Share this room ID in chat: ${rid}`);
+          db.ref("messages/" + Date.now()).set({ usr: username, msg: `New battle room open: ${rid} - join to challenge!` });
+
+          roomRef.onSnapshot(s => {
+            const d = s.data();
+            if (d?.answer && !peerConn.currentRemoteDescription) {
+              peerConn.setRemoteDescription(new RTCSessionDescription(d.answer));
+            }
+            updateVoteBar(d?.votesCurrent || 0, d?.votesChallenger || 0);
+          });
+
+          collectCandidates("callerCandidates", "calleeCandidates");
+        } else if (choice?.toLowerCase() === "join") {
+          const rid = prompt("Enter room ID:");
+          roomRef = firestore.collection('rooms').doc(rid);
+          isCurrent = false;
+
+          peerConn = new RTCPeerConnection(iceConfig);
+          localStream.getTracks().forEach(t => peerConn.addTrack(t, localStream));
+
+          const snap = await roomRef.get();
+          await peerConn.setRemoteDescription(new RTCSessionDescription(snap.data().offer));
+
+          const ans = await peerConn.createAnswer();
+          await peerConn.setLocalDescription(ans);
+          await roomRef.update({ answer: { type: ans.type, sdp: ans.sdp } });
+
+          collectCandidates("calleeCandidates", "callerCandidates");
+        }
+
+        peerConn.ontrack = e => {
+          document.getElementById("remoteVideo").srcObject = e.streams[0];
+        };
+
+        startTimerAndVotes(roomRef);
+      } catch (err) {
+        alert("Error accessing camera/mic: " + err.message);
+      }
+    });
+
+    function collectCandidates(localName, remoteName) {
+      const coll = roomRef.collection(localName);
+      peerConn.addEventListener('icecandidate', ev => {
+        if (ev.candidate) coll.add(ev.candidate.toJSON());
+      });
+      roomRef.collection(remoteName).onSnapshot(s => {
+        s.docChanges().forEach(ch => {
+          if (ch.type === "added") peerConn.addIceCandidate(new RTCIceCandidate(ch.doc.data()));
+        });
+      });
+    }
+
+    function updateVoteBar(curr, chall) {
+      const total = curr + chall || 1;
+      document.getElementById("vote-left").style.width = (curr / total * 100) + "%";
+      document.getElementById("vote-right").style.width = (chall / total * 100) + "%";
+    }
+
+    function startTimerAndVotes(ref) {
+      let secs = 120;
+      const timerElem = document.getElementById("timer");
+      const interval = setInterval(() => {
+        secs--;
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        timerElem.textContent = `TIME REMAINING: ${m}:${s < 10 ? '0' : ''}${s}`;
+        if (secs <= 0) {
+          clearInterval(interval);
+          ref.get().then(doc => {
+            const d = doc.data();
+            const win = d.votesCurrent > d.votesChallenger ? "CURRENT" : (d.votesCurrent < d.votesChallenger ? "CHALLENGER" : "TIE");
+            alert(`Battle ended! Winner: ${win}`);
+            ref.update({ offer: null, answer: null, votesCurrent: 0, votesChallenger: 0 });
+            timerElem.textContent = "TIME REMAINING: 2:00";
+          });
+        }
+      }, 1000);
+
+      document.getElementById("voteCurrent").onclick = () => ref.update({ votesCurrent: firebase.firestore.FieldValue.increment(1) });
+      document.getElementById("voteChallenger").onclick = () => ref.update({ votesChallenger: firebase.firestore.FieldValue.increment(1) });
+    }
+  </script>
+</body>
+</html>
