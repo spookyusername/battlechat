@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Username Selection Overlay -->
     <div id="username-overlay" class="overlay">
         <div class="bubble">
             <h2>PICK A USERNAME</h2>
@@ -16,6 +17,7 @@
         </div>
     </div>
 
+    <!-- Main App Container -->
     <div id="app-container" class="hidden">
         <div class="video-grid">
             <div class="video-container" id="player1-container">
@@ -29,6 +31,7 @@
                 <video id="p1Video" autoplay muted playsinline></video>
                 <button class="vote-btn" id="vote-p1">VOTE P1</button>
             </div>
+
             <div class="video-container" id="player2-container">
                 <div class="stream-info">
                     <h2 class="username" id="p2-username">WAITING...</h2>
@@ -40,6 +43,7 @@
                 <video id="p2Video" autoplay playsinline></video>
                 <button class="vote-btn" id="vote-p2">VOTE P2</button>
             </div>
+
             <div class="battle-status" id="battle-status">
                 <div class="timer" id="timer">2:00</div>
             </div>
@@ -47,6 +51,7 @@
 
         <div class="sidebar">
             <button id="queue-btn" class="action-btn">JOIN BATTLE CHAT QUEUE</button>
+
             <div class="chat-container">
                 <div class="chat-messages" id="chat-messages">
                     <div class="message system">Welcome to BattleChat Live!</div>
@@ -58,7 +63,7 @@
         </div>
     </div>
 
-    <!-- Firebase Modular SDK -->
+    <!-- Firebase -->
     <script type="module">
       import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js';
       import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js';
