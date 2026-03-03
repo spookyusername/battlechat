@@ -1,4 +1,3 @@
-<DOCUMENT filename="app.js">
 // app.js - Single streamer queue + session-only chat history
 
 let currentUser = null;
@@ -257,3 +256,4 @@ function syncChat() {
 
 // ... (keep other functions, remove battle/vote/timer/streak logic)
 </DOCUMENT>
+
