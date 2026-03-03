@@ -22,24 +22,45 @@
 
         <!-- Video Grid -->
         <div class="video-grid">
-            <!-- Streamer -->
-            <div class="video-container" id="streamer-container">
+            <!-- Player 1 (Left) -->
+            <div class="video-container" id="player1-container">
                 <div class="stream-info">
-                    <h2 class="username" id="streamer-username">WAITING...</h2>
+                    <h2 class="username" id="p1-username">WAITING...</h2>
+                    <div class="stats" id="p1-stats">
+                        <span class="label">WINSTREAK</span>
+                        <span class="value" id="p1-streak">0</span>
+                    </div>
                 </div>
                 <!-- Video Element -->
-                <video id="streamerVideo" autoplay muted playsinline></video>
+                <video id="p1Video" autoplay muted playsinline></video>
+                <!-- Vote Button Overlay -->
+                <button class="vote-btn" id="vote-p1">VOTE P1</button>
             </div>
 
-            <!-- Status Overlay (Center) -->
+            <!-- Player 2 (Right) -->
+            <div class="video-container" id="player2-container">
+                <div class="stream-info">
+                    <h2 class="username" id="p2-username">WAITING...</h2>
+                    <div class="stats" id="p2-stats">
+                        <span class="label">WINSTREAK</span>
+                        <span class="value" id="p2-streak">0</span>
+                    </div>
+                </div>
+                <!-- Video Element -->
+                <video id="p2Video" autoplay playsinline></video>
+                <!-- Vote Button Overlay -->
+                <button class="vote-btn" id="vote-p2">VOTE P2</button>
+            </div>
+
+            <!-- Timer / Status Overlay (Center) -->
             <div class="battle-status" id="battle-status">
-                <div class="timer" id="timer">LIVE</div>
+                <div class="timer" id="timer">2:00</div>
             </div>
         </div>
 
         <!-- Sidebar (Chat & Queue) -->
         <div class="sidebar">
-            <button id="queue-btn" class="action-btn">JOIN QUEUE TO GO LIVE</button>
+            <button id="queue-btn" class="action-btn">JOIN BATTLE CHAT QUEUE</button>
 
             <div class="chat-container">
                 <div class="chat-messages" id="chat-messages">
@@ -55,11 +76,12 @@
 
     <!-- Firebase Modular SDK (CDN) - Loads first so app.js can use it -->
     <script type="module">
-      import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-      import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-      import { getDatabase, ref, set, onValue, push, remove, serverTimestamp, get, query, orderByChild, startAt, onChildAdded } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js';
+      import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js';
+      import { getDatabase, ref, set, onValue, push, remove, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js';
 
       // === PASTE YOUR REAL FIREBASE CONFIG HERE ===
+      // Go to Firebase console > Project Overview > Your apps > Web app > SDK setup > Copy the config object
       const firebaseConfig = {
         apiKey: "AIzaSyDwudK0Z8VPQh4okgzAXBpq1BQJwRqiDTI",
         authDomain: "battlechat-e988c.firebaseapp.com",
@@ -74,7 +96,7 @@
       const auth = getAuth(app);
       const db = getDatabase(app);
 
-      // Expose to global scope for app.js
+      // Expose to global scope for app.js (no imports needed there)
       window.firebaseAuth = auth;
       window.firebaseDb = db;
       window.firebaseRef = ref;
@@ -84,17 +106,14 @@
       window.firebaseRemove = remove;
       window.firebaseServerTimestamp = serverTimestamp;
       window.firebaseSignInAnonymously = signInAnonymously;
-      window.firebaseGet = get;
-      window.firebaseQuery = query;
-      window.firebaseOrderByChild = orderByChild;
-      window.firebaseStartAt = startAt;
-      window.firebaseOnChildAdded = onChildAdded;
 
-      console.log("Firebase v10.12.0 modular loaded OK");
+      console.log("Firebase v12.10.0 modular loaded OK");
     </script>
 
     <script src="app.js"></script>
 </body>
 </html>
-</DOCUMENT>
+
+
+
 
