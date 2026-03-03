@@ -1,7 +1,7 @@
-// app.js - Global chat + solo preview + test battle visibility
+// app.js - Global chat + solo preview + test visibility
 
 document.addEventListener('DOMContentLoaded', () => {
-  console.log("DOM ready – starting app");
+  console.log("DOM ready – app starting");
 
   // VARIABLES
   let currentUser = null;
@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function enterSoloPreviewMode() {
+    console.log("Entering solo preview mode");
     const videoGrid = document.querySelector('.video-grid');
     videoGrid.classList.add('solo-preview');
 
@@ -75,10 +76,11 @@ document.addEventListener('DOMContentLoaded', () => {
     p1Streak.innerText = "0";
     p1Stats.classList.remove('hidden');
 
-    addMessage('System', 'Waiting for opponent... Your preview is live across the screen!', true);
+    addMessage('System', 'Waiting for someone to join... Your preview is live!', true);
   }
 
   function exitSoloPreviewMode() {
+    console.log("Exiting solo preview mode");
     const videoGrid = document.querySelector('.video-grid');
     videoGrid.classList.remove('solo-preview');
 
@@ -162,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 
-        enterSoloPreviewMode();  // Big preview across both sides
+        enterSoloPreviewMode();  // ← This makes it big/centered
 
         inQueue = true;
         queueBtn.innerText = "WAITING IN QUEUE...";
@@ -174,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
       } catch (err) {
-        alert("Camera/mic error: " + err.message);
+        alert("Camera error: " + err.message);
       }
     } else {
       inQueue = false;
@@ -192,6 +194,37 @@ document.addEventListener('DOMContentLoaded', () => {
       addMessage('System', 'Left queue.', true);
     }
   });
+
+  // ────────────────────────────────────────────────
+  // DEBUG: Simulate battle so other tabs can see your camera
+  // Add this button to index.html sidebar if not there:
+  // <button id="test-match-btn" class="action-btn" style="margin-top:10px;background:#006600;">TEST MATCH (SEE MY CAM)</button>
+  // ────────────────────────────────────────────────
+  const testMatchBtn = document.getElementById('test-match-btn');
+  if (testMatchBtn) {
+    testMatchBtn.addEventListener('click', async () => {
+      if (!currentUserId || !localStream) {
+        alert("Queue first to start camera");
+        return;
+      }
+
+      const testId = 'test-' + Date.now();
+      await firebaseSet(firebaseRef(firebaseDb, 'currentBattleId'), testId);
+
+      await firebaseSet(firebaseRef(firebaseDb, `battles/${testId}`), {
+        p1: currentUserId,
+        p2: null, // simulate waiting for p2
+        startTime: firebaseServerTimestamp(),
+        endTime: Date.now() + 120000,
+        votesP1: 0,
+        votesP2: 0
+      });
+
+      await firebaseSet(firebaseRef(firebaseDb, `battles/${testId}/participants/${currentUserId}`), 'p1');
+
+      addMessage('System', 'Test match started — your camera is now live. Open another tab to join and see it!', true);
+    });
+  }
 
   // Attach JOIN
   joinBtn.addEventListener('click', enterApp);
