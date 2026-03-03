@@ -1,8 +1,6 @@
 // app.js - Solo live to viewers + match messages + fixed connection
-
 document.addEventListener('DOMContentLoaded', () => {
   console.log("DOM ready – starting app");
-
   let currentUser = null;
   let currentUserId = null;
   let localStream = null;
@@ -14,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let p2UserId = null;
   let streak = { p1: 0, p2: 0 };
   let lastChatKeys = new Set();
-
   const overlay = document.getElementById('username-overlay');
   const appContainer = document.getElementById('app-container');
   const usernameInput = document.getElementById('username-input');
@@ -34,11 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const timerEl = document.getElementById('timer');
   const voteP1Btn = document.getElementById('vote-p1');
   const voteP2Btn = document.getElementById('vote-p2');
-
   const rtcConfig = {
     iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
   };
-
   function addMessage(user, text, isSystem = false) {
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message');
@@ -50,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
     chatMessages.appendChild(msgDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
-
   function enterSoloPreviewMode() {
     document.querySelector('.video-grid').classList.add('solo-preview');
     p1Video.srcObject = localStream;
@@ -61,45 +55,34 @@ document.addEventListener('DOMContentLoaded', () => {
     p1Stats.classList.remove('hidden');
     addMessage('System', 'Waiting for opponent... Your preview is live!', true);
   }
-
   function exitSoloPreviewMode() {
     document.querySelector('.video-grid').classList.remove('solo-preview');
   }
-
   async function enterApp() {
     const username = usernameInput.value.trim();
     if (!username) return alert("Enter username");
-
     try {
       currentUser = username;
       const credential = await firebaseSignInAnonymously(firebaseAuth);
       currentUserId = credential.user.uid;
-
       await firebaseSet(firebaseRef(firebaseDb, `players/${currentUserId}/username`), currentUser);
-
       overlay.classList.add('hidden');
       appContainer.classList.remove('hidden');
-
       addMessage('System', `${currentUser} joined the chat.`, true);
-
       firebaseOnValue(firebaseRef(firebaseDb, 'currentBattleId'), (snap) => {
         const battleId = snap.val();
         if (battleId && !currentBattleId) joinBattle(battleId, 'viewer');
       });
-
       syncChat();
     } catch (error) {
       console.error("Join error:", error);
       alert("Error: " + error.message);
     }
   }
-
   function syncChat() {
     const chatRef = firebaseRef(firebaseDb, 'chat/global');
-
     chatMessages.innerHTML = '';
     lastChatKeys.clear();
-
     firebaseOnValue(chatRef, (snap) => {
       const messages = snap.val() || {};
       Object.entries(messages).forEach(([key, msg]) => {
@@ -109,7 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     });
-
     chatInput.addEventListener('keypress', async (e) => {
       if (e.key === 'Enter') {
         const text = chatInput.value.trim();
@@ -125,7 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-
   queueBtn.addEventListener('click', async () => {
     if (!currentUserId) return alert("Enter username first");
 
@@ -193,7 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
       exitSoloPreviewMode();
 
       if (currentBattleId && myRole === 'p1') {
-        // If you were p1 in solo battle, end it when leaving
         await firebaseRemove(firebaseRef(firebaseDb, 'currentBattleId'));
       }
 
@@ -201,58 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ────────────────────────────────────────────────
-  // BATTLE (when match starts)
-  // ────────────────────────────────────────────────
-  async function joinBattle(battleId, role = 'viewer') {
-    currentBattleId = battleId;
-    myRole = role;
-    battleStatus.classList.remove('hidden');
-    voteP1Btn.classList.toggle('hidden', role !== 'viewer');
-    voteP2Btn.classList.toggle('hidden', role !== 'viewer');
-
-    const battleRef = firebaseRef(firebaseDb, `battles/${battleId}`);
-
-    firebaseOnValue(battleRef, (snap) => {
-      const data = snap.val();
-      if (!data) return;
-
-      p1UserId = data.p1;
-      p2UserId = data.p2;
-
-      if (p2UserId) exitSoloPreviewMode(); // Switch to split if p2 exists
-      else enterSoloPreviewMode(); // Big mode if solo
-
-      firebaseOnValue(firebaseRef(firebaseDb, `players/${p1UserId}/username`), (s) => p1Username.innerText = s.val() || 'P1');
-      firebaseOnValue(firebaseRef(firebaseDb, `players/${p2UserId}/username`), (s) => p2Username.innerText = s.val() || 'P2');
-
-      p1Streak.innerText = data.p1Streak || 0;
-      p2Streak.innerText = data.p2Streak || 0;
-      p1Stats.classList.remove('hidden');
-      p2Stats.classList.remove('hidden');
-
-      startTimer(data.endTime || Date.now() + 120000);
-      updateVotes(data.votes || {});
-    });
-
-    firebaseOnValue(firebaseRef(battleRef, 'participants'), (snap) => {
-      const participants = snap.val() || {};
-      Object.keys(participants).forEach(otherId => {
-        if (otherId !== currentUserId && !peerConnections[otherId]) {
-          createPeerConnection(otherId, battleId);
-        }
-      });
-    });
-
-    await firebaseSet(firebaseRef(battleRef, `participants/${currentUserId}`), myRole);
-
-    if (myRole === 'p1') p1Video.srcObject = localStream;
-    if (myRole === 'p2') p2Video.srcObject = localStream;
-
-    voteP1Btn.onclick = () => castVote(1);
-    voteP2Btn.onclick = () => castVote(2);
-  }
-
+  // Attach JOIN
   joinBtn.addEventListener('click', enterApp);
   usernameInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') enterApp();
