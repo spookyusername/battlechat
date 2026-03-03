@@ -1,19 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BattleChat Live</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Roboto:wght@400;700&display=swap"
-        rel="stylesheet">
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-database.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 </head>
-
 <body>
     <!-- Username Selection Overlay -->
     <div id="username-overlay" class="overlay">
@@ -81,7 +74,42 @@
         </div>
     </div>
 
+    <!-- Firebase Modular SDK (CDN) - Loads first so app.js can use it -->
+    <script type="module">
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js';
+      import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js';
+      import { getDatabase, ref, set, onValue, push, remove, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js';
+
+      // === PASTE YOUR REAL FIREBASE CONFIG HERE ===
+      // Go to Firebase console > Project Overview > Your apps > Web app > SDK setup > Copy the config object
+      const firebaseConfig = {
+        apiKey: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        authDomain: "your-project-name-12345.firebaseapp.com",
+        databaseURL: "https://your-project-name-12345-default-rtdb.firebaseio.com",
+        projectId: "your-project-name-12345",
+        storageBucket: "your-project-name-12345.appspot.com",
+        messagingSenderId: "123456789012",
+        appId: "1:123456789012:web:abcdef1234567890abcdef"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getDatabase(app);
+
+      // Expose to global scope for app.js (no imports needed there)
+      window.firebaseAuth = auth;
+      window.firebaseDb = db;
+      window.firebaseRef = ref;
+      window.firebaseSet = set;
+      window.firebaseOnValue = onValue;
+      window.firebasePush = push;
+      window.firebaseRemove = remove;
+      window.firebaseServerTimestamp = serverTimestamp;
+      window.firebaseSignInAnonymously = signInAnonymously;
+
+      console.log("Firebase v12.10.0 modular loaded OK");
+    </script>
+
     <script src="app.js"></script>
 </body>
-
 </html>
