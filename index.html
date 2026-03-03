@@ -58,7 +58,7 @@
         </div>
     </div>
 
-    <!-- Firebase -->
+    <!-- Firebase Modular SDK -->
     <script type="module">
       import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js';
       import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js';
@@ -87,7 +87,7 @@
       window.firebaseRemove = remove;
       window.firebaseServerTimestamp = serverTimestamp;
       window.firebaseSignInAnonymously = signInAnonymously;
-      window.firebaseGet = get;   // ← fixed
+      window.firebaseGet = get;
 
       console.log("Firebase loaded OK");
     </script>
