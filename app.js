@@ -1,4 +1,4 @@
-// app.js - Enhanced with Firebase, WebRTC, Queue, Voting, Timer
+// app.js - Updated to Firebase modular style (using globals from index.html module script)
 
 let currentUser = null;
 let currentUserId = null;
@@ -9,9 +9,9 @@ let myRole = null; // 'p1', 'p2', or 'viewer'
 let peerConnections = {}; // {otherUserId: RTCPeerConnection}
 let p1UserId = null;
 let p2UserId = null;
-let streak = {p1: 0, p2: 0}; // Update from DB
+let streak = {p1: 0, p2: 0};
 
-// DOM Elements (updated video IDs)
+// DOM Elements
 const overlay = document.getElementById('username-overlay');
 const appContainer = document.getElementById('app-container');
 const usernameInput = document.getElementById('username-input');
@@ -25,36 +25,22 @@ const p1Username = document.getElementById('p1-username');
 const p2Username = document.getElementById('p2-username');
 const p1Streak = document.getElementById('p1-streak');
 const p2Streak = document.getElementById('p2-streak');
+const p1Stats = document.getElementById('p1-stats');   // Added - was missing
+const p2Stats = document.getElementById('p2-stats');   // Added - was missing
 const battleStatus = document.getElementById('battle-status');
 const timerEl = document.getElementById('timer');
 const voteP1Btn = document.getElementById('vote-p1');
 const voteP2Btn = document.getElementById('vote-p2');
 
-// Firebase Config - Paste your config here
-const firebaseConfig = {
-  apiKey: "AIzaSyDwudK0Z8VPQh4okgzAXBpq1BQJwRqiDTI",
-  authDomain: "battlechat-e988c.firebaseapp.com",
-  databaseURL: "https://battlechat-e988c-default-rtdb.firebaseio.com",
-  projectId: "battlechat-e988c",
-  storageBucket: "battlechat-e988c.firebasestorage.app",
-  messagingSenderId: "57130292781",
-  appId: "1:57130292781:web:586bcfc01bca236e820aa4"
-};
-
-// Initialize Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const auth = firebase.auth();
-
-// STUN/TURN Servers (add your TURN if needed)
+// STUN/TURN Servers
 const rtcConfig = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
-    // Add TURN: { urls: 'turn:your.turn.server:3478', username: 'user', credential: 'pass' }
+    // Add TURN here later if connections fail
   ]
 };
 
-// Init
+// Init event listeners
 joinBtn.addEventListener('click', enterApp);
 usernameInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') enterApp();
@@ -62,48 +48,58 @@ usernameInput.addEventListener('keypress', (e) => {
 
 async function enterApp() {
   const username = usernameInput.value.trim();
-  if (username.length > 0) {
+  if (username.length === 0) {
+    alert("Please enter a username.");
+    return;
+  }
+
+  try {
     currentUser = username;
+
+    // Anonymous sign-in using modular auth
+    const credential = await firebaseSignInAnonymously(firebaseAuth);
+    currentUserId = credential.user.uid;
+
+    // Hide overlay and show app
     overlay.classList.add('hidden');
     appContainer.classList.remove('hidden');
 
-    // Anonymous auth
-    const credential = await auth.signInAnonymously();
-    currentUserId = credential.user.uid;
-
-    // Save username
-    db.ref(`players/${currentUserId}/username`).set(currentUser);
+    // Save username to DB
+    await firebaseSet(firebaseRef(firebaseDb, `players/${currentUserId}/username`), currentUser);
 
     addMessage('System', `${currentUser} joined the server.`, true);
 
-    // Start camera
+    // Start local camera
     await startLocalVideo();
 
-    // Listen for current battle (auto-join as viewer if exists)
-    db.ref('currentBattleId').on('value', (snap) => {
+    // Listen for active battle (auto-join as viewer)
+    firebaseOnValue(firebaseRef(firebaseDb, 'currentBattleId'), (snap) => {
       const battleId = snap.val();
-      if (battleId && !currentBattleId) joinBattle(battleId, 'viewer');
+      if (battleId && !currentBattleId) {
+        joinBattle(battleId, 'viewer');
+      }
     });
 
-    // Sync chat globally (or per battle later)
+    // Start global chat sync (can change to battle-specific later)
     syncChat();
 
-  } else {
-    alert("Please enter a username.");
+  } catch (error) {
+    console.error("Join failed:", error);
+    alert("Error joining: " + (error.message || "Unknown error. Check console (F12)."));
   }
 }
 
 async function startLocalVideo() {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    // Local video now in p1Video or p2Video based on role later
+    // We'll assign it to video element based on role later
   } catch (err) {
-    console.error("Error accessing media devices.", err);
+    console.error("Media error:", err);
     addMessage('System', 'Camera/Mic access denied or unavailable.', true);
   }
 }
 
-// Queue Button
+// Queue toggle
 queueBtn.addEventListener('click', async () => {
   if (!inQueue) {
     inQueue = true;
@@ -111,24 +107,21 @@ queueBtn.addEventListener('click', async () => {
     queueBtn.style.backgroundColor = "#555";
     addMessage('System', 'You joined the battle queue.', true);
 
-    // Add to queue
-    await db.ref(`queue/${currentUserId}`).set({
+    await firebaseSet(firebaseRef(firebaseDb, `queue/${currentUserId}`), {
       username: currentUser,
-      joinedAt: firebase.database.ServerValue.TIMESTAMP
+      joinedAt: firebaseServerTimestamp()
     });
-
   } else {
     inQueue = false;
     queueBtn.innerText = "JOIN BATTLE CHAT QUEUE";
     queueBtn.style.backgroundColor = "#8b0000";
     addMessage('System', 'You left the battle queue.', true);
 
-    // Remove from queue
-    await db.ref(`queue/${currentUserId}`).remove();
+    await firebaseRemove(firebaseRef(firebaseDb, `queue/${currentUserId}`));
   }
 });
 
-// Join battle as fighter or viewer
+// Join a battle (fighter or viewer)
 async function joinBattle(battleId, role = 'viewer') {
   currentBattleId = battleId;
   myRole = role;
@@ -136,9 +129,10 @@ async function joinBattle(battleId, role = 'viewer') {
   voteP1Btn.classList.toggle('hidden', role !== 'viewer');
   voteP2Btn.classList.toggle('hidden', role !== 'viewer');
 
-  // Get battle data
-  const battleRef = db.ref(`battles/${battleId}`);
-  battleRef.on('value', (snap) => {
+  const battleRef = firebaseRef(firebaseDb, `battles/${battleId}`);
+
+  // Listen for battle changes
+  firebaseOnValue(battleRef, (snap) => {
     const data = snap.val();
     if (!data) return;
 
@@ -147,23 +141,25 @@ async function joinBattle(battleId, role = 'viewer') {
     streak.p1 = data.p1Streak || 0;
     streak.p2 = data.p2Streak || 0;
 
-    // Update UI
-    db.ref(`players/${p1UserId}/username`).once('value', (s) => p1Username.innerText = s.val() || 'P1');
-    db.ref(`players/${p2UserId}/username`).once('value', (s) => p2Username.innerText = s.val() || 'P2');
+    // Fetch usernames
+    firebaseOnValue(firebaseRef(firebaseDb, `players/${p1UserId}/username`), (s) => {
+      p1Username.innerText = s.val() || 'P1';
+    });
+    firebaseOnValue(firebaseRef(firebaseDb, `players/${p2UserId}/username`), (s) => {
+      p2Username.innerText = s.val() || 'P2';
+    });
+
     p1Streak.innerText = streak.p1;
     p2Streak.innerText = streak.p2;
     p1Stats.classList.remove('hidden');
     p2Stats.classList.remove('hidden');
 
-    // Start timer
-    startTimer(data.endTime);
-
-    // Update votes
+    startTimer(data.endTime || Date.now() + 120000); // Fallback
     updateVotes(data.votes || {});
   });
 
-  // Get other participants
-  battleRef.child('participants').on('value', (snap) => {
+  // Participants for WebRTC
+  firebaseOnValue(firebaseRef(battleRef, 'participants'), (snap) => {
     const participants = snap.val() || {};
     Object.keys(participants).forEach(otherId => {
       if (otherId !== currentUserId && !peerConnections[otherId]) {
@@ -172,66 +168,66 @@ async function joinBattle(battleId, role = 'viewer') {
     });
   });
 
-  // Add self to participants
-  await battleRef.child(`participants/${currentUserId}`).set(myRole);
+  // Join participants list
+  await firebaseSet(firebaseRef(battleRef, `participants/${currentUserId}`), myRole);
 
-  // Sync chat to this battle
+  // Switch chat to battle-specific
   syncChat(battleId);
 
-  // If fighter, add stream to connections
+  // Show local stream if fighter
   if (myRole === 'p1' || myRole === 'p2') {
-    p1Video.srcObject = localStream; // Local always left for self if p1, but adjust
+    if (myRole === 'p1') p1Video.srcObject = localStream;
+    if (myRole === 'p2') p2Video.srcObject = localStream;
   }
 
-  // Vote buttons (viewers only)
-  voteP1Btn.addEventListener('click', () => castVote(1));
-  voteP2Btn.addEventListener('click', () => castVote(2));
+  // Vote listeners (only once)
+  voteP1Btn.onclick = () => castVote(1);
+  voteP2Btn.onclick = () => castVote(2);
 }
 
-// Create P2P connection to another user
+// WebRTC Peer Connection setup (unchanged except DB refs)
 function createPeerConnection(otherId, battleId) {
   const pc = new RTCPeerConnection(rtcConfig);
   peerConnections[otherId] = pc;
 
-  // Add local stream if fighter
   if (myRole !== 'viewer' && localStream) {
     localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
   }
 
-  // Receive remote stream
   pc.ontrack = (event) => {
     const stream = event.streams[0];
-    // Assign to p1 or p2 video based on otherId
     if (otherId === p1UserId) p1Video.srcObject = stream;
     else if (otherId === p2UserId) p2Video.srcObject = stream;
   };
 
-  // ICE candidates
   pc.onicecandidate = (event) => {
     if (event.candidate) {
-      db.ref(`signaling/${battleId}/${currentUserId}-${otherId}/ice`).push(event.candidate.toJSON());
+      firebasePush(firebaseRef(firebaseDb, `signaling/${battleId}/${currentUserId}-${otherId}/ice`), event.candidate.toJSON());
     }
   };
 
-  // Listen for remote ICE
-  db.ref(`signaling/${battleId}/${otherId}-${currentUserId}/ice`).on('child_added', async (snap) => {
-    try {
-      await pc.addIceCandidate(new RTCIceCandidate(snap.val()));
-    } catch (err) { console.error(err); }
+  // Remote ICE
+  firebaseOnValue(firebaseRef(firebaseDb, `signaling/${battleId}/${otherId}-${currentUserId}/ice`), async (snap) => {
+    snap.forEach(async child => {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(child.val()));
+      } catch (err) {
+        console.error("ICE add error:", err);
+      }
+    });
   });
 
-  // Signaling: If my ID < other ID, create offer (to avoid duplicates)
+  // Offer/Answer logic (unchanged but using new DB methods)
   if (currentUserId < otherId) {
     createOffer(pc, battleId, otherId);
   } else {
-    // Listen for offer
-    db.ref(`signaling/${battleId}/${otherId}-${currentUserId}/offer`).on('value', async (snap) => {
+    firebaseOnValue(firebaseRef(firebaseDb, `signaling/${battleId}/${otherId}-${currentUserId}/offer`), async (snap) => {
       const offer = snap.val();
       if (offer) {
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        db.ref(`signaling/${battleId}/${currentUserId}-${otherId}/answer`).set({
+        await firebaseSet(firebaseRef(firebaseDb, `signaling/${battleId}/${currentUserId}-${otherId}/answer`), {
           type: answer.type,
           sdp: answer.sdp
         });
@@ -239,8 +235,7 @@ function createPeerConnection(otherId, battleId) {
     });
   }
 
-  // Listen for answer
-  db.ref(`signaling/${battleId}/${otherId}-${currentUserId}/answer`).on('value', async (snap) => {
+  firebaseOnValue(firebaseRef(firebaseDb, `signaling/${battleId}/${otherId}-${currentUserId}/answer`), async (snap) => {
     const answer = snap.val();
     if (answer && !pc.currentRemoteDescription) {
       await pc.setRemoteDescription(new RTCSessionDescription(answer));
@@ -251,7 +246,7 @@ function createPeerConnection(otherId, battleId) {
 async function createOffer(pc, battleId, otherId) {
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
-  db.ref(`signaling/${battleId}/${currentUserId}-${otherId}/offer`).set({
+  await firebaseSet(firebaseRef(firebaseDb, `signaling/${battleId}/${currentUserId}-${otherId}/offer`), {
     type: offer.type,
     sdp: offer.sdp
   });
@@ -269,7 +264,6 @@ function startTimer(endTime) {
     if (remaining <= 0) {
       clearInterval(timerInterval);
       addMessage('System', 'Battle ended!', true);
-      // Client-side cleanup; function handles logic
     }
   }, 1000);
 }
@@ -277,34 +271,82 @@ function startTimer(endTime) {
 // Voting
 async function castVote(player) {
   if (myRole !== 'viewer') return alert('Only viewers can vote!');
-  await db.ref(`battles/${currentBattleId}/votes/${currentUserId}`).set(player);
+  await firebaseSet(firebaseRef(firebaseDb, `battles/${currentBattleId}/votes/${currentUserId}`), player);
   addMessage('System', `You voted for P${player}.`, true);
 }
 
 function updateVotes(votes) {
   let p1Count = 0, p2Count = 0;
   Object.values(votes).forEach(v => v === 1 ? p1Count++ : p2Count++);
-  // Update UI if needed (e.g., percentage bars - add CSS/JS for that)
-  db.ref(`battles/${currentBattleId}`).update({votesP1: p1Count, votesP2: p2Count});
+  // Optional: add UI progress bars here later
+  firebaseSet(firebaseRef(firebaseDb, `battles/${currentBattleId}`), { votesP1: p1Count, votesP2: p2Count }, { merge: true });
 }
 
-// Chat Sync
+// Chat
 function syncChat(battleId = null) {
-  const chatRef = db.ref(battleId ? `chat/${battleId}` : 'chat/global');
-  chatRef.on('child_added', (snap) => {
-    const msg = snap.val();
-    addMessage(msg.user, msg.text, msg.isSystem);
+  const path = battleId ? `chat/${battleId}` : 'chat/global';
+  const chatRef = firebaseRef(firebaseDb, path);
+
+  firebaseOnValue(chatRef, (snap) => {
+    // Clear old messages? Or append only new - for simplicity, reload or use child_added
+    // For now: use child_added pattern instead
   });
 
-  chatInput.addEventListener('keypress', (e) => {
+  // Better: use child_added for incremental
+  // But to keep simple, assume you reload or handle in child_added
+
+  // Listener for new messages (replace on('child_added'))
+  // Note: onValue is for whole ref, better to use on child_added via separate listener if needed
+
+  // For now keep as is, but change to modular
+  // (You can optimize later)
+
+  chatInput.addEventListener('keypress', async (e) => {
     if (e.key === 'Enter') {
       const msg = chatInput.value.trim();
       if (msg) {
-        chatRef.push({
+        await firebasePush(chatRef, {
           user: currentUser,
           text: msg,
           isSystem: false,
-          time: firebase.database.ServerValue.TIMESTAMP
+          time: firebaseServerTimestamp()
+        });
+        chatInput.value = '';
+      }
+    }
+  });
+}
+
+// Note: Your original syncChat uses .on('child_added') - to match exactly:
+function syncChat(battleId = null) {
+  const path = battleId ? `chat/${battleId}` : 'chat/global';
+  const chatRef = firebaseRef(firebaseDb, path);
+
+  // Use a separate listener for child_added (Firebase modular has no direct 'on child_added', use onValue and track changes or use limitToLast)
+  // For simplicity, here's a basic child_added emulation with onValue + previous snapshot (advanced, but ok for start)
+  let lastKeys = new Set();
+
+  firebaseOnValue(chatRef, (snap) => {
+    const messages = snap.val() || {};
+    Object.keys(messages).forEach(key => {
+      if (!lastKeys.has(key)) {
+        const msg = messages[key];
+        addMessage(msg.user, msg.text, msg.isSystem);
+        lastKeys.add(key);
+      }
+    });
+  });
+
+  // Input handler
+  chatInput.addEventListener('keypress', async (e) => {
+    if (e.key === 'Enter') {
+      const msg = chatInput.value.trim();
+      if (msg) {
+        await firebasePush(chatRef, {
+          user: currentUser,
+          text: msg,
+          isSystem: false,
+          time: firebaseServerTimestamp()
         });
         chatInput.value = '';
       }
