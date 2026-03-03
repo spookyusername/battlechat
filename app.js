@@ -1,4 +1,8 @@
+// app.js - Solo live to viewers + match messages + fixed connection
+
 document.addEventListener('DOMContentLoaded', () => {
+  console.log("DOM ready – starting app");
+
   let currentUser = null;
   let currentUserId = null;
   let localStream = null;
@@ -31,7 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const voteP1Btn = document.getElementById('vote-p1');
   const voteP2Btn = document.getElementById('vote-p2');
 
-  const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+  const rtcConfig = {
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+  };
 
   function addMessage(user, text, isSystem = false) {
     const msgDiv = document.createElement('div');
@@ -83,12 +89,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       syncChat();
     } catch (error) {
+      console.error("Join error:", error);
       alert("Error: " + error.message);
     }
   }
 
   function syncChat() {
     const chatRef = firebaseRef(firebaseDb, 'chat/global');
+
     chatMessages.innerHTML = '';
     lastChatKeys.clear();
 
@@ -106,7 +114,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.key === 'Enter') {
         const text = chatInput.value.trim();
         if (text && currentUser) {
-          await firebasePush(chatRef, { user: currentUser, text, isSystem: false, time: firebaseServerTimestamp() });
+          await firebasePush(chatRef, {
+            user: currentUser,
+            text: text,
+            isSystem: false,
+            time: firebaseServerTimestamp()
+          });
           chatInput.value = '';
         }
       }
@@ -119,46 +132,51 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!inQueue) {
       try {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        enterSoloPreviewMode();
+        console.log("Camera started");
 
         inQueue = true;
         queueBtn.innerText = "WAITING IN QUEUE...";
         queueBtn.style.backgroundColor = "#555";
 
-        await firebaseSet(firebaseRef(firebaseDb, `queue/${currentUserId}`), {
-          username: currentUser,
-          joinedAt: firebaseServerTimestamp()
-        });
+        // Check if a battle exists (someone already queued)
+        const currentBattleSnap = await firebaseGet(firebaseRef(firebaseDb, 'currentBattleId'));
+        currentBattleId = currentBattleSnap.val();
 
-        // Auto-pair check
-        const queueSnap = await firebaseGet(firebaseRef(firebaseDb, 'queue'));
-        const queueData = queueSnap.val() || {};
-        const queuedUsers = Object.keys(queueData).filter(id => id !== currentUserId);
+        if (currentBattleId) {
+          // Battle exists – join as p2
+          myRole = 'p2';
+          await firebaseSet(firebaseRef(firebaseDb, `battles/${currentBattleId}/p2`), currentUserId);
+          await firebaseSet(firebaseRef(firebaseDb, `battles/${currentBattleId}/participants/${currentUserId}`), 'p2');
 
-        if (queuedUsers.length >= 1) {
-          const opponentId = queuedUsers[0];
-          const battleId = 'battle-' + Date.now();
+          p2Video.srcObject = localStream;
+          addMessage('System', 'Joined as challenger (P2) — battle starting!', true);
+          exitSoloPreviewMode(); // Switch to split
 
-          await firebaseSet(firebaseRef(firebaseDb, 'currentBattleId'), battleId);
+          // Connect to p1
+          firebaseOnValue(firebaseRef(firebaseDb, `battles/${currentBattleId}`), (snap) => {
+            p1UserId = snap.val().p1;
+            if (p1UserId && !peerConnections[p1UserId]) createPeerConnection(p1UserId, currentBattleId);
+          });
+        } else {
+          // No battle – create solo battle, you as p1
+          currentBattleId = 'battle-' + Date.now();
+          await firebaseSet(firebaseRef(firebaseDb, 'currentBattleId'), currentBattleId);
 
-          await firebaseSet(firebaseRef(firebaseDb, `battles/${battleId}`), {
+          await firebaseSet(firebaseRef(firebaseDb, `battles/${currentBattleId}`), {
             p1: currentUserId,
-            p2: opponentId,
+            p2: null,
             startTime: firebaseServerTimestamp(),
             endTime: Date.now() + 120000,
             votesP1: 0,
             votesP2: 0
           });
 
-          await firebaseSet(firebaseRef(firebaseDb, `battles/${battleId}/participants/${currentUserId}`), 'p1');
-          await firebaseSet(firebaseRef(firebaseDb, `battles/${battleId}/participants/${opponentId}`), 'p2');
+          await firebaseSet(firebaseRef(firebaseDb, `battles/${currentBattleId}/participants/${currentUserId}`), 'p1');
 
-          await firebaseRemove(firebaseRef(firebaseDb, `queue/${currentUserId}`));
-          await firebaseRemove(firebaseRef(firebaseDb, `queue/${opponentId}`));
-
-          addMessage('System', `Match found! Battling ${queueData[opponentId].username}...`, true);
-          exitSoloPreviewMode();
+          enterSoloPreviewMode(); // Big preview
+          addMessage('System', 'You are now live alone on the site! Waiting for a challenger...', true);
         }
+
       } catch (err) {
         alert("Camera error: " + err.message);
       }
@@ -167,18 +185,452 @@ document.addEventListener('DOMContentLoaded', () => {
       queueBtn.innerText = "JOIN BATTLE CHAT QUEUE";
       queueBtn.style.backgroundColor = "#8b0000";
 
-      if (localStream) localStream.getTracks().forEach(track => track.stop());
-      localStream = null;
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+      }
 
       exitSoloPreviewMode();
 
-      await firebaseRemove(firebaseRef(firebaseDb, `queue/${currentUserId}`));
+      if (currentBattleId && myRole === 'p1') {
+        // If you were p1 in solo battle, end it when leaving
+        await firebaseRemove(firebaseRef(firebaseDb, 'currentBattleId'));
+      }
+
       addMessage('System', 'Left queue.', true);
     }
   });
 
+  // ────────────────────────────────────────────────
+  // BATTLE (when match starts)
+  // ────────────────────────────────────────────────
+  async function joinBattle(battleId, role = 'viewer') {
+    currentBattleId = battleId;
+    myRole = role;
+    battleStatus.classList.remove('hidden');
+    voteP1Btn.classList.toggle('hidden', role !== 'viewer');
+    voteP2Btn.classList.toggle('hidden', role !== 'viewer');
+
+    const battleRef = firebaseRef(firebaseDb, `battles/${battleId}`);
+
+    firebaseOnValue(battleRef, (snap) => {
+      const data = snap.val();
+      if (!data) return;
+
+      p1UserId = data.p1;
+      p2UserId = data.p2;
+
+      if (p2UserId) exitSoloPreviewMode(); // Switch to split if p2 exists
+      else enterSoloPreviewMode(); // Big mode if solo
+
+      firebaseOnValue(firebaseRef(firebaseDb, `players/${p1UserId}/username`), (s) => p1Username.innerText = s.val() || 'P1');
+      firebaseOnValue(firebaseRef(firebaseDb, `players/${p2UserId}/username`), (s) => p2Username.innerText = s.val() || 'P2');
+
+      p1Streak.innerText = data.p1Streak || 0;
+      p2Streak.innerText = data.p2Streak || 0;
+      p1Stats.classList.remove('hidden');
+      p2Stats.classList.remove('hidden');
+
+      startTimer(data.endTime || Date.now() + 120000);
+      updateVotes(data.votes || {});
+    });
+
+    firebaseOnValue(firebaseRef(battleRef, 'participants'), (snap) => {
+      const participants = snap.val() || {};
+      Object.keys(participants).forEach(otherId => {
+        if (otherId !== currentUserId && !peerConnections[otherId]) {
+          createPeerConnection(otherId, battleId);
+        }
+      });
+    });
+
+    await firebaseSet(firebaseRef(battleRef, `participants/${currentUserId}`), myRole);
+
+    if (myRole === 'p1') p1Video.srcObject = localStream;
+    if (myRole === 'p2') p2Video.srcObject = localStream;
+
+    voteP1Btn.onclick = () => castVote(1);
+    voteP2Btn.onclick = () => castVote(2);
+  }
+
   joinBtn.addEventListener('click', enterApp);
-  usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enterApp(); });
+  usernameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') enterApp();
+  });
 
   console.log("App ready");
 });
+</DOCUMENT>
+
+<DOCUMENT filename="style.css">
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #0f0f0f;
+    color: #ffffff;
+    font-family: 'Roboto', sans-serif;
+    overflow: hidden;
+}
+
+/* Typography */
+h2,
+.username,
+.label,
+.value,
+button {
+    font-family: 'Anton', sans-serif;
+    text-transform: uppercase;
+}
+
+/* Overlay (username entry) */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.overlay.hidden {
+    display: none;
+}
+
+.bubble {
+    background-color: #1a1a1a;
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.2);
+    border: 1px solid #333;
+}
+
+.bubble h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+}
+
+#username-input {
+    padding: 15px;
+    font-size: 1.2rem;
+    font-family: 'Roboto', sans-serif;
+    width: 80%;
+    margin-bottom: 20px;
+    background: #000;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 5px;
+    outline: none;
+}
+
+#username-input:focus {
+    border-color: #d11111;
+}
+
+#join-btn {
+    padding: 15px 40px;
+    font-size: 1.5rem;
+    background-color: #d11111;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.3s;
+}
+
+#join-btn:hover {
+    background-color: #ff1e1e;
+}
+
+/* Main layout */
+#app-container {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+}
+
+#app-container.hidden {
+    display: none;
+}
+
+/* Video grid */
+.video-grid {
+    flex: 1;
+    display: flex;
+    padding: 10px;
+    gap: 10px;
+    position: relative;
+    background-color: #050505;
+}
+
+.video-container {
+    flex: 1;
+    background-color: #111;
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid #222;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Stream info overlay */
+.stream-info {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    z-index: 10;
+}
+
+.stream-info .username {
+    font-size: 3rem;
+    letter-spacing: 1px;
+    text-shadow: 2px 2px 4px #000;
+}
+
+.stream-info .stats {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stats .label {
+    color: #d11111;
+    font-size: 1.2rem;
+    letter-spacing: 1px;
+}
+
+.stats .value {
+    color: #d11111;
+    font-size: 2.5rem;
+    line-height: 1;
+}
+
+.hidden {
+    display: none !important;
+}
+
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background-color: #000;
+}
+
+/* Vote buttons */
+.vote-btn {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(209, 17, 17, 0.8);
+    color: white;
+    padding: 15px 30px;
+    font-size: 1.5rem;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    z-index: 10;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.vote-btn:hover {
+    background-color: rgba(255, 30, 30, 1);
+    transform: translateX(-50%) scale(1.05);
+}
+
+.vote-btn:active {
+    transform: translateX(-50%) scale(0.95);
+}
+
+/* Timer / status */
+.battle-status {
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 2px solid #d11111;
+    z-index: 20;
+}
+
+.timer {
+    font-family: 'Anton', sans-serif;
+    font-size: 2.5rem;
+    color: #fff;
+    letter-spacing: 2px;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 350px;
+    background-color: #111;
+    border-left: 2px solid #222;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+}
+
+.action-btn {
+    background-color: #8b0000;
+    color: white;
+    font-size: 1.5rem;
+    padding: 15px;
+    width: 100%;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    transition: background 0.3s;
+    text-align: center;
+}
+
+.action-btn:hover {
+    background-color: #a80000;
+}
+
+.chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #0a0a0a;
+    border-radius: 5px;
+    border: 1px solid #333;
+    overflow: hidden;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    font-size: 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.chat-messages .message {
+    word-break: break-word;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 5px;
+}
+
+.chat-messages .system {
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    border-bottom: none;
+}
+
+.msg-username {
+    font-family: 'Anton', sans-serif;
+    color: #aaa;
+    margin-right: 5px;
+    letter-spacing: 1px;
+}
+
+.msg-text {
+    color: #fff;
+}
+
+.msg-time {
+    font-size: 0.7rem;
+    color: #666;
+    margin-left: 5px;
+}
+
+.chat-input-area {
+    padding: 10px;
+    background-color: #111;
+    border-top: 1px solid #333;
+}
+
+#chat-input {
+    width: 100%;
+    padding: 10px;
+    background-color: #000;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 5px;
+    outline: none;
+    font-family: 'Roboto', sans-serif;
+}
+
+#chat-input:focus {
+    border-color: #d11111;
+}
+
+/* Scrollbar */
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: #0a0a0a;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* ────────────────────────────────────────────────
+   SOLO PREVIEW MODE – big centered camera when alone
+   ──────────────────────────────────────────────── */
+.video-grid.solo-preview {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: #000;
+}
+
+.video-grid.solo-preview .video-container {
+    flex: none;
+    width: 90vw;
+    max-width: 1400px;
+    aspect-ratio: 16 / 9;
+    margin: 0 auto;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(209, 17, 17, 0.6);
+}
+
+.video-grid.solo-preview #player2-container,
+.video-grid.solo-preview #p2Video,
+.video-grid.solo-preview #p2-username,
+.video-grid.solo-preview #p2-stats,
+.video-grid.solo-preview #vote-p2 {
+    display: none !important;
+}
+
+.video-grid.solo-preview .stream-info {
+    top: 40px;
+    left: 40px;
+    font-size: 2.5rem;
+}
+
+.video-grid.solo-preview .battle-status {
+    font-size: 5rem;
+    padding: 30px 60px;
+}
+
+</DOCUMENT>
