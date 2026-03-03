@@ -329,4 +329,30 @@ video {
 
 .chat-messages::-webkit-scrollbar-thumb:hover {
     background: #555;
+
+    /* Solo preview mode - one big centered video when alone in queue */
+.video-grid.solo-preview {
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.video-grid.solo-preview .video-container {
+  flex: 0 1 80%;               /* takes ~80% width, centered */
+  max-width: 900px;
+  aspect-ratio: 16 / 9;        /* keeps good video proportions */
+  margin: 0 auto;
+}
+
+.video-grid.solo-preview #player2-container,
+.video-grid.solo-preview #p2Video,
+.video-grid.solo-preview #p2-username,
+.video-grid.solo-preview #p2-stats,
+.video-grid.solo-preview #vote-p2 {
+  display: none !important;    /* hide right side completely */
+}
+
+.video-grid.solo-preview .battle-status {
+  font-size: 3rem;             /* bigger timer when alone */
+
 }
