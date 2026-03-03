@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Username Selection Overlay -->
     <div id="username-overlay" class="overlay">
         <div class="bubble">
             <h2>PICK A USERNAME</h2>
@@ -17,12 +16,8 @@
         </div>
     </div>
 
-    <!-- Main App Container -->
     <div id="app-container" class="hidden">
-
-        <!-- Video Grid -->
         <div class="video-grid">
-            <!-- Player 1 (Left) -->
             <div class="video-container" id="player1-container">
                 <div class="stream-info">
                     <h2 class="username" id="p1-username">WAITING...</h2>
@@ -31,13 +26,9 @@
                         <span class="value" id="p1-streak">0</span>
                     </div>
                 </div>
-                <!-- Video Element -->
                 <video id="p1Video" autoplay muted playsinline></video>
-                <!-- Vote Button Overlay -->
                 <button class="vote-btn" id="vote-p1">VOTE P1</button>
             </div>
-
-            <!-- Player 2 (Right) -->
             <div class="video-container" id="player2-container">
                 <div class="stream-info">
                     <h2 class="username" id="p2-username">WAITING...</h2>
@@ -46,30 +37,18 @@
                         <span class="value" id="p2-streak">0</span>
                     </div>
                 </div>
-                <!-- Video Element -->
                 <video id="p2Video" autoplay playsinline></video>
-                <!-- Vote Button Overlay -->
                 <button class="vote-btn" id="vote-p2">VOTE P2</button>
             </div>
-
-            <!-- Timer / Status Overlay (Center) -->
             <div class="battle-status" id="battle-status">
                 <div class="timer" id="timer">2:00</div>
             </div>
         </div>
 
-        <!-- Sidebar (Chat & Queue) -->
         <div class="sidebar">
             <button id="queue-btn" class="action-btn">JOIN BATTLE CHAT QUEUE</button>
-
-            <!-- DEBUG BUTTON - Click this after queuing to simulate a match so other tabs can see your camera -->
-            <button id="test-match-btn" class="action-btn" style="margin-top: 10px; background: #006600;">
-                TEST MATCH (SEE MY CAM)
-            </button>
-
             <div class="chat-container">
                 <div class="chat-messages" id="chat-messages">
-                    <!-- Messages will appear here -->
                     <div class="message system">Welcome to BattleChat Live!</div>
                 </div>
                 <div class="chat-input-area">
@@ -79,11 +58,11 @@
         </div>
     </div>
 
-    <!-- Firebase Modular SDK (CDN) -->
+    <!-- Firebase -->
     <script type="module">
       import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js';
       import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js';
-      import { getDatabase, ref, set, onValue, push, remove, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js';
+      import { getDatabase, ref, set, onValue, push, remove, serverTimestamp, get } from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js';
 
       const firebaseConfig = {
         apiKey: "AIzaSyDwudK0Z8VPQh4okgzAXBpq1BQJwRqiDTI",
@@ -108,8 +87,9 @@
       window.firebaseRemove = remove;
       window.firebaseServerTimestamp = serverTimestamp;
       window.firebaseSignInAnonymously = signInAnonymously;
+      window.firebaseGet = get;   // ← fixed
 
-      console.log("Firebase v12.10.0 modular loaded OK");
+      console.log("Firebase loaded OK");
     </script>
 
     <script src="app.js"></script>
