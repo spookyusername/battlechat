@@ -1,8 +1,9 @@
-// app.js - Global chat + solo preview + auto-pair on 2nd queue
+// app.js - Global chat + solo live broadcast + auto-pair
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log("DOM ready – starting app");
 
+  // VARIABLES
   let currentUser = null;
   let currentUserId = null;
   let localStream = null;
@@ -56,20 +57,23 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function enterSoloPreviewMode() {
-    document.querySelector('.video-grid').classList.add('solo-preview');
+    const videoGrid = document.querySelector('.video-grid');
+    videoGrid.classList.add('solo-preview');
+
     p1Video.srcObject = localStream;
     p1Video.muted = true;
     p1Video.play().catch(e => console.error("Preview play error:", e));
+
     p1Username.innerText = currentUser || "WAITING FOR OPPONENT";
     p1Streak.innerText = "0";
     p1Stats.classList.remove('hidden');
+
     addMessage('System', 'Waiting for opponent... Your preview is live!', true);
   }
 
   function exitSoloPreviewMode() {
-    document.querySelector('.video-grid').classList.remove('solo-preview');
-    p1Video.srcObject = null;
-    p2Video.srcObject = null;
+    const videoGrid = document.querySelector('.video-grid');
+    videoGrid.classList.remove('solo-preview');
   }
 
   // ────────────────────────────────────────────────
@@ -108,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ────────────────────────────────────────────────
   function syncChat() {
     const chatRef = firebaseRef(firebaseDb, 'chat/global');
+
     chatMessages.innerHTML = '';
     lastChatKeys.clear();
 
@@ -138,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ────────────────────────────────────────────────
-  // QUEUE – auto-pair if someone else is waiting
+  // QUEUE – create solo battle if alone, add p2 if not
   // ────────────────────────────────────────────────
   queueBtn.addEventListener('click', async () => {
     if (!currentUserId) return alert("Enter username first");
@@ -146,54 +151,55 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!inQueue) {
       try {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        enterSoloPreviewMode();  // Big preview for solo
+        console.log("Camera started");
 
         inQueue = true;
         queueBtn.innerText = "WAITING IN QUEUE...";
         queueBtn.style.backgroundColor = "#555";
 
-        await firebaseSet(firebaseRef(firebaseDb, `queue/${currentUserId}`), {
-          username: currentUser,
-          joinedAt: firebaseServerTimestamp()
-        });
+        // Check if a battle exists (someone already queued)
+        const currentBattleSnap = await firebaseGet(firebaseRef(firebaseDb, 'currentBattleId'));
+        currentBattleId = currentBattleSnap.val();
 
-        // Check if someone else is in queue (simple 2-player auto-match)
-        const queueSnap = await firebaseGet(firebaseRef(firebaseDb, 'queue'));
-        const queueData = queueSnap.val() || {};
-        const queuedUsers = Object.keys(queueData).filter(id => id !== currentUserId);
+        if (currentBattleId) {
+          // Battle exists – join as p2
+          myRole = 'p2';
+          await firebaseSet(firebaseRef(firebaseDb, `battles/${currentBattleId}/p2`), currentUserId);
+          await firebaseSet(firebaseRef(firebaseDb, `battles/${currentBattleId}/participants/${currentUserId}`), 'p2');
 
-        if (queuedUsers.length >= 1) {
-          // Found someone — create battle, you as p1, them as p2
-          const opponentId = queuedUsers[0]; // first waiting person
-          const battleId = 'battle-' + Date.now();
+          p2Video.srcObject = localStream;
+          addMessage('System', 'Joined as challenger (P2) — battle starting!', true);
+          exitSoloPreviewMode(); // Switch to split
 
-          await firebaseSet(firebaseRef(firebaseDb, 'currentBattleId'), battleId);
+          // Connect to p1
+          firebaseOnValue(firebaseRef(firebaseDb, `battles/${currentBattleId}`), (snap) => {
+            p1UserId = snap.val().p1;
+            if (p1UserId && !peerConnections[p1UserId]) createPeerConnection(p1UserId, currentBattleId);
+          });
+        } else {
+          // No battle – create solo battle, you as p1
+          currentBattleId = 'battle-' + Date.now();
+          await firebaseSet(firebaseRef(firebaseDb, 'currentBattleId'), currentBattleId);
 
-          await firebaseSet(firebaseRef(firebaseDb, `battles/${battleId}`), {
+          await firebaseSet(firebaseRef(firebaseDb, `battles/${currentBattleId}`), {
             p1: currentUserId,
-            p2: opponentId,
+            p2: null,
             startTime: firebaseServerTimestamp(),
             endTime: Date.now() + 120000,
             votesP1: 0,
             votesP2: 0
           });
 
-          await firebaseSet(firebaseRef(firebaseDb, `battles/${battleId}/participants/${currentUserId}`), 'p1');
-          await firebaseSet(firebaseRef(firebaseDb, `battles/${battleId}/participants/${opponentId}`), 'p2');
+          await firebaseSet(firebaseRef(firebaseDb, `battles/${currentBattleId}/participants/${currentUserId}`), 'p1');
 
-          // Remove both from queue
-          await firebaseRemove(firebaseRef(firebaseDb, `queue/${currentUserId}`));
-          await firebaseRemove(firebaseRef(firebaseDb, `queue/${opponentId}`));
-
-          addMessage('System', `Match found! Battling ${queueData[opponentId].username}...`, true);
-          exitSoloPreviewMode(); // Switch to split screen
+          enterSoloPreviewMode(); // Big preview
+          addMessage('System', 'You are now live alone on the site! Waiting for a challenger...', true);
         }
 
       } catch (err) {
         alert("Camera error: " + err.message);
       }
     } else {
-      // Leave queue
       inQueue = false;
       queueBtn.innerText = "JOIN BATTLE CHAT QUEUE";
       queueBtn.style.backgroundColor = "#8b0000";
@@ -205,13 +211,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
       exitSoloPreviewMode();
 
-      await firebaseRemove(firebaseRef(firebaseDb, `queue/${currentUserId}`));
+      if (currentBattleId && myRole === 'p1') {
+        // If you were p1 in solo battle, end it when leaving
+        await firebaseRemove(firebaseRef(firebaseDb, 'currentBattleId'));
+      }
+
       addMessage('System', 'Left queue.', true);
     }
   });
 
   // ────────────────────────────────────────────────
-  // BATTLE (when match starts)
+  // JOIN BATTLE (as viewer or player)
   // ────────────────────────────────────────────────
   async function joinBattle(battleId, role = 'viewer') {
     currentBattleId = battleId;
@@ -228,6 +238,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       p1UserId = data.p1;
       p2UserId = data.p2;
+
+      if (p2UserId) exitSoloPreviewMode(); // Switch to split if p2 exists
+      else enterSoloPreviewMode(); // Big mode if solo
 
       firebaseOnValue(firebaseRef(firebaseDb, `players/${p1UserId}/username`), (s) => p1Username.innerText = s.val() || 'P1');
       firebaseOnValue(firebaseRef(firebaseDb, `players/${p2UserId}/username`), (s) => p2Username.innerText = s.val() || 'P2');
@@ -248,7 +261,6 @@ document.addEventListener('DOMContentLoaded', () => {
           createPeerConnection(otherId, battleId);
         }
       });
-      if (Object.keys(participants).length > 1) exitSoloPreviewMode();
     });
 
     await firebaseSet(firebaseRef(battleRef, `participants/${currentUserId}`), myRole);
@@ -260,13 +272,11 @@ document.addEventListener('DOMContentLoaded', () => {
     voteP2Btn.onclick = () => castVote(2);
   }
 
-  // ... (keep createPeerConnection, createOffer, startTimer, castVote, updateVotes from your previous version)
-
-  // Attach JOIN listeners
+  // Attach JOIN
   joinBtn.addEventListener('click', enterApp);
   usernameInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') enterApp();
   });
 
-  console.log("App ready – type username and press JOIN");
+  console.log("App ready");
 });
