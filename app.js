@@ -1,4 +1,4 @@
-// app.js - Permission only on queue join + simple manual battle test
+// app.js
 
 let currentUser = null;
 let currentUserId = null;
@@ -11,13 +11,22 @@ let p1UserId = null;
 let p2UserId = null;
 let streak = {p1: 0, p2: 0};
 
-// DOM Elements (add these if missing)
-const p1Stats = document.getElementById('p1-stats');
-const p2Stats = document.getElementById('p2-stats');
-// ... (keep all other const from before)
-
-
-// ... (keep rtcConfig and other init)
+// DOM Elements
+const overlay          = document.getElementById('username-overlay');
+const appContainer     = document.getElementById('app-container');
+const usernameInput    = document.getElementById('username-input');
+const joinBtn          = document.getElementById('join-btn');
+const queueBtn         = document.getElementById('queue-btn');
+const chatMessages     = document.getElementById('chat-messages');
+const chatInput        = document.getElementById('chat-input');
+const p1Video          = document.getElementById('p1Video');
+const p2Video          = document.getElementById('p2Video');
+const p1Username       = document.getElementById('p1-username');
+const p2Username       = document.getElementById('p2-username');
+const timerEl          = document.getElementById('timer');
+const battleStatus     = document.getElementById('battle-status');
+const voteP1           = document.getElementById('vote-p1');
+const voteP2           = document.getElementById('vote-p2');
 
 // Init listeners
 joinBtn.addEventListener('click', enterApp);
@@ -45,8 +54,6 @@ async function enterApp() {
 
     addMessage('System', `${currentUser} joined. Click JOIN QUEUE to start camera and queue up.`, true);
 
-    // NO camera here anymore!
-
     firebaseOnValue(firebaseRef(firebaseDb, 'currentBattleId'), (snap) => {
       const battleId = snap.val();
       if (battleId && !currentBattleId) joinBattle(battleId, 'viewer');
@@ -60,7 +67,6 @@ async function enterApp() {
   }
 }
 
-// Queue button - NOW starts camera + adds to queue
 queueBtn.addEventListener('click', async () => {
   if (!currentUserId) {
     alert("Join first (enter username)");
@@ -68,7 +74,6 @@ queueBtn.addEventListener('click', async () => {
   }
 
   if (!inQueue) {
-    // Request camera/microphone HERE (only when user wants to queue/fight)
     try {
       localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       addMessage('System', 'Camera & mic enabled. You are now queueing.', true);
@@ -87,11 +92,7 @@ queueBtn.addEventListener('click', async () => {
       joinedAt: firebaseServerTimestamp()
     });
 
-    // For testing: if you want manual start - add a temp button or auto-check
-    // For now: prompt in console or add a "Force Start Battle" button below
-
   } else {
-    // Leave queue
     inQueue = false;
     queueBtn.innerText = "JOIN BATTLE CHAT QUEUE";
     queueBtn.style.backgroundColor = "#8b0000";
@@ -106,31 +107,20 @@ queueBtn.addEventListener('click', async () => {
   }
 });
 
-// To test visibility: Manually create a battle in Firebase console for now
-// Or add this temp function & call it from console or add a button
-async function forceStartBattleForTesting() {
-  // Example: make current user P1, simulate P2 as someone else
-  const testBattleId = 'test-battle-' + Date.now();
-  await firebaseSet(firebaseRef(firebaseDb, 'currentBattleId'), testBattleId);
-
-  await firebaseSet(firebaseRef(firebaseDb, `battles/${testBattleId}`), {
-    p1: currentUserId,
-    p2: 'test-friend-uid', // replace with real uid from another tab
-    startTime: firebaseServerTimestamp(),
-    endTime: Date.now() + 120000,
-    votesP1: 0,
-    votesP2: 0
-  });
-
-  await firebaseSet(firebaseRef(firebaseDb, `battles/${testBattleId}/participants/${currentUserId}`), 'p1');
-  addMessage('System', 'Test battle started – your camera should be visible if someone joins as viewer or p2.');
+// Placeholder functions (add your real logic later)
+function addMessage(sender, text, isSystem = false) {
+  const div = document.createElement('div');
+  div.className = `message ${isSystem ? 'system' : ''}`;
+  div.innerHTML = isSystem ? text : `<span class="msg-username">${sender}</span><span class="msg-text">${text}</span>`;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// In joinBattle: assign localStream to video based on role
-// (keep rest of joinBattle, createPeerConnection, etc. from previous version)
+function syncChat() {
+  // TODO: real chat listener
+}
 
-// Example in joinBattle:
-if (myRole === 'p1') p1Video.srcObject = localStream;
-if (myRole === 'p2') p2Video.srcObject = localStream;
-
-// ... keep timer, voting, chat functions (update DB refs as before)
+function joinBattle(battleId, role) {
+  // TODO: real battle join logic
+  console.log(`Joined battle ${battleId} as ${role}`);
+}
