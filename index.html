@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BattleChat — Live</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -41,7 +42,7 @@
   .cam-feed::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px); pointer-events: none; z-index: 3; }
   .cam-feed video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
   .cam-feed video.mirror { transform: scaleX(-1); }
-  .cam-placeholder { display: flex; flex-direction: column; align-items: center; gap: 12px; opacity: 0.15; z-index: 2; }
+  .cam-placeholder { display: flex; flex-direction: column; align-items: center; gap: 12px; opacity: 0.15; z-index: 2; position: relative; }
   .cam-placeholder-icon { width: 72px; height: 72px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 2rem; }
   .cam-placeholder-text { font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; letter-spacing: 3px; text-transform: uppercase; }
   .cam-nameplate { position: absolute; top: 12px; left: 12px; z-index: 5; display: flex; align-items: center; gap: 8px; background: rgba(8,8,8,0.8); border: 1px solid var(--border); padding: 5px 12px 5px 8px; backdrop-filter: blur(4px); cursor: pointer; }
@@ -65,7 +66,7 @@
   .vote-btn.voted-left { background: var(--red); border-color: var(--red); color: white; cursor: default; }
   .vote-btn.voted-right { background: #3a86ff; border-color: #3a86ff; color: white; cursor: default; }
   .vote-btn:disabled { opacity: 0.5; cursor: default; }
-  .vote-pct { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 1px; line-height: 1; }
+  .vote-pct { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 1px; line-height: 1; flex-shrink: 0; }
   .cam-panel:first-child .vote-pct { color: var(--red-hot); }
   .cam-panel.right-cam .vote-pct { color: #60a5fa; }
 
@@ -100,7 +101,7 @@
   .chat-msg:hover { background: rgba(255,255,255,0.02); }
   .msg-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.82rem; margin-right: 5px; cursor: pointer; }
   .msg-name:hover { text-decoration: underline; }
-  .msg-name.me { color: #4CAF50; } .msg-name.other { color: #60a5fa; } .msg-name.system-name { color: var(--red-hot); }
+  .msg-name.me { color: #4CAF50; } .msg-name.other { color: #60a5fa; }
   .msg-text { color: rgba(232,232,232,0.7); }
   .chat-msg.system { padding: 5px 14px; margin: 3px 8px; background: rgba(217,43,43,0.06); border-left: 2px solid var(--red); }
   .chat-msg.system .msg-text { color: rgba(232,232,232,0.45); font-size: 0.8rem; font-style: italic; }
@@ -176,6 +177,8 @@
   .btn-save:hover { background: var(--red-hot); }
   .btn-cancel { font-family: 'Bebas Neue', sans-serif; font-size: 0.95rem; letter-spacing: 2px; background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 9px 24px; cursor: pointer; clip-path: polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); transition: border-color 0.2s, color 0.2s; }
   .btn-cancel:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+
+  /* ARENA MODAL */
   .modal-arena { max-width: 560px; }
   .arena-modal-header { padding: 22px 28px 0; display: flex; align-items: center; justify-content: space-between; }
   .arena-modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 3px; }
@@ -187,7 +190,7 @@
   .sdot.done { background: rgba(217,43,43,0.4); border-color: rgba(217,43,43,0.4); }
   .arena-body { padding: 18px 28px 28px; }
   .cam-preview-wrap { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border: 1px solid var(--border); overflow: hidden; margin-bottom: 14px; display: flex; align-items: center; justify-content: center; }
-  #arena-cam-preview { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: none; }
+  #arena-preview { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: none; }
   .cam-ph { display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: 0.25; }
   .cam-active-lbl { position: absolute; top: 10px; left: 10px; background: rgba(8,8,8,0.8); border: 1px solid var(--border); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.7rem; letter-spacing: 2px; color: var(--text); padding: 4px 10px; display: none; align-items: center; gap: 6px; }
   .cam-active-lbl.on { display: flex; }
@@ -215,7 +218,6 @@
   .q-chip.you { border-color: rgba(217,43,43,0.4); color: var(--red-hot); background: rgba(217,43,43,0.08); }
   .q-leave-btn { font-family: 'Bebas Neue', sans-serif; font-size: 0.95rem; letter-spacing: 2px; background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 10px 28px; cursor: pointer; clip-path: polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); transition: all 0.2s; }
   .q-leave-btn:hover { border-color: var(--red); color: var(--red-hot); }
-
   .toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-10px); background: var(--gold); color: var(--black); font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; padding: 10px 28px; clip-path: polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%); opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.3s; z-index: 999; white-space: nowrap; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
@@ -241,7 +243,7 @@
 
   <!-- LEFT CAM -->
   <div class="cam-panel" id="cam-left">
-    <div class="cam-feed">
+    <div class="cam-feed" id="feed-left">
       <div class="cam-nameplate" id="np-left" style="display:none;" onclick="openProfileBySlot('left')">
         <div class="cam-avatar-sm" id="av-left">🥊</div>
         <span class="cam-username" id="un-left">—</span>
@@ -272,7 +274,7 @@
 
   <!-- RIGHT CAM -->
   <div class="cam-panel right-cam" id="cam-right">
-    <div class="cam-feed">
+    <div class="cam-feed" id="feed-right">
       <div class="cam-nameplate" id="np-right" style="display:none;" onclick="openProfileBySlot('right')">
         <div class="cam-avatar-sm" id="av-right">🔥</div>
         <span class="cam-username" id="un-right">—</span>
@@ -333,7 +335,6 @@
       </div>
     </div>
   </div>
-
 </div>
 
 <!-- TOAST -->
@@ -351,7 +352,6 @@
       <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Log In</button>
       <button class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
     </div>
-    <!-- LOGIN -->
     <div id="login-form" class="auth-form">
       <div class="field-group">
         <div class="field-label">Email</div>
@@ -366,7 +366,6 @@
       <div class="auth-divider">or</div>
       <button class="auth-submit" style="background:var(--dark3);border:1px solid var(--border);color:var(--muted);" onclick="switchAuthTab('signup')">CREATE ACCOUNT</button>
     </div>
-    <!-- SIGNUP -->
     <div id="signup-form" class="auth-form" style="display:none;">
       <div class="field-group">
         <div class="field-label">Username</div>
@@ -452,11 +451,10 @@
       <div class="sdot" id="sdot1"></div>
     </div>
     <div class="arena-body">
-      <!-- STEP 1 -->
       <div id="arena-s1">
         <div style="margin-bottom:14px;">
           <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;margin-bottom:4px;">Check your setup</div>
-          <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;">Make sure your camera and mic are working before entering the queue.</div>
+          <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;">Make sure your camera and mic look good before entering the queue.</div>
         </div>
         <div class="cam-preview-wrap">
           <video id="arena-preview" autoplay muted playsinline></video>
@@ -481,7 +479,6 @@
           <button class="arena-next-btn" id="arena-next-btn" onclick="goToQueue()" disabled>LOOKS GOOD →</button>
         </div>
       </div>
-      <!-- STEP 2: QUEUE -->
       <div id="arena-s2" style="display:none;">
         <div class="queue-screen">
           <div class="q-avatar" id="q-av">🥊</div>
@@ -504,7 +501,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import { getDatabase, ref, push, onChildAdded, set, onValue, remove, off, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, push, onChildAdded, set, onValue, remove, off } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
 // ── FIREBASE ──
 const app = initializeApp({
@@ -520,33 +517,153 @@ const auth = getAuth(app);
 const db   = getFirestore(app);
 const rtdb = getDatabase(app);
 
-// ── CONSTANTS ──
-const AVATARS = ['🥊','🔥','⚡','💀','🐺','🦅','🐉','👊','🗡️','🛡️','🎯','💣','🌪️','🦁','🤺','🧨','🏆','⚔️'];
-const ICE = { iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}] };
+// ── LIVEKIT ──
+const LK_URL        = 'wss://battlechat-ef3iejkp.livekit.cloud';
+const TOKEN_URL     = 'https://battlechat-tokens.realeazybot.workers.dev';
+const ROOM_NAME     = 'battlechat-stage';
+const { Room, RoomEvent, Track, createLocalVideoTrack, createLocalAudioTrack } = LivekitClient;
 
 // ── STATE ──
 let me = null, myProfile = null;
-let arenaStream = null, pc = null;
-let mySlot = null, oppUid = null;
+let localStream = null;
+let lkRoom = null;
+let mySlot = null;
 let stageUids = { left: null, right: null };
-let viewingUid = null, editAv = '🥊', signupAv = '🥊';
+let signupAv = '🥊', editAv = '🥊';
 let chatOpen = true, hasVoted = false, lv = 50, rv = 50, roundSec = 120;
 let queueInt = null, queuePos = 0;
 
-// ── AUTH LISTENER ──
+const AVATARS = ['🥊','🔥','⚡','💀','🐺','🦅','🐉','👊','🗡️','🛡️','🎯','💣','🌪️','🦁','🤺','🧨','🏆','⚔️'];
+const fakeQ   = ['BLASTZONE','RAPIDFIRE','COLDFRONT','STATIC','VOLTAGE','GHOSTMODE'];
+
+// ── FETCH LIVEKIT TOKEN ──
+async function getToken(identity, canPublish) {
+  const url = `${TOKEN_URL}?identity=${encodeURIComponent(identity)}&room=${ROOM_NAME}&publish=${canPublish}`;
+  const res  = await fetch(url);
+  const data = await res.json();
+  return data.token;
+}
+
+// ── JOIN LIVEKIT AS VIEWER (subscribe only) ──
+async function joinAsViewer() {
+  if (lkRoom) return;
+  const identity = 'viewer-' + Math.random().toString(36).slice(2, 8);
+  const token    = await getToken(identity, false);
+  lkRoom = new Room();
+  lkRoom.on(RoomEvent.TrackSubscribed, (track, pub, participant) => {
+    handleRemoteTrack(track, participant.identity);
+  });
+  lkRoom.on(RoomEvent.TrackUnsubscribed, (track, pub, participant) => {
+    handleRemoteTrackRemoved(participant.identity);
+  });
+  lkRoom.on(RoomEvent.ParticipantConnected, p => updateOnlineCount());
+  lkRoom.on(RoomEvent.ParticipantDisconnected, p => {
+    handleRemoteTrackRemoved(p.identity);
+    updateOnlineCount();
+  });
+  await lkRoom.connect(LK_URL, token);
+  updateOnlineCount();
+  // Attach any tracks already in the room
+  lkRoom.remoteParticipants.forEach(p => {
+    p.trackPublications.forEach(pub => {
+      if (pub.track) handleRemoteTrack(pub.track, p.identity);
+    });
+  });
+}
+
+// ── JOIN LIVEKIT AS FIGHTER (publish camera) ──
+async function joinAsFighter(slot) {
+  const identity = `fighter-${slot}-${myProfile.username}`;
+  // Disconnect viewer session first if exists
+  if (lkRoom) { await lkRoom.disconnect(); lkRoom = null; }
+
+  const token = await getToken(identity, true);
+  lkRoom = new Room();
+
+  lkRoom.on(RoomEvent.TrackSubscribed, (track, pub, participant) => {
+    handleRemoteTrack(track, participant.identity);
+  });
+  lkRoom.on(RoomEvent.TrackUnsubscribed, (track, pub, participant) => {
+    handleRemoteTrackRemoved(participant.identity);
+  });
+  lkRoom.on(RoomEvent.ParticipantConnected, p => updateOnlineCount());
+  lkRoom.on(RoomEvent.ParticipantDisconnected, p => {
+    handleRemoteTrackRemoved(p.identity);
+    updateOnlineCount();
+  });
+
+  await lkRoom.connect(LK_URL, token);
+
+  // Publish local tracks from the localStream we already have
+  const [videoTrack] = localStream.getVideoTracks();
+  const [audioTrack] = localStream.getAudioTracks();
+
+  if (videoTrack) {
+    const lkVideo = await LivekitClient.LocalVideoTrack.createFromMediaStreamTrack(videoTrack);
+    await lkRoom.localParticipant.publishTrack(lkVideo);
+  }
+  if (audioTrack) {
+    const lkAudio = await LivekitClient.LocalAudioTrack.createFromMediaStreamTrack(audioTrack);
+    await lkRoom.localParticipant.publishTrack(lkAudio);
+  }
+
+  // Show own preview in the slot
+  const myVid = document.getElementById(`vid-${slot}`);
+  myVid.srcObject = localStream;
+  myVid.style.display = 'block';
+
+  updateOnlineCount();
+  // Attach any existing remote participants
+  lkRoom.remoteParticipants.forEach(p => {
+    p.trackPublications.forEach(pub => {
+      if (pub.track) handleRemoteTrack(pub.track, p.identity);
+    });
+  });
+}
+
+// ── MAP REMOTE TRACK TO CORRECT SLOT ──
+function handleRemoteTrack(track, identity) {
+  if (track.kind !== Track.Kind.Video) return;
+  const slot = identity.startsWith('fighter-left') ? 'left'
+             : identity.startsWith('fighter-right') ? 'right'
+             : null;
+  if (!slot) return;
+  const vid = document.getElementById(`vid-${slot}`);
+  track.attach(vid);
+  vid.style.display = 'block';
+  document.getElementById(`ph-${slot}`).style.display = 'none';
+}
+
+function handleRemoteTrackRemoved(identity) {
+  const slot = identity.startsWith('fighter-left') ? 'left'
+             : identity.startsWith('fighter-right') ? 'right'
+             : null;
+  if (!slot || slot === mySlot) return;
+  const vid = document.getElementById(`vid-${slot}`);
+  vid.style.display = 'none'; vid.srcObject = null;
+}
+
+function updateOnlineCount() {
+  if (!lkRoom) return;
+  const count = lkRoom.remoteParticipants.size + 1;
+  document.getElementById('online-count').textContent = count + ' online';
+}
+
+// ── AUTH STATE ──
 onAuthStateChanged(auth, async user => {
   me = user;
   if (user) {
-    const snap = await getDoc(doc(db,'users',user.uid));
+    const snap = await getDoc(doc(db, 'users', user.uid));
     myProfile = snap.exists() ? snap.data() : null;
     renderTopbar();
     listenChat();
     listenStage();
-    listenPresence();
   } else {
     myProfile = null;
     renderTopbar();
   }
+  // Everyone joins as viewer on load
+  joinAsViewer();
 });
 
 // ── TOPBAR ──
@@ -567,7 +684,7 @@ window.doLogout = async () => {
 window.switchAuthTab = t => {
   ['login','signup'].forEach(x => {
     document.getElementById('tab-'+x).classList.toggle('active', x===t);
-    document.getElementById(x+'-form').style.display = x===t ? 'flex' : 'none';
+    document.getElementById(x+'-form').style.display = x===t ? 'flex':'none';
   });
 };
 
@@ -580,9 +697,7 @@ window.doLogin = async () => {
   try {
     await signInWithEmailAndPassword(auth, eEl.value.trim(), document.getElementById('login-pw').value);
     closeModal('auth-overlay'); showToast('⚡ Welcome back!');
-  } catch(e) {
-    errEl.textContent = 'Invalid email or password'; eEl.classList.add('error');
-  }
+  } catch(e) { errEl.textContent = 'Invalid email or password'; eEl.classList.add('error'); }
   btn.disabled = false; btn.textContent = 'LOG IN';
 };
 
@@ -592,26 +707,22 @@ window.doSignup = async () => {
   const pEl = document.getElementById('su-pw');
   ['su-username-err','su-email-err','su-pw-err'].forEach(id => { const e=document.getElementById(id); if(e) e.textContent=''; });
   [uEl,eEl,pEl].forEach(el => el.classList.remove('error'));
-  const username = uEl.value.trim(), email = eEl.value.trim(), pw = pEl.value;
-  let ok = true;
-  if (!username || username.length < 3) { document.getElementById('su-username-err').textContent='Min 3 characters'; uEl.classList.add('error'); ok=false; }
-  if (!email.includes('@')) { document.getElementById('su-email-err').textContent='Valid email required'; eEl.classList.add('error'); ok=false; }
-  if (pw.length < 6) { document.getElementById('su-pw-err').textContent='Min 6 characters'; pEl.classList.add('error'); ok=false; }
+  const username=uEl.value.trim(), email=eEl.value.trim(), pw=pEl.value;
+  let ok=true;
+  if (!username||username.length<3){document.getElementById('su-username-err').textContent='Min 3 characters';uEl.classList.add('error');ok=false;}
+  if (!email.includes('@')){document.getElementById('su-email-err').textContent='Valid email required';eEl.classList.add('error');ok=false;}
+  if (pw.length<6){document.getElementById('su-pw-err').textContent='Min 6 characters';pEl.classList.add('error');ok=false;}
   if (!ok) return;
-  // Check username taken
   const allUsers = await getDocs(collection(db,'users'));
-  if (allUsers.docs.some(d => d.data().username?.toLowerCase() === username.toLowerCase())) {
-    document.getElementById('su-username-err').textContent='Username taken'; uEl.classList.add('error'); return;
-  }
-  const btn = document.getElementById('su-btn');
+  if (allUsers.docs.some(d=>d.data().username?.toLowerCase()===username.toLowerCase())){document.getElementById('su-username-err').textContent='Username taken';uEl.classList.add('error');return;}
+  const btn=document.getElementById('su-btn');
   btn.disabled=true; btn.textContent='CREATING...';
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pw);
-    const profile = { uid:cred.user.uid, username:username.toUpperCase(), avatar:signupAv, desc:'', wins:0, losses:0, bestStreak:0, currentStreak:0, joined:new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'}) };
+    const profile = {uid:cred.user.uid,username:username.toUpperCase(),avatar:signupAv,desc:'',wins:0,losses:0,bestStreak:0,currentStreak:0,joined:new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'})};
     await setDoc(doc(db,'users',cred.user.uid), profile);
-    myProfile = profile;
-    closeModal('auth-overlay'); showToast('🎉 Welcome, '+profile.username+'!');
-  } catch(e) { document.getElementById('su-email-err').textContent=e.message; eEl.classList.add('error'); }
+    myProfile=profile; closeModal('auth-overlay'); showToast('🎉 Welcome, '+profile.username+'!');
+  } catch(e){document.getElementById('su-email-err').textContent=e.message;eEl.classList.add('error');}
   btn.disabled=false; btn.textContent='CREATE ACCOUNT';
 };
 
@@ -619,43 +730,43 @@ window.doSignup = async () => {
 window.openProfileByUid = async uid => {
   const snap = await getDoc(doc(db,'users',uid));
   if (!snap.exists()) return;
-  const p = snap.data(); viewingUid = uid;
-  document.getElementById('p-avatar').textContent = p.avatar;
-  document.getElementById('p-username').textContent = p.username;
-  document.getElementById('p-desc').textContent = p.desc || 'No description yet.';
-  document.getElementById('p-wins').textContent = p.wins;
-  document.getElementById('p-losses').textContent = p.losses;
-  const tot = p.wins+p.losses;
-  document.getElementById('p-ratio').textContent = tot>0 ? Math.round(p.wins/tot*100)+'%' : '—';
-  document.getElementById('p-streak').textContent = p.bestStreak||0;
-  document.getElementById('p-joined').textContent = 'Joined '+p.joined;
-  document.getElementById('p-edit-btn').style.display = (me && me.uid===uid) ? 'block':'none';
+  const p = snap.data();
+  document.getElementById('p-avatar').textContent=p.avatar;
+  document.getElementById('p-username').textContent=p.username;
+  document.getElementById('p-desc').textContent=p.desc||'No description yet.';
+  document.getElementById('p-wins').textContent=p.wins;
+  document.getElementById('p-losses').textContent=p.losses;
+  const tot=p.wins+p.losses;
+  document.getElementById('p-ratio').textContent=tot>0?Math.round(p.wins/tot*100)+'%':'—';
+  document.getElementById('p-streak').textContent=p.bestStreak||0;
+  document.getElementById('p-joined').textContent='Joined '+p.joined;
+  document.getElementById('p-edit-btn').style.display=(me&&me.uid===uid)?'block':'none';
   document.getElementById('p-view').style.display='block';
   document.getElementById('p-edit').style.display='none';
   openModal('profile-overlay');
 };
-window.openProfileBySlot = slot => { const uid = stageUids[slot]; if(uid) openProfileByUid(uid); };
+window.openProfileBySlot = slot => { const uid=stageUids[slot]; if(uid) openProfileByUid(uid); };
 
 window.startEditProfile = () => {
   if (!myProfile) return;
-  editAv = myProfile.avatar;
-  document.getElementById('ed-username').value = myProfile.username;
-  document.getElementById('ed-desc').value = myProfile.desc||'';
-  buildAvatarGrid('ed-avatar-grid', editAv, av=>editAv=av);
+  editAv=myProfile.avatar;
+  document.getElementById('ed-username').value=myProfile.username;
+  document.getElementById('ed-desc').value=myProfile.desc||'';
+  buildAvatarGrid('ed-avatar-grid',editAv,av=>editAv=av);
   document.getElementById('p-view').style.display='none';
   document.getElementById('p-edit').style.display='block';
 };
-window.cancelEdit = () => { document.getElementById('p-view').style.display='block'; document.getElementById('p-edit').style.display='none'; };
+window.cancelEdit=()=>{document.getElementById('p-view').style.display='block';document.getElementById('p-edit').style.display='none';};
 
 window.saveProfile = async () => {
   if (!me||!myProfile) return;
   const uEl=document.getElementById('ed-username'); uEl.classList.remove('error');
   document.getElementById('ed-username-err').textContent='';
   const newUser=uEl.value.trim().toUpperCase(), newDesc=document.getElementById('ed-desc').value.trim();
-  if (!newUser||newUser.length<3){ document.getElementById('ed-username-err').textContent='Min 3 characters'; uEl.classList.add('error'); return; }
-  if (newUser!==myProfile.username) {
+  if (!newUser||newUser.length<3){document.getElementById('ed-username-err').textContent='Min 3 characters';uEl.classList.add('error');return;}
+  if (newUser!==myProfile.username){
     const all=await getDocs(collection(db,'users'));
-    if (all.docs.some(d=>d.id!==me.uid&&d.data().username?.toLowerCase()===newUser.toLowerCase())){ document.getElementById('ed-username-err').textContent='Username taken'; uEl.classList.add('error'); return; }
+    if(all.docs.some(d=>d.id!==me.uid&&d.data().username?.toLowerCase()===newUser.toLowerCase())){document.getElementById('ed-username-err').textContent='Username taken';uEl.classList.add('error');return;}
   }
   await updateDoc(doc(db,'users',me.uid),{username:newUser,avatar:editAv,desc:newDesc});
   myProfile.username=newUser; myProfile.avatar=editAv; myProfile.desc=newDesc;
@@ -664,48 +775,37 @@ window.saveProfile = async () => {
 
 // ── LEADERBOARD ──
 async function loadLeaderboard() {
-  const q = query(collection(db,'users'),orderBy('wins','desc'),limit(10));
-  const snap = await getDocs(q);
-  const list = document.getElementById('lb-list'); list.innerHTML='';
+  const q=query(collection(db,'users'),orderBy('wins','desc'),limit(10));
+  const snap=await getDocs(q);
+  const list=document.getElementById('lb-list'); list.innerHTML='';
   snap.docs.forEach((d,i)=>{
-    const p=d.data();
-    const rc=i===0?'g':i===1?'s':i===2?'b':'';
+    const p=d.data(), rc=i===0?'g':i===1?'s':i===2?'b':'';
     const row=document.createElement('div'); row.className='lb-row';
     row.innerHTML=`<span class="lb-rank ${rc}">${i+1}</span><span class="lb-name">${p.username}</span><span class="lb-stat w">${p.wins}W</span><span style="color:rgba(255,255,255,0.1);font-size:0.7rem;">/</span><span class="lb-stat l">${p.losses}L</span>`;
-    row.onclick=()=>openProfileByUid(d.id);
-    list.appendChild(row);
+    row.onclick=()=>openProfileByUid(d.id); list.appendChild(row);
   });
 }
 
-// ── REAL-TIME CHAT ──
-let chatUnsubscribe = null;
+// ── CHAT (Firebase RTDB) ──
 function listenChat() {
-  const chatRef = ref(rtdb,'chat');
-  onChildAdded(chatRef, snap => {
-    const msg = snap.val();
-    addChatBubble(msg);
-  });
+  onChildAdded(ref(rtdb,'chat'), snap => addChatBubble(snap.val()));
 }
-
 window.sendMessage = async () => {
-  const input = document.getElementById('chat-input');
-  const text = input.value.trim();
+  const input=document.getElementById('chat-input');
+  const text=input.value.trim();
   if (!text) return;
-  if (!me||!myProfile){ showToast('Log in to chat!'); return; }
-  await push(ref(rtdb,'chat'),{ uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, text, ts:Date.now() });
+  if (!me||!myProfile){showToast('Log in to chat!');return;}
+  await push(ref(rtdb,'chat'),{uid:me.uid,username:myProfile.username,avatar:myProfile.avatar,text,ts:Date.now()});
   input.value='';
 };
-
 function addChatBubble(msg) {
-  const view = document.getElementById('chat-view');
-  const div = document.createElement('div'); div.className='chat-msg';
-  const color = me && msg.uid===me.uid ? 'me' : 'other';
+  const view=document.getElementById('chat-view');
+  const div=document.createElement('div'); div.className='chat-msg';
+  const color=me&&msg.uid===me.uid?'me':'other';
   div.innerHTML=`<span class="msg-name ${color}" onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.username)}</span><span class="msg-text">${escHtml(msg.text)}</span>`;
-  view.appendChild(div);
-  view.scrollTop=view.scrollHeight;
+  view.appendChild(div); view.scrollTop=view.scrollHeight;
   while(view.children.length>100) view.removeChild(view.firstChild);
 }
-
 function addSystemMsg(text) {
   const view=document.getElementById('chat-view');
   const d=document.createElement('div'); d.className='chat-msg system';
@@ -713,49 +813,18 @@ function addSystemMsg(text) {
   view.appendChild(d); view.scrollTop=view.scrollHeight;
 }
 
-// ── PRESENCE / ONLINE COUNT ──
-function listenPresence() {
-  if (!me||!myProfile) return;
-  const presRef=ref(rtdb,`presence/${me.uid}`);
-  set(presRef,{username:myProfile.username, ts:Date.now()});
-  onValue(ref(rtdb,'presence'), snap=>{
-    const c=snap.exists()?Object.keys(snap.val()).length:0;
-    document.getElementById('online-count').textContent=c+' online';
-  });
-}
-
-// ── STAGE (WebRTC + RTDB signaling) ──
+// ── STAGE (Firebase RTDB for metadata) ──
 function listenStage() {
-  onValue(ref(rtdb,'stage'), snap=>{
+  onValue(ref(rtdb,'stage'), snap => {
     const d=snap.val()||{};
     stageUids.left=d.left?.uid||null;
     stageUids.right=d.right?.uid||null;
-    d.left ? showSlot('left',d.left) : clearSlot('left');
-    d.right ? showSlot('right',d.right) : clearSlot('right');
-  });
-  if (!me) return;
-  onValue(ref(rtdb,`signals/${me.uid}`), async snap=>{
-    if (!snap.exists()||!pc) return;
-    const sig=snap.val();
-    try {
-      if (sig.type==='offer') {
-        await pc.setRemoteDescription(new RTCSessionDescription(sig));
-        const ans=await pc.createAnswer();
-        await pc.setLocalDescription(ans);
-        await set(ref(rtdb,`signals/${sig.from}`),{...ans,from:me.uid});
-        await remove(ref(rtdb,`signals/${me.uid}`));
-      } else if (sig.type==='answer') {
-        await pc.setRemoteDescription(new RTCSessionDescription(sig));
-        await remove(ref(rtdb,`signals/${me.uid}`));
-      } else if (sig.candidate!==undefined) {
-        await pc.addIceCandidate(new RTCIceCandidate(sig));
-        await remove(ref(rtdb,`signals/${me.uid}`));
-      }
-    } catch(e){ console.warn('WebRTC signal error:',e); }
+    d.left  ? showSlot('left',d.left)   : clearSlotMeta('left');
+    d.right ? showSlot('right',d.right) : clearSlotMeta('right');
   });
 }
 
-function showSlot(slot,data) {
+function showSlot(slot, data) {
   document.getElementById(`av-${slot}`).textContent=data.avatar||'🥊';
   document.getElementById(`un-${slot}`).textContent=data.username||'—';
   document.getElementById(`w-${slot}`).textContent='W: '+(data.wins||0);
@@ -764,69 +833,40 @@ function showSlot(slot,data) {
   document.getElementById(`live-${slot}`).style.display='flex';
   document.getElementById(`ph-${slot}`).style.display='none';
 }
-function clearSlot(slot) {
+function clearSlotMeta(slot) {
   document.getElementById(`np-${slot}`).style.display='none';
   document.getElementById(`live-${slot}`).style.display='none';
   document.getElementById(`ph-${slot}`).style.display='flex';
-  const v=document.getElementById(`vid-${slot}`);
-  v.style.display='none'; v.srcObject=null;
+  if (slot !== mySlot) {
+    const v=document.getElementById(`vid-${slot}`);
+    v.style.display='none'; v.srcObject=null;
+  }
 }
 
 async function goLive(slot) {
   mySlot=slot;
-  const oppSlot=slot==='left'?'right':'left';
-  // Show own video
-  const myVid=document.getElementById(`vid-${slot}`);
-  myVid.srcObject=arenaStream; myVid.style.display='block';
-  // Write to stage
-  await set(ref(rtdb,`stage/${slot}`),{ uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, wins:myProfile.wins, losses:myProfile.losses });
+  // Write stage metadata to Firebase
+  await set(ref(rtdb,`stage/${slot}`),{uid:me.uid,username:myProfile.username,avatar:myProfile.avatar,wins:myProfile.wins,losses:myProfile.losses});
   addSystemMsg(`⚡ ${myProfile.username} has entered the arena!`);
-  // If opponent already on stage, initiate WebRTC
-  const oppSnap=await getDoc(doc(db,'users',stageUids[oppSlot]||'_'));
-  if (stageUids[oppSlot]) {
-    oppUid=stageUids[oppSlot];
-    await startRTC(oppUid, true);
-  } else {
-    // Wait for opponent
-    const unsub=onValue(ref(rtdb,`stage/${oppSlot}`), async snap2=>{
-      if (snap2.exists()&&!oppUid) {
-        oppUid=snap2.val().uid;
-        if (oppUid!==me.uid) { off(ref(rtdb,`stage/${oppSlot}`)); await startRTC(oppUid,false); }
-      }
-    });
-  }
-}
-
-async function startRTC(remoteUid, isInitiator) {
-  pc=new RTCPeerConnection(ICE);
-  arenaStream.getTracks().forEach(t=>pc.addTrack(t,arenaStream));
-  const remSlot=mySlot==='left'?'right':'left';
-  const remVid=document.getElementById(`vid-${remSlot}`);
-  const remStream=new MediaStream();
-  remVid.srcObject=remStream; remVid.style.display='block';
-  pc.ontrack=e=>remStream.addTrack(e.track);
-  pc.onicecandidate=async e=>{
-    if (e.candidate) await set(ref(rtdb,`signals/${remoteUid}`),{...e.candidate.toJSON(),from:me.uid});
-  };
-  if (isInitiator) {
-    const offer=await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    await set(ref(rtdb,`signals/${remoteUid}`),{type:'offer',sdp:offer.sdp,from:me.uid});
-  }
+  // Join LiveKit as a publishing fighter
+  await joinAsFighter(slot);
+  showToast(`🔥 You're LIVE, ${myProfile.username}!`);
 }
 
 async function leaveStage() {
   if (!mySlot) return;
-  if (pc) { pc.close(); pc=null; }
   await remove(ref(rtdb,`stage/${mySlot}`));
-  await remove(ref(rtdb,`signals/${me.uid}`));
-  clearSlot(mySlot); mySlot=null; oppUid=null;
-  if (arenaStream) { arenaStream.getTracks().forEach(t=>t.stop()); arenaStream=null; }
+  clearSlotMeta(mySlot);
+  if (lkRoom) { await lkRoom.disconnect(); lkRoom=null; }
+  if (localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
+  mySlot=null;
+  // Rejoin as viewer
+  joinAsViewer();
 }
 
 // ── ARENA MODAL ──
 window.openArenaModal = () => {
-  if (!me){ openModal('auth-overlay'); showToast('Log in first!'); return; }
+  if (!me){openModal('auth-overlay');showToast('Log in first!');return;}
   document.getElementById('arena-s1').style.display='block';
   document.getElementById('arena-s2').style.display='none';
   document.getElementById('sdot0').className='sdot active';
@@ -843,15 +883,19 @@ async function startCamPreview() {
   const lbl=document.getElementById('cam-active-lbl');
   const err=document.getElementById('cam-err');
   const btn=document.getElementById('arena-next-btn');
-  err.classList.remove('on'); btn.disabled=true;
+  err.classList.remove('on'); btn.disabled=true; btn.textContent='LOOKS GOOD →';
   try {
-    arenaStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
-    video.srcObject=arenaStream; video.style.display='block';
+    localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+    video.srcObject=localStream; video.style.display='block';
     ph.style.display='none'; lbl.classList.add('on'); btn.disabled=false;
     const devs=await navigator.mediaDevices.enumerateDevices();
     const vs=document.getElementById('sel-video'), as=document.getElementById('sel-audio');
     vs.innerHTML=''; as.innerHTML=''; let vc=0,ac=0;
-    devs.forEach(d=>{ const o=document.createElement('option'); o.value=d.deviceId; if(d.kind==='videoinput'){o.textContent=d.label||'Camera '+(++vc);vs.appendChild(o);}else if(d.kind==='audioinput'){o.textContent=d.label||'Mic '+(++ac);as.appendChild(o);} });
+    devs.forEach(d=>{
+      const o=document.createElement('option'); o.value=d.deviceId;
+      if(d.kind==='videoinput'){o.textContent=d.label||'Camera '+(++vc);vs.appendChild(o);}
+      else if(d.kind==='audioinput'){o.textContent=d.label||'Mic '+(++ac);as.appendChild(o);}
+    });
     document.getElementById('dev-selects').style.display='flex';
   } catch(e) {
     document.getElementById('cam-ph-txt').textContent='Camera blocked';
@@ -867,14 +911,13 @@ function stopCamPreview() {
   document.getElementById('dev-selects').style.display='none';
   document.getElementById('cam-err').classList.remove('on');
   document.getElementById('arena-next-btn').disabled=true;
-  document.getElementById('arena-next-btn').textContent='LOOKS GOOD →';
 }
 
 window.switchCam = async () => {
-  if (arenaStream) arenaStream.getTracks().forEach(t=>t.stop());
+  if (localStream) localStream.getTracks().forEach(t=>t.stop());
   try {
-    arenaStream=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:document.getElementById('sel-video').value}},audio:{deviceId:{exact:document.getElementById('sel-audio').value}}});
-    document.getElementById('arena-preview').srcObject=arenaStream;
+    localStream=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:document.getElementById('sel-video').value}},audio:{deviceId:{exact:document.getElementById('sel-audio').value}}});
+    document.getElementById('arena-preview').srcObject=localStream;
   } catch(e){}
 };
 
@@ -887,13 +930,12 @@ window.goToQueue = () => {
   enterQueue();
 };
 
-const fakeQ=['BLASTZONE','RAPIDFIRE','COLDFRONT','STATIC','VOLTAGE','GHOSTMODE'];
 function enterQueue() {
   document.getElementById('q-av').textContent=myProfile.avatar;
   document.getElementById('q-name').textContent=myProfile.username;
   document.getElementById('q-status').textContent='⏳ Finding opponent...';
-  // Check for free slot in realtime
-  onValue(ref(rtdb,'stage'), async snap=>{
+
+  onValue(ref(rtdb,'stage'), async snap => {
     const d=snap.val()||{};
     let free=null;
     if (!d.left) free='left';
@@ -901,22 +943,20 @@ function enterQueue() {
     if (free) {
       off(ref(rtdb,'stage'));
       clearInterval(queueInt);
-      document.getElementById('q-status').textContent='⚡ Slot open!';
+      document.getElementById('q-status').textContent='⚡ Slot open — going live!';
       document.getElementById('q-pos').textContent='▶';
       document.getElementById('q-pos').style.color='#4CAF50';
       setTimeout(async()=>{
-        stopCamPreview();
         closeModal('arena-overlay');
         await goLive(free);
-        showToast(`🔥 You're LIVE, ${myProfile.username}!`);
-      },1200);
+      },1000);
     } else {
       queuePos=Math.floor(Math.random()*4)+2;
       document.getElementById('q-pos').textContent=queuePos;
       document.getElementById('q-pos').style.color='var(--red-hot)';
       renderQChips();
       queueInt=setInterval(()=>{
-        if(queuePos>1){ queuePos--; document.getElementById('q-pos').textContent=queuePos; renderQChips(); if(queuePos===1){document.getElementById('q-status').textContent='🔥 You\'re up next!'; showToast('🔥 Next in line!');} }
+        if(queuePos>1){queuePos--;document.getElementById('q-pos').textContent=queuePos;renderQChips();if(queuePos===1){document.getElementById('q-status').textContent='🔥 You\'re up next!';showToast('🔥 Next in line!');}}
       },4000);
     }
   },{onlyOnce:true});
@@ -925,84 +965,79 @@ function enterQueue() {
 function renderQChips() {
   const list=document.getElementById('q-chips'); list.innerHTML='';
   const ahead=Math.min(queuePos-1,fakeQ.length);
-  for(let i=0;i<ahead;i++){ const c=document.createElement('div'); c.className='q-chip'; c.innerHTML=`<span>${i+1}.</span>${fakeQ[i]}`; list.appendChild(c); }
+  for(let i=0;i<ahead;i++){const c=document.createElement('div');c.className='q-chip';c.innerHTML=`<span>${i+1}.</span>${fakeQ[i]}`;list.appendChild(c);}
   const you=document.createElement('div'); you.className='q-chip you';
   you.innerHTML=`<span>${queuePos}.</span>${myProfile.username} <span style="opacity:0.5;font-size:0.7rem;">(you)</span>`; list.appendChild(you);
 }
 
-window.leaveQueue = () => { clearInterval(queueInt); off(ref(rtdb,'stage')); closeArenaModal(); };
+window.leaveQueue=()=>{ clearInterval(queueInt); off(ref(rtdb,'stage')); closeArenaModal(); };
 
 // ── VOTE ──
-window.castVote = side => {
-  if (hasVoted) return;
-  if (!me){ showToast('Log in to vote!'); return; }
+window.castVote=side=>{
+  if(hasVoted)return;
+  if(!me){showToast('Log in to vote!');return;}
   hasVoted=true;
-  if(side==='left') lv+=5; else rv+=5;
-  document.getElementById(`vbtn-left`).disabled=true;
-  document.getElementById(`vbtn-right`).disabled=true;
+  if(side==='left')lv+=5;else rv+=5;
+  document.getElementById('vbtn-left').disabled=true;
+  document.getElementById('vbtn-right').disabled=true;
   document.getElementById(`vbtn-${side}`).classList.add(`voted-${side}`);
   document.getElementById(`vbtn-${side}`).textContent='✓ VOTED';
   updateVote(); showToast('✓ Vote locked in!');
 };
-function updateVote() {
-  const tot=lv+rv, lp=Math.round(lv/tot*100), rp=100-lp;
+function updateVote(){
+  const tot=lv+rv,lp=Math.round(lv/tot*100),rp=100-lp;
   document.getElementById('pct-left').textContent=lp+'%';
   document.getElementById('pct-right').textContent=rp+'%';
   document.getElementById('vbar-left').style.width=lp+'%';
   document.getElementById('vbar-right').style.width=rp+'%';
 }
-function resetRound() {
-  hasVoted=false; lv=50; rv=50;
-  ['left','right'].forEach(s=>{ const b=document.getElementById(`vbtn-${s}`); b.disabled=false; b.classList.remove('voted-left','voted-right'); b.textContent='VOTE'; });
+function resetRound(){
+  hasVoted=false;lv=50;rv=50;
+  ['left','right'].forEach(s=>{const b=document.getElementById(`vbtn-${s}`);b.disabled=false;b.classList.remove('voted-left','voted-right');b.textContent='VOTE';});
   updateVote();
 }
 
 // ── TIMER ──
 setInterval(()=>{
-  if(roundSec>0) roundSec--; else{ roundSec=120; resetRound(); addSystemMsg('🔔 New round!'); }
-  const m=Math.floor(roundSec/60), s=roundSec%60, pct=((roundSec/120)*100)+'%';
+  if(roundSec>0)roundSec--;else{roundSec=120;resetRound();addSystemMsg('🔔 New round!');}
+  const m=Math.floor(roundSec/60),s=roundSec%60,pct=((roundSec/120)*100)+'%';
   document.getElementById('timer-display').textContent=`${m}:${s.toString().padStart(2,'0')}`;
   document.getElementById('tfill-l').style.width=pct;
   document.getElementById('tfill-r').style.width=pct;
-  document.getElementById('timer-display').style.color=roundSec<=10?'var(--red-hot)':'var(--gold)';
   document.getElementById('tlbl-r').textContent=`${m}:${s.toString().padStart(2,'0')} LEFT`;
+  document.getElementById('timer-display').style.color=roundSec<=10?'var(--red-hot)':'var(--gold)';
 },1000);
 
 // ── AVATAR GRID ──
-function buildAvatarGrid(id, sel, cb) {
-  const g=document.getElementById(id); g.innerHTML='';
-  AVATARS.forEach(av=>{ const el=document.createElement('div'); el.className='avatar-opt'+(av===sel?' selected':''); el.textContent=av; el.onclick=()=>{ g.querySelectorAll('.avatar-opt').forEach(o=>o.classList.remove('selected')); el.classList.add('selected'); cb(av); }; g.appendChild(el); });
+function buildAvatarGrid(id,sel,cb){
+  const g=document.getElementById(id);g.innerHTML='';
+  AVATARS.forEach(av=>{const el=document.createElement('div');el.className='avatar-opt'+(av===sel?' selected':'');el.textContent=av;el.onclick=()=>{g.querySelectorAll('.avatar-opt').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');cb(av);};g.appendChild(el);});
 }
-buildAvatarGrid('su-avatar-grid', signupAv, av=>signupAv=av);
+buildAvatarGrid('su-avatar-grid',signupAv,av=>signupAv=av);
 
 // ── LOGO ALIGN ──
-function alignLogo() {
-  const col=document.querySelector('.center-col'), logo=document.getElementById('logo');
-  if(!col||!logo) return;
-  const r=col.getBoundingClientRect();
-  logo.style.left=(r.left+r.width/2)+'px';
-}
-alignLogo(); window.addEventListener('resize',alignLogo);
+function alignLogo(){const col=document.querySelector('.center-col'),logo=document.getElementById('logo');if(!col||!logo)return;const r=col.getBoundingClientRect();logo.style.left=(r.left+r.width/2)+'px';}
+alignLogo();window.addEventListener('resize',alignLogo);
 
 // ── COLLAPSE ──
-window.toggleChat=()=>{ chatOpen=!chatOpen; document.getElementById('main-grid').classList.toggle('chat-collapsed',!chatOpen); document.getElementById('collapse-icon').textContent=chatOpen?'▶▶':'◀◀'; document.getElementById('collapse-label').textContent=chatOpen?'HIDE CHAT':'SHOW CHAT'; setTimeout(alignLogo,360); };
+window.toggleChat=()=>{chatOpen=!chatOpen;document.getElementById('main-grid').classList.toggle('chat-collapsed',!chatOpen);document.getElementById('collapse-icon').textContent=chatOpen?'▶▶':'◀◀';document.getElementById('collapse-label').textContent=chatOpen?'HIDE CHAT':'SHOW CHAT';setTimeout(alignLogo,360);};
 
 // ── TABS ──
-window.switchTab=(btn,tab)=>{ document.querySelectorAll('.chat-tab').forEach(t=>t.classList.remove('active')); btn.classList.add('active'); document.getElementById('chat-view').style.display=tab==='chat'?'flex':'none'; document.getElementById('lb-view').style.display=tab==='leaderboard'?'flex':'none'; if(tab==='leaderboard') loadLeaderboard(); };
+window.switchTab=(btn,tab)=>{document.querySelectorAll('.chat-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');document.getElementById('chat-view').style.display=tab==='chat'?'flex':'none';document.getElementById('lb-view').style.display=tab==='leaderboard'?'flex':'none';if(tab==='leaderboard')loadLeaderboard();};
 
 // ── MODALS ──
 window.openModal=id=>document.getElementById(id).classList.add('open');
 window.closeModal=id=>document.getElementById(id).classList.remove('open');
 
-// ── ENTER ARENA ──
-document.getElementById('enter-arena-btn').addEventListener('click', ()=>window.openArenaModal());
+// ── ENTER ARENA BUTTON ──
+document.getElementById('enter-arena-btn').addEventListener('click',()=>window.openArenaModal());
 
 // ── TOAST ──
 let tt;
-window.showToast=msg=>{ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),2500); };
+window.showToast=msg=>{const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2500);};
 
 // ── UTIL ──
-function escHtml(s='') { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escHtml(s=''){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 </script>
 </body>
 </html>
