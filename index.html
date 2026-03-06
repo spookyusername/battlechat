@@ -3055,7 +3055,7 @@ function faLoop() {
 
   // Spawn pipes every ~90 frames
   // Pipe spacing: starts at 210 frames (~3.5s), gets tighter by 2 frames per pipe, min 120
-  const faPipeInterval = Math.max(140, 280 - faPipes * 2);
+  const faPipeInterval = Math.max(160, 360 - faPipes * 2);
   if (FA.countdownDone && FA.started && FA.frame % faPipeInterval === 0) faSpawnPipe();
 
   if (FA.countdownDone && FA.started && !FA.dead) {
