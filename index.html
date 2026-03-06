@@ -21,6 +21,7 @@
   .topbar-right { justify-content: flex-end; }
   .logo { position: absolute; font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 4px; color: var(--text); pointer-events: none; transform: translateX(-50%); transition: left 0.35s ease; }
   .logo span { color: var(--red-hot); }
+  .topbar-coins { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 2px; color: var(--gold); margin-left: 8px; }
   .topbar-btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.78rem; letter-spacing: 2px; text-transform: uppercase; border: 1px solid var(--border); background: transparent; color: var(--muted); padding: 5px 14px; cursor: pointer; transition: border-color 0.2s, color 0.2s; }
   .topbar-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
   .topbar-btn.enter { background: var(--red); border-color: var(--red); color: white; }
@@ -298,6 +299,15 @@
   @keyframes roundLose { 0%{background:var(--dark2)} 30%{background:rgba(217,43,43,0.15)} 100%{background:var(--dark2)} }
   @keyframes scanline { 0%{transform:translateY(-100%)} 100%{transform:translateY(400%)} }
 
+  /* LEVEL UP BANNER */
+  @keyframes lvlBannerIn  { 0%{opacity:0;transform:translate(-50%,-50%) scale(0.7)} 60%{transform:translate(-50%,-50%) scale(1.05)} 100%{opacity:1;transform:translate(-50%,-50%) scale(1)} }
+  @keyframes lvlBannerOut { 0%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-50%) scale(0.85) translateY(-20px)} }
+  .levelup-banner { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.7); z-index:9000; background:linear-gradient(135deg,rgba(14,14,14,0.97),rgba(20,12,0,0.98)); border:2px solid var(--gold); padding:28px 48px; text-align:center; opacity:0; pointer-events:none; transition:opacity 0.3s, transform 0.4s cubic-bezier(0.22,1,0.36,1); box-shadow:0 0 60px rgba(201,168,76,0.4), 0 0 120px rgba(201,168,76,0.15); }
+  .levelup-banner.visible { opacity:1; transform:translate(-50%,-50%) scale(1); }
+  .lvlup-title { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:0.85rem; letter-spacing:6px; color:var(--gold); opacity:0.7; margin-bottom:4px; }
+  .lvlup-num   { font-family:'Bebas Neue',sans-serif; font-size:4rem; letter-spacing:6px; color:var(--gold); text-shadow:0 0 30px rgba(201,168,76,0.8); line-height:1; }
+  .lvlup-bonus { font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:3px; color:rgba(201,168,76,0.7); margin-top:8px; }
+
   /* OPPONENT ENTRANCE */
   @keyframes oppBanner { 0%{opacity:0;transform:translateY(-100%) scaleX(0.8)} 15%{opacity:1;transform:translateY(0) scaleX(1)} 75%{opacity:1;transform:translateY(0)} 100%{opacity:0;transform:translateY(-20px)} }
   @keyframes arenaFlash { 0%{opacity:0.35} 100%{opacity:0} }
@@ -338,7 +348,7 @@
 
 <!-- TOPBAR -->
 <div class="topbar">
-  <div class="topbar-left"><button class="menu-btn" id="menu-btn" onclick="toggleMenu()">☰ MENU</button><div class="chat-online" style="margin-left:4px;"><div class="online-dot"></div><span id="online-count">0 online</span></div></div>
+  <div class="topbar-left"><button class="menu-btn" id="menu-btn" onclick="toggleMenu()">☰ MENU</button><div class="chat-online" style="margin-left:4px;"><div class="online-dot"></div><span id="online-count">0 online</span></div><span class="topbar-coins" id="topbar-coins" style="display:none;">🪙 0</span></div>
   <div class="logo" id="logo"><span>BATTLE</span>CHAT</div>
   <div class="topbar-right">
     <button class="collapse-btn" onclick="toggleChat()">
@@ -1103,7 +1113,7 @@ window.sendMessage = async () => {
   const lvl = calcLevel(xp).level;
   await push(ref(rtdb,'chat'),{uid:me.uid,username:myProfile.username,avatar:myProfile.avatar,text,level:lvl,nameColor:activeNameColor,ts:Date.now()});
   input.value='';
-  await grantXp(2);
+  await grantRewards(2, 1, null); // chat: +2 XP, +1 coin
 };
 function addChatBubble(msg) {
   const view=document.getElementById('chat-view');
@@ -1538,12 +1548,11 @@ async function resolveRound(roundIndex) {
     const winnerName = document.getElementById('un-'+winnerSlot).textContent;
     SFX.win(); animateWin(winnerSlot); animateLose(loserSlot);
     addSystemMsg(winnerName + ' wins the round!');
-    showToast('You win the round! +50 XP');
     try {
       await updateDoc(doc(db,'users',me.uid),{ wins: (myProfile.wins||0)+1 });
       myProfile.wins = (myProfile.wins||0)+1;
     } catch(e){}
-    await grantXp(50);
+    await grantRewards(50, 25, '🏆 Round Win!');
   }
 
   // Clean up old votes
@@ -1781,11 +1790,76 @@ function levelTag(totalXp) {
   return `<span class="msg-lvl">LVL ${level}</span>`;
 }
 
-async function grantXp(amount) {
+// ── REWARD RATES ──
+// Chat message:  +2 XP,  +1 coin
+// Round win:     +50 XP, +25 coins
+// Level-up:      bonus coins = newLevel * 10
+
+async function grantRewards(xpAmount, coinAmount, reason) {
   if (!me || !myProfile) return;
-  const newXp = (myProfile.xp || 0) + amount;
-  myProfile.xp = newXp;
-  try { await updateDoc(doc(db, 'users', me.uid), { xp: newXp }); } catch(e) {}
+
+  const oldXp    = myProfile.xp    || 0;
+  const oldCoins = myProfile.coins || 0;
+  const oldLevel = calcLevel(oldXp).level;
+
+  const newXp    = oldXp    + xpAmount;
+  const newLevel = calcLevel(newXp).level;
+
+  // Level-up bonus coins
+  let bonusCoins = 0;
+  if (newLevel > oldLevel) {
+    for (let lvl = oldLevel + 1; lvl <= newLevel; lvl++) {
+      bonusCoins += lvl * 10; // e.g. reaching level 3 gives 30 bonus coins
+    }
+  }
+
+  const newCoins = oldCoins + coinAmount + bonusCoins;
+
+  myProfile.xp    = newXp;
+  myProfile.coins = newCoins;
+
+  try {
+    await updateDoc(doc(db, 'users', me.uid), { xp: newXp, coins: newCoins });
+  } catch(e) {}
+
+  // Update coin display everywhere
+  const coinEl = document.getElementById('shop-coins');
+  if (coinEl) coinEl.textContent = '🪙 ' + newCoins;
+  const tcEl = document.getElementById('topbar-coins');
+  if (tcEl) { tcEl.textContent = '🪙 ' + newCoins; tcEl.style.display = 'inline'; }
+
+  // Show +coins toast (don't show for tiny chat messages — too spammy)
+  if (coinAmount >= 25 || bonusCoins > 0) {
+    let msg = '';
+    if (reason)      msg += reason + '  ';
+    if (coinAmount)  msg += '+' + coinAmount + ' 🪙';
+    if (bonusCoins)  msg += '  +' + bonusCoins + ' 🪙 LEVEL BONUS';
+    showToast(msg.trim());
+  }
+
+  // Level-up announcement
+  if (newLevel > oldLevel) {
+    sfxChord([440, 554, 659, 880], 'sine', 0.7, 0.2);
+    showLevelUpBanner(newLevel, bonusCoins);
+    addSystemMsg('🏆 ' + myProfile.username + ' reached Level ' + newLevel + '!');
+  }
+}
+
+// Backwards compat alias used in old call sites
+async function grantXp(amount) {
+  await grantRewards(amount, 0, null);
+}
+
+function showLevelUpBanner(level, bonusCoins) {
+  const el = document.createElement('div');
+  el.className = 'levelup-banner';
+  el.innerHTML =
+    '<div class="lvlup-title">LEVEL UP!</div>' +
+    '<div class="lvlup-num">LVL ' + level + '</div>' +
+    (bonusCoins ? '<div class="lvlup-bonus">+' + bonusCoins + ' 🪙 BONUS COINS</div>' : '');
+  document.body.appendChild(el);
+  setTimeout(() => el.classList.add('visible'), 20);
+  setTimeout(() => { el.classList.remove('visible'); setTimeout(() => el.remove(), 600); }, 3000);
 }
 
 // ── MENU SYSTEM ──
@@ -1952,7 +2026,10 @@ function applyUserPrefs(profile) {
     if (ns) ns.value = profile.nameColor;
   }
   if (profile.coins !== undefined) {
-    document.getElementById('shop-coins').textContent = '🪙 ' + (profile.coins||0);
+    const c = profile.coins || 0;
+    document.getElementById('shop-coins').textContent = '🪙 ' + c;
+    const tc = document.getElementById('topbar-coins');
+    if (tc) { tc.textContent = '🪙 ' + c; tc.style.display = 'inline'; }
   }
 }
 
