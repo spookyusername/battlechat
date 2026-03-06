@@ -269,11 +269,13 @@
   .shop-item { background: var(--dark3); border: 1px solid var(--border); padding: 10px 8px; cursor: pointer; text-align: center; transition: border-color 0.2s, transform 0.15s; }
   .shop-item:hover { border-color: var(--gold); transform: translateY(-2px); }
   .shop-preview { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; margin-bottom: 4px; }
-  .theme-preview { font-size: 0.85rem; padding: 4px 0; }
-  .void-prev { background: #000; color: #888; border: 1px solid #222; }
-  .ember-prev { background: linear-gradient(135deg,#1a0000,#2a0800); color: #ff6b35; }
-  .ice-prev { background: linear-gradient(135deg,#00111a,#001a2e); color: #60d4f5; }
-  .toxic-prev { background: linear-gradient(135deg,#001400,#001a00); color: #39ff14; }
+  .theme-preview { font-size: 0.78rem; padding: 4px 2px; letter-spacing: 2px; font-family:'Bebas Neue',sans-serif; }
+  .void-prev    { background: #000; color: #555; border: 1px solid #1a1a1a; }
+  .ember-prev   { background: linear-gradient(135deg,#1a0000,#2a0800); color: #ff6b35; }
+  .ice-prev     { background: linear-gradient(135deg,#00111a,#001a2e); color: #00bbff; }
+  .toxic-prev   { background: linear-gradient(135deg,#001400,#001a00); color: #39ff14; }
+  .gold-prev    { background: linear-gradient(135deg,#1a1200,#2a1e00); color: #C9A84C; }
+  .blood-prev   { background: linear-gradient(135deg,#0d0000,#1a0000); color: #8b0000; border: 1px solid #3a0000; }
   .shop-item-name { font-family: 'Barlow Condensed', sans-serif; font-size: 0.72rem; letter-spacing: 1px; color: var(--muted); margin-bottom: 5px; }
   .shop-price { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; color: var(--gold); }
   .shop-coins-bar { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; padding: 10px 14px; background: var(--dark3); border: 1px solid rgba(201,168,76,0.2); }
@@ -819,23 +821,33 @@
     <div class="shop-grid">
       <div class="shop-item" onclick="buyItem('theme_void',1000)">
         <div class="shop-preview theme-preview void-prev">VOID</div>
-        <div class="shop-item-name">Void Theme</div>
+        <div class="shop-item-name">Chocolate Starfish</div>
         <div class="shop-price">🪙 1000</div>
       </div>
       <div class="shop-item" onclick="buyItem('theme_ember',1200)">
         <div class="shop-preview theme-preview ember-prev">EMBER</div>
-        <div class="shop-item-name">Ember Theme</div>
+        <div class="shop-item-name">Stinky Rash</div>
         <div class="shop-price">🪙 1200</div>
       </div>
       <div class="shop-item" onclick="buyItem('theme_ice',1200)">
         <div class="shop-preview theme-preview ice-prev">ICE</div>
-        <div class="shop-item-name">Ice Theme</div>
+        <div class="shop-item-name">Blue Balls</div>
         <div class="shop-price">🪙 1200</div>
       </div>
       <div class="shop-item" onclick="buyItem('theme_toxic',1500)">
         <div class="shop-preview theme-preview toxic-prev">TOXIC</div>
-        <div class="shop-item-name">Toxic Theme</div>
+        <div class="shop-item-name">Biohazard</div>
         <div class="shop-price">🪙 1500</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('theme_gold',1800)">
+        <div class="shop-preview theme-preview gold-prev">GOLD</div>
+        <div class="shop-item-name">Dirty Money</div>
+        <div class="shop-price">🪙 1800</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('theme_blood',2000)">
+        <div class="shop-preview theme-preview blood-prev">BLOOD</div>
+        <div class="shop-item-name">Period Bloodbath</div>
+        <div class="shop-price">🪙 2000</div>
       </div>
     </div>
     <div class="shop-coins-bar">
@@ -940,10 +952,12 @@
         </div>
         <select class="settings-select" id="theme-select" onchange="applyTheme(this.value)">
           <option value="default">Default</option>
-          <option value="void">Void</option>
-          <option value="ember">Ember</option>
-          <option value="ice">Ice</option>
-          <option value="toxic">Vomit Green</option>
+          <option value="void">Chocolate Starfish</option>
+          <option value="ember">Stinky Rash</option>
+          <option value="ice">Blue Balls</option>
+          <option value="toxic">Biohazard</option>
+          <option value="gold">Dirty Money</option>
+          <option value="blood">Period Bloodbath</option>
         </select>
       </div>
       <div class="settings-row" id="settings-namecolor-row">
@@ -2078,10 +2092,12 @@ const NAME_COLORS = {
 
 const THEMES = {
   default: { red:'#D92B2B', redHot:'#FF3B3B', gold:'#C9A84C', black:'#080808', dark:'#0e0e0e', dark2:'#141414', dark3:'#1c1c1c' },
-  void:    { red:'#555', redHot:'#888', gold:'#aaa', black:'#000', dark:'#080808', dark2:'#0d0d0d', dark3:'#141414' },
-  ember:   { red:'#ff4500', redHot:'#ff6b35', gold:'#ffaa00', black:'#0a0300', dark:'#120500', dark2:'#180800', dark3:'#200b00' },
-  ice:     { red:'#0088cc', redHot:'#00bbff', gold:'#60d4f5', black:'#000d14', dark:'#001520', dark2:'#001c2a', dark3:'#002235' },
-  toxic:   { red:'#00cc00', redHot:'#39ff14', gold:'#aaff00', black:'#000a00', dark:'#001200', dark2:'#001800', dark3:'#001e00' },
+  void:    { red:'#3a3a3a', redHot:'#666', gold:'#999', black:'#000', dark:'#060606', dark2:'#0a0a0a', dark3:'#111' },
+  ember:   { red:'#e63900', redHot:'#ff6b35', gold:'#ffaa00', black:'#0a0200', dark:'#130400', dark2:'#1c0600', dark3:'#260900' },
+  ice:     { red:'#0077bb', redHot:'#00bbff', gold:'#60d4f5', black:'#00080f', dark:'#001018', dark2:'#001822', dark3:'#00202e' },
+  toxic:   { red:'#00b300', redHot:'#39ff14', gold:'#aaff00', black:'#000800', dark:'#000f00', dark2:'#001500', dark3:'#001c00' },
+  gold:    { red:'#b8860b', redHot:'#C9A84C', gold:'#ffd700', black:'#0a0800', dark:'#141000', dark2:'#1e1800', dark3:'#282200' },
+  blood:   { red:'#6b0000', redHot:'#990000', gold:'#8b0000', black:'#050000', dark:'#0d0000', dark2:'#140000', dark3:'#1c0000' },
 };
 
 let sfxEnabled = true;
