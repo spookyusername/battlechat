@@ -30,7 +30,8 @@
   .collapse-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
   .topbar-user { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 10px 4px 4px; border: 1px solid var(--border); transition: border-color 0.2s; }
   .topbar-user:hover { border-color: rgba(255,255,255,0.15); }
-  .topbar-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+  .topbar-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-family:'Bebas Neue',sans-serif; font-weight:700; overflow:hidden; flex-shrink:0; }
+  .topbar-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
   .topbar-username { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; }
 
   /* MAIN GRID */
@@ -48,7 +49,8 @@
   .cam-placeholder-text { font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; letter-spacing: 3px; text-transform: uppercase; }
   .cam-nameplate { position: absolute; top: 12px; left: 12px; z-index: 5; display: flex; align-items: center; gap: 8px; background: rgba(8,8,8,0.8); border: 1px solid var(--border); padding: 5px 12px 5px 8px; backdrop-filter: blur(4px); cursor: pointer; }
   .cam-nameplate:hover { border-color: rgba(255,255,255,0.2); }
-  .cam-avatar-sm { width: 26px; height: 26px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
+  .cam-avatar-sm { width: 26px; height: 26px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-family:'Bebas Neue',sans-serif; font-weight:700; flex-shrink:0; overflow:hidden; }
+  .cam-avatar-sm img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
   .cam-username { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.95rem; letter-spacing: 1px; }
   .cam-stats { display: flex; gap: 8px; margin-left: 4px; }
   .cam-stat { font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; }
@@ -81,7 +83,8 @@
   .timer-bar-num { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 4px; color: var(--gold); text-shadow: 0 0 12px rgba(201,168,76,0.3); line-height: 1; transition: color 0.3s; flex-shrink: 0; }
   .timer-fighter-slot { display: flex; align-items: center; gap: 8px; flex: 1; overflow: hidden; }
   .timer-fighter-slot.right { justify-content: flex-end; }
-  .tbar-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--dark3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+  .tbar-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--dark3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-family:'Bebas Neue',sans-serif; font-weight:700; flex-shrink:0; overflow:hidden; }
+  .tbar-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
   .tbar-info { overflow: hidden; }
   .tbar-name { font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 2px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
   .tbar-stats { display: flex; gap: 6px; }
@@ -166,7 +169,10 @@
   .profile-banner::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg,rgba(217,43,43,0.15),transparent); }
   .profile-banner-accent { position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: linear-gradient(to right,var(--red),transparent); }
   .profile-avatar-wrap { display: flex; justify-content: center; padding-top: 20px; }
-  .profile-avatar-lg { width: 88px; height: 88px; border-radius: 50%; background: var(--dark3); border: 3px solid var(--red); display: flex; align-items: center; justify-content: center; font-size: 2.8rem; box-shadow: 0 0 24px rgba(217,43,43,0.3); }
+  .profile-avatar-lg { width: 88px; height: 88px; border-radius: 50%; background: var(--dark3); border: 3px solid var(--red); display: flex; align-items: center; justify-content: center; font-size: 2rem; font-family:'Bebas Neue',sans-serif; font-weight:700; box-shadow: 0 0 24px rgba(217,43,43,0.3); overflow:hidden; cursor:pointer; position:relative; }
+  .profile-avatar-lg img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+  .profile-avatar-lg:hover .av-change-hint { opacity:1; }
+  .av-change-hint { position:absolute; inset:0; background:rgba(0,0,0,0.6); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.55rem; letter-spacing:2px; color:#fff; opacity:0; transition:opacity 0.2s; font-family:'Barlow Condensed',sans-serif; }
   .profile-body { padding: 14px 28px 28px; }
   .profile-name-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 6px; text-align: center; flex-wrap: wrap; }
   .profile-username-lg { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; letter-spacing: 2px; line-height: 1; }
@@ -214,7 +220,8 @@
   .arena-next-btn:hover { background: var(--red-hot); }
   .arena-next-btn:disabled { opacity: 0.35; cursor: default; }
   .queue-screen { text-align: center; padding: 8px 0; }
-  .q-avatar { width: 80px; height: 80px; border-radius: 50%; background: var(--dark3); border: 3px solid var(--red); display: flex; align-items: center; justify-content: center; font-size: 2.8rem; margin: 0 auto 14px; box-shadow: 0 0 30px rgba(217,43,43,0.3); animation: qp 2s ease-in-out infinite; }
+  .q-avatar { width: 80px; height: 80px; border-radius: 50%; background: var(--dark3); border: 3px solid var(--red); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-family:'Bebas Neue',sans-serif; font-weight:700; margin: 0 auto 14px; box-shadow: 0 0 30px rgba(217,43,43,0.3); animation: qp 2s ease-in-out infinite; overflow:hidden; }
+  .q-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
   @keyframes qp { 0%,100%{box-shadow:0 0 20px rgba(217,43,43,0.3)} 50%{box-shadow:0 0 40px rgba(217,43,43,0.6)} }
   .q-name { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 3px; margin-bottom: 4px; }
   .q-status { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin-bottom: 24px; }
@@ -458,7 +465,7 @@
   <div class="cam-panel" id="cam-left">
     <div class="cam-feed" id="feed-left">
       <div class="cam-nameplate" id="np-left" style="display:none;" onclick="openProfileBySlot('left')">
-        <div class="cam-avatar-sm" id="av-left">🥊</div>
+        <div class="cam-avatar-sm" id="av-left"><span style="opacity:0.3;">?</span></div>
         <span class="cam-username" id="un-left">—</span>
         <div class="cam-stats">
           <span class="cam-stat w" id="w-left">W: 0</span>
@@ -490,7 +497,7 @@
   <div class="cam-panel right-cam" id="cam-right">
     <div class="cam-feed" id="feed-right">
       <div class="cam-nameplate" id="np-right" style="display:none;" onclick="openProfileBySlot('right')">
-        <div class="cam-avatar-sm" id="av-right">🔥</div>
+        <div class="cam-avatar-sm" id="av-right"><span style="opacity:0.3;">?</span></div>
         <span class="cam-username" id="un-right">—</span>
         <div class="cam-stats">
           <span class="cam-stat w" id="w-right">W: 0</span>
@@ -609,7 +616,10 @@
       </div>
       <div class="field-group">
         <div class="field-label">Choose Avatar</div>
-        <div class="avatar-grid" id="su-avatar-grid"></div>
+        <div style="display:flex;align-items:center;gap:12px;margin:8px 0;">
+          <div class="q-avatar" id="su-av-preview" style="width:56px;height:56px;font-size:1.4rem;margin:0;animation:none;flex-shrink:0;">?</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;color:var(--muted);line-height:1.6;">Your avatar will show your initial by default.<br>Upload a profile photo after signing up.</div>
+        </div>
       </div>
       <button class="auth-submit" id="su-btn" onclick="doSignup()">CREATE ACCOUNT</button>
     </div>
@@ -621,7 +631,13 @@
   <div class="modal modal-wide">
     <button class="modal-close" onclick="closeModal('profile-overlay')">✕</button>
     <div class="profile-banner"><div class="profile-banner-accent"></div></div>
-    <div class="profile-avatar-wrap"><div class="profile-avatar-lg" id="p-avatar">🥊</div></div>
+    <div class="profile-avatar-wrap">
+      <div class="profile-avatar-lg" id="p-avatar" onclick="triggerAvatarUpload()">
+        <span id="p-avatar-initials">?</span>
+        <div class="av-change-hint">CHANGE PHOTO</div>
+      </div>
+      <input type="file" id="avatar-file-input" accept="image/*" style="display:none;" onchange="handleAvatarUpload(event)">
+    </div>
     <div class="profile-body">
       <div id="p-view">
         <div class="profile-name-row">
@@ -656,7 +672,16 @@
           </div>
           <div class="field-group">
             <div class="field-label">Avatar</div>
-            <div class="avatar-grid" id="ed-avatar-grid"></div>
+            <div style="display:flex;align-items:center;gap:12px;margin:6px 0;">
+              <div class="profile-avatar-lg" id="ed-av-preview" style="width:56px;height:56px;font-size:1.3rem;cursor:pointer;" onclick="document.getElementById('edit-avatar-file').click()">
+                <span id="ed-av-initials">?</span>
+              </div>
+              <input type="file" id="edit-avatar-file" accept="image/*" style="display:none;" onchange="handleEditAvatarUpload(event)">
+              <div>
+                <button class="topbar-btn" style="display:block;margin-bottom:6px;" onclick="document.getElementById('edit-avatar-file').click()">📷 UPLOAD PHOTO</button>
+                <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);">JPG / PNG / WEBP · max 2MB</div>
+              </div>
+            </div>
           </div>
           <div class="edit-actions">
             <button class="btn-save" onclick="saveProfile()">SAVE</button>
@@ -711,7 +736,7 @@
       </div>
       <div id="arena-s2" style="display:none;">
         <div class="queue-screen">
-          <div class="q-avatar" id="q-av">🥊</div>
+          <div class="q-avatar" id="q-av"><span style="opacity:0.3;">?</span></div>
           <div class="q-name" id="q-name">—</div>
           <div class="q-status" id="q-status">⏳ Finding opponent...</div>
           <div class="q-pos-wrap">
@@ -971,13 +996,13 @@ const ROOM_NAME = 'battlechat-stage';
 const { Room, RoomEvent, Track } = LivekitClient;
 
 // ── CONSTANTS ──
-const AVATARS = ['🥊','🔥','⚡','💀','🐺','🦅','🐉','👊','🗡️','🛡️','🎯','💣','🌪️','🦁','🤺','🧨','🏆','⚔️'];
+// Emoji avatars removed — now using initials + photo uploads
 
 // ── STATE ──
 let me = null, myProfile = null;
 let localStream = null, lkRoom = null, mySlot = null;
 let stageUids = { left: null, right: null };
-let signupAv = '🥊', editAv = '🥊';
+let editAvData = null; // base64 data URL for pending edit avatar
 let chatOpen = true, hasVoted = false, roundSec = 120;
 let timerInterval = null;
 let queueUnsubStage = null, queueUnsubList = null;
@@ -1135,7 +1160,7 @@ onAuthStateChanged(auth, async user => {
 function renderTopbar() {
   const a = document.getElementById('topbar-user-area');
   a.innerHTML = me && myProfile
-    ? `<div class="topbar-user" onclick="openOwnProfile()"><div class="topbar-avatar">${myProfile.avatar}</div><span class="topbar-username">${myProfile.username}</span></div>`
+    ? `<div class="topbar-user" onclick="openOwnProfile()"><div class="topbar-avatar">${avatarInner(myProfile.avatar, myProfile.username)}</div><span class="topbar-username">${myProfile.username}</span></div>`
     : `<button class="topbar-btn" onclick="openModal('auth-overlay')">LOG IN</button>`;
 }
 window.openOwnProfile = () => me && openProfileByUid(me.uid);
@@ -1178,7 +1203,7 @@ window.doSignup = async () => {
   const btn=document.getElementById('su-btn'); btn.disabled=true; btn.textContent='CREATING...';
   try {
     const cred=await createUserWithEmailAndPassword(auth,email,pw);
-    const profile={uid:cred.user.uid,username:username.toUpperCase(),avatar:signupAv,desc:'',wins:0,losses:0,bestStreak:0,currentStreak:0,xp:0,joined:new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'})};
+    const profile={uid:cred.user.uid,username:username.toUpperCase(),avatar:'',desc:'',wins:0,losses:0,bestStreak:0,currentStreak:0,xp:0,joined:new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'})};
     await setDoc(doc(db,'users',cred.user.uid),profile);
     myProfile=profile; closeModal('auth-overlay'); showToast('Welcome, '+profile.username+'!');
   } catch(e){document.getElementById('su-email-err').textContent=e.message;eEl.classList.add('error');}
@@ -1190,7 +1215,15 @@ window.openProfileByUid = async uid => {
   const snap=await getDoc(doc(db,'users',uid));
   if(!snap.exists()) return;
   const p=snap.data();
-  document.getElementById('p-avatar').textContent=p.avatar;
+  const profAvEl = document.getElementById('p-avatar');
+  const profInitEl = document.getElementById('p-avatar-initials');
+  if (profAvEl) {
+    if (p.avatar && p.avatar.startsWith('data:')) {
+      profAvEl.innerHTML = `<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"><div class="av-change-hint">CHANGE PHOTO</div>`;
+    } else {
+      profAvEl.innerHTML = `<span id="p-avatar-initials">${getInitial(p.username)}</span><div class="av-change-hint">CHANGE PHOTO</div>`;
+    }
+  }
   document.getElementById('p-username').textContent=p.username;
   document.getElementById('p-desc').textContent=p.desc||'No description yet.';
   document.getElementById('p-wins').textContent=p.wins;
@@ -1212,10 +1245,11 @@ window.openProfileBySlot = slot => { const uid=stageUids[slot]; if(uid) openProf
 
 window.startEditProfile = () => {
   if(!myProfile) return;
-  editAv=myProfile.avatar;
+  // avatar handled by editAvData system
   document.getElementById('ed-username').value=myProfile.username;
   document.getElementById('ed-desc').value=myProfile.desc||'';
-  buildAvatarGrid('ed-avatar-grid',editAv,av=>editAv=av);
+  // avatar grid removed — uses upload instead
+  editAvData = null; setEdAvatarPreview(myProfile);
   document.getElementById('p-view').style.display='none';
   document.getElementById('p-edit').style.display='block';
 };
@@ -1231,8 +1265,11 @@ window.saveProfile = async () => {
     const all=await getDocs(collection(db,'users'));
     if(all.docs.some(d=>d.id!==me.uid&&d.data().username?.toLowerCase()===newUser.toLowerCase())){document.getElementById('ed-username-err').textContent='Username taken';uEl.classList.add('error');return;}
   }
-  await updateDoc(doc(db,'users',me.uid),{username:newUser,avatar:editAv,desc:newDesc});
-  myProfile.username=newUser; myProfile.avatar=editAv; myProfile.desc=newDesc;
+  const newAvatar = editAvData !== null ? editAvData : myProfile.avatar;
+  await updateDoc(doc(db,'users',me.uid),{username:newUser,avatar:newAvatar,desc:newDesc});
+  myProfile.username=newUser; myProfile.avatar=newAvatar; myProfile.desc=newDesc;
+  editAvData=null;
+  refreshAllAvatars();
   renderTopbar(); cancelEdit(); openProfileByUid(me.uid); showToast('Profile saved!');
 };
 
@@ -1295,7 +1332,7 @@ function listenStage() {
 
 function showSlot(slot, data) {
   const wasEmpty = document.getElementById('np-'+slot).style.display === 'none';
-  document.getElementById('av-'+slot).textContent = data.avatar||'🥊';
+  setAvatar('av-'+slot, data.avatar, data.username);
   document.getElementById('un-'+slot).textContent = data.username||'—';
   document.getElementById('w-'+slot).textContent  = 'W: '+(data.wins||0);
   document.getElementById('l-'+slot).textContent  = 'L: '+(data.losses||0);
@@ -1309,7 +1346,7 @@ function showSlot(slot, data) {
   const tun = document.getElementById('tbar-un-'+slot);
   const tw  = document.getElementById('tbar-w-'+slot);
   const tl  = document.getElementById('tbar-l-'+slot);
-  if (tav) tav.textContent = data.avatar || '🥊';
+  if (tav) tav.innerHTML = avatarInner(data.avatar, data.username);
   if (tun) tun.textContent = data.username || '—';
   if (tw)  tw.textContent  = 'W: ' + (data.wins||0);
   if (tl)  tl.textContent  = 'L: ' + (data.losses||0);
@@ -1376,7 +1413,7 @@ function clearSlotUI(slot) {
   const tun = document.getElementById('tbar-un-'+slot);
   const tw  = document.getElementById('tbar-w-'+slot);
   const tl  = document.getElementById('tbar-l-'+slot);
-  if (tav) tav.textContent = '—';
+  if (tav) tav.innerHTML = '<span style="opacity:0.3;">?</span>';
   if (tun) tun.textContent = 'WAITING';
   if (tw)  tw.textContent  = 'W: 0';
   if (tl)  tl.textContent  = 'L: 0';
@@ -1518,7 +1555,7 @@ window.goToQueue = () => {
 // When a stage slot opens, the person with the lowest ts (first in line) gets it
 
 async function enterQueue() {
-  document.getElementById('q-av').textContent     = myProfile.avatar;
+  setAvatar('q-av', myProfile.avatar, myProfile.username);
   document.getElementById('q-name').textContent   = myProfile.username;
   document.getElementById('q-status').textContent = 'Finding a slot...';
   document.getElementById('q-pos').textContent    = '...';
@@ -1798,17 +1835,11 @@ onValue(timerRef, async snap => {
 });
 
 // ── AVATAR GRID ──
-function buildAvatarGrid(id, sel, cb) {
-  const g=document.getElementById(id); g.innerHTML='';
-  AVATARS.forEach(av=>{
-    const el=document.createElement('div');
-    el.className='avatar-opt'+(av===sel?' selected':'');
-    el.textContent=av;
-    el.onclick=()=>{ g.querySelectorAll('.avatar-opt').forEach(o=>o.classList.remove('selected')); el.classList.add('selected'); cb(av); };
+;
     g.appendChild(el);
   });
 }
-buildAvatarGrid('su-avatar-grid', signupAv, av=>signupAv=av);
+// no signup avatar grid — initials used by default
 
 // ── LOGO ALIGN ──
 function alignLogo() {
@@ -2644,6 +2675,125 @@ window.switchMenuTab = (btn, tab) => {
   _origSwitchMenuTab(btn, tab);
   if (tab === 'gamble') syncBjBalance();
 };
+
+// ── AVATAR SYSTEM ──
+// avatar field: null/'' = initials, or base64 data URL string
+
+function getInitial(username) {
+  return (username || '?').charAt(0).toUpperCase();
+}
+
+// Returns HTML to set inside an avatar element
+function avatarInner(avatar, username) {
+  if (avatar && avatar.startsWith('data:')) {
+    return `<img src="${avatar}" alt="${getInitial(username)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  }
+  return `<span>${getInitial(username)}</span>`;
+}
+
+// Set any avatar element (by id or DOM el)
+function setAvatar(elOrId, avatar, username) {
+  const el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+  if (!el) return;
+  el.innerHTML = avatarInner(avatar, username);
+}
+
+// Resize image to max 200px and compress to JPEG base64 (~20-40kb)
+function resizeImage(file, maxPx = 200) {
+  return new Promise((resolve, reject) => {
+    if (file.size > 2 * 1024 * 1024) { reject('Image must be under 2MB'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const scale  = Math.min(maxPx / img.width, maxPx / img.height, 1);
+        canvas.width  = Math.round(img.width  * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = () => reject('Could not load image');
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject('Could not read file');
+    reader.readAsDataURL(file);
+  });
+}
+
+window.triggerAvatarUpload = () => {
+  if (!me) return;
+  document.getElementById('avatar-file-input').click();
+};
+
+window.handleAvatarUpload = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    showToast('Uploading...');
+    const data = await resizeImage(file);
+    await updateDoc(doc(db,'users',me.uid), { avatar: data });
+    myProfile.avatar = data;
+    // Update all avatar spots
+    refreshAllAvatars();
+    showToast('Profile photo updated!');
+    SFX.win && SFX.win();
+  } catch(err) {
+    showToast('Upload failed: ' + err);
+  }
+  e.target.value = '';
+};
+
+window.handleEditAvatarUpload = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    editAvData = await resizeImage(file);
+    setEdAvatarPreview({ avatar: editAvData, username: myProfile?.username });
+  } catch(err) { showToast('Upload failed: ' + err); }
+  e.target.value = '';
+};
+
+function setEdAvatarPreview(profile) {
+  const el = document.getElementById('ed-av-preview');
+  const initEl = document.getElementById('ed-av-initials');
+  if (!el) return;
+  if (profile?.avatar && profile.avatar.startsWith('data:')) {
+    el.innerHTML = `<img src="${profile.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  } else {
+    if (initEl) initEl.textContent = getInitial(profile?.username);
+    else el.innerHTML = `<span>${getInitial(profile?.username)}</span>`;
+  }
+}
+
+function refreshAllAvatars() {
+  if (!myProfile) return;
+  const av = myProfile.avatar;
+  const un = myProfile.username;
+  // Topbar
+  const tbAv = document.querySelector('.topbar-avatar');
+  if (tbAv) tbAv.innerHTML = avatarInner(av, un);
+  // Profile modal
+  const profAv = document.getElementById('p-avatar');
+  if (profAv) {
+    const initSpan = document.getElementById('p-avatar-initials');
+    if (av && av.startsWith('data:')) {
+      if (initSpan) initSpan.remove();
+      const existing = profAv.querySelector('img');
+      if (existing) existing.remove();
+      const img = document.createElement('img');
+      img.src = av; img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;';
+      profAv.insertBefore(img, profAv.querySelector('.av-change-hint'));
+    } else {
+      if (initSpan) initSpan.textContent = getInitial(un);
+    }
+  }
+  // Queue avatar
+  setAvatar('q-av', av, un);
+  // Stage slots (if on stage)
+  if (mySlot) setAvatar('av-'+mySlot, av, un);
+}
 
 // ── UTIL ──
 function escHtml(s='') { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
