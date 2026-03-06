@@ -975,15 +975,15 @@
       </div>
 
       <!-- RESULT SCREEN -->
-      <div id="fa-result-screen" style="display:none;position:relative;overflow:hidden;">
-        <canvas id="fa-coin-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:10;"></canvas>
-        <div style="text-align:center;padding:16px 0 8px;">
+      <div id="fa-result-screen" style="display:none;position:relative;">
+        <canvas id="fa-coin-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:5;"></canvas>
+        <div style="position:relative;z-index:20;text-align:center;padding:16px 0 8px;">
           <div class="bj-result-icon" id="fa-result-icon">🐦</div>
           <div class="bj-result-title" id="fa-result-title">—</div>
           <div class="bj-result-amount" id="fa-result-amount"></div>
           <div class="bj-final-hands" id="fa-result-detail"></div>
         </div>
-        <button class="bj-claim-btn" id="fa-claim-btn" onclick="faClaim()">COLLECT WINNINGS</button>
+        <button class="bj-claim-btn" id="fa-claim-btn" onclick="faClaim()" style="position:relative;z-index:20;">COLLECT WINNINGS</button>
       </div>
     </div> <!-- end gamble-flappy -->
 
