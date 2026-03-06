@@ -104,8 +104,12 @@
   .chat-messages { flex: 1; overflow-y: auto; padding: 8px 0; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent; display: flex; flex-direction: column; }
   .chat-messages::-webkit-scrollbar { width: 3px; }
   .chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
-  .chat-msg { padding: 4px 14px; line-height: 1.5; font-size: 0.85rem; }
+  .chat-msg { padding: 5px 12px; display: flex; gap: 9px; align-items: flex-start; }
   .chat-msg:hover { background: rgba(255,255,255,0.02); }
+  .chat-msg.system { display: block; }
+  .msg-avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue',sans-serif; font-size: 0.72rem; font-weight:700; flex-shrink: 0; overflow: hidden; margin-top: 1px; cursor: pointer; }
+  .msg-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+  .msg-body { flex: 1; min-width: 0; line-height: 1.5; font-size: 0.85rem; }
   .msg-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.82rem; margin-right: 5px; cursor: pointer; }
   .msg-name:hover { text-decoration: underline; }
   .msg-name.me { color: #4CAF50; } .msg-name.other { color: #60a5fa; }
@@ -772,7 +776,7 @@
   <div class="menu-nav">
     <button class="menu-nav-btn active" onclick="switchMenuTab(this,'shop')" data-tab="shop">🏪 SHOP</button>
     <button class="menu-nav-btn" onclick="switchMenuTab(this,'gamble')" data-tab="gamble">🃏 GAMBLE</button>
-    <button class="menu-nav-btn" onclick="switchMenuTab(this,'community')" data-tab="community">BIGBLOCKS</button>
+    <button class="menu-nav-btn" onclick="switchMenuTab(this,'community')" data-tab="community" style="white-space:nowrap;">🔷 BIGBLOCKS</button>
     <button class="menu-nav-btn" onclick="switchMenuTab(this,'settings')" data-tab="settings">⚙️ SETTINGS</button>
   </div>
 
