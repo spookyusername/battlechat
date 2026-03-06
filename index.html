@@ -126,7 +126,7 @@
   .main {
     display: grid;
     grid-template-columns: 1fr 56px 1fr 280px;
-    grid-template-rows: 1fr;
+    grid-template-rows: 1fr 48px;
     height: calc(100vh - 48px);
     gap: 0;
     transition: grid-template-columns 0.35s ease;
@@ -134,6 +134,75 @@
   .main.chat-collapsed {
     grid-template-columns: 1fr 56px 1fr 0px;
   }
+
+  /* Timer bar spans left cam + center + right cam */
+  .timer-bar-bottom {
+    grid-column: 1 / 4;
+    grid-row: 2;
+    background: var(--dark2);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 0 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .timer-bar-bottom::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--red), transparent);
+    opacity: 0.4;
+  }
+  /* progress fill behind the bar */
+  .timer-bar-progress-bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, rgba(217,43,43,0.06), transparent);
+    transform-origin: left;
+    transition: transform 1s linear;
+  }
+
+  .timer-bar-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 0.7rem;
+    letter-spacing: 3px; text-transform: uppercase;
+    color: var(--muted); flex-shrink: 0;
+  }
+  .timer-bar-track {
+    flex: 1; height: 3px;
+    background: rgba(255,255,255,0.05);
+    position: relative; overflow: hidden;
+    max-width: 300px;
+  }
+  .timer-bar-fill {
+    height: 100%;
+    background: linear-gradient(to right, var(--red-dark, #8B0000), var(--red-hot));
+    transition: width 1s linear;
+  }
+  .timer-bar-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem; letter-spacing: 2px;
+    color: var(--gold);
+    text-shadow: 0 0 16px rgba(201,168,76,0.4);
+    flex-shrink: 0; line-height: 1;
+  }
+
+  /* chat panel spans both rows in its column */
+  .chat-panel {
+    grid-column: 4;
+    grid-row: 1 / 3;
+    background: var(--dark2);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: border-color 0.35s ease;
+  }
+  .main.chat-collapsed .chat-panel { border-left-color: transparent; }
 
   /* ── CAM PANELS ── */
   .cam-panel {
@@ -340,8 +409,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    padding: 16px 0;
+    justify-content: center;
+    gap: 20px;
     position: relative;
     z-index: 2;
   }
@@ -359,49 +428,6 @@
     flex-shrink: 0;
   }
 
-  .timer-vert {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-  }
-  .timer-label-vert {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 0.6rem;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--muted);
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-  }
-  .timer-num {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.6rem;
-    color: var(--gold);
-    letter-spacing: 1px;
-    text-shadow: 0 0 16px rgba(201,168,76,0.5);
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    line-height: 1;
-  }
-
-  /* vertical progress bar */
-  .timer-track {
-    width: 3px;
-    flex: 1;
-    background: var(--dark3);
-    border-radius: 2px;
-    overflow: hidden;
-    margin: 8px 0;
-    position: relative;
-  }
-  .timer-track-fill {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    background: linear-gradient(to top, var(--red-hot), var(--red));
-    transition: height 1s linear;
-  }
-
   .bounty-trigger {
     font-family: 'Barlow Condensed', sans-serif;
     font-weight: 700;
@@ -416,20 +442,6 @@
     transition: opacity 0.2s;
   }
   .bounty-trigger:hover { opacity: 1; }
-
-  /* ── CHAT PANEL ── */
-  .chat-panel {
-    background: var(--dark2);
-    border-left: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    overflow: hidden;
-    transition: border-color 0.35s ease;
-  }
-  .main.chat-collapsed .chat-panel {
-    border-left-color: transparent;
-  }
 
   .chat-header {
     height: 44px;
@@ -1098,10 +1110,6 @@
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="topbar-left">
-    <div class="viewers-badge">
-      <div class="live-dot"></div>
-      <span id="viewer-count">4,821</span> WATCHING
-    </div>
   </div>
 
   <div class="logo" id="logo"><span>BATTLE</span>CHAT</div>
@@ -1121,25 +1129,26 @@
   <!-- LEFT CAM -->
   <div class="cam-panel" id="cam-left">
     <div class="cam-feed">
-      <div class="cam-nameplate">
-        <div class="cam-avatar">🥊</div>
-        <span class="cam-username">JAKEFURY</span>
+      <div class="cam-nameplate" id="left-nameplate" style="display:none;">
+        <div class="cam-avatar" id="left-avatar">🥊</div>
+        <span class="cam-username" id="left-username">PLAYER 1</span>
         <div class="cam-stats">
-          <span class="cam-stat w">W: 48</span>
-          <span class="cam-stat l">L: 9</span>
+          <span class="cam-stat w" id="left-wins">W: 0</span>
+          <span class="cam-stat l" id="left-losses">L: 0</span>
         </div>
       </div>
-      <div class="cam-live">LIVE</div>
-      <div class="cam-placeholder">
+      <div class="cam-live" id="left-live-badge" style="display:none;">LIVE</div>
+      <video id="live-video-left" autoplay muted playsinline style="display:none;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);position:absolute;inset:0;"></video>
+      <div class="cam-placeholder" id="left-placeholder">
         <div class="cam-placeholder-icon">📷</div>
-        <div class="cam-placeholder-text">Camera Feed</div>
+        <div class="cam-placeholder-text">Waiting for fighter...</div>
       </div>
     </div>
     <div class="cam-votebar">
-      <div class="cam-votebar-fill" id="vbar-left" style="width: 62%; margin-left: auto;"></div>
+      <div class="cam-votebar-fill" id="vbar-left" style="width: 50%; margin-left: auto;"></div>
     </div>
     <div class="cam-footer">
-      <div class="vote-pct" id="pct-left">62%</div>
+      <div class="vote-pct" id="pct-left">50%</div>
       <button class="vote-btn" id="vote-btn-left" onclick="castVote('left')">VOTE</button>
     </div>
   </div>
@@ -1147,47 +1156,53 @@
   <!-- CENTER COLUMN -->
   <div class="center-col">
     <div class="vs-hex">VS</div>
-    <div class="timer-vert">
-      <div class="timer-label-vert">Round</div>
-      <div class="timer-num" id="timer-display">1:48</div>
-      <div class="timer-track">
-        <div class="timer-track-fill" id="timer-fill" style="height: 90%;"></div>
-      </div>
-    </div>
     <div class="bounty-trigger" onclick="showToast('💰 Bounty panel coming soon!')">💰 BOUNTY</div>
   </div>
 
   <!-- RIGHT CAM -->
   <div class="cam-panel right-cam" id="cam-right">
     <div class="cam-feed">
-      <div class="cam-nameplate">
-        <div class="cam-avatar">🔥</div>
-        <span class="cam-username">NEONRIDER</span>
+      <div class="cam-nameplate" id="right-nameplate" style="display:none;">
+        <div class="cam-avatar" id="right-avatar">🔥</div>
+        <span class="cam-username" id="right-username">PLAYER 2</span>
         <div class="cam-stats">
-          <span class="cam-stat w">W: 26</span>
-          <span class="cam-stat l">L: 21</span>
+          <span class="cam-stat w" id="right-wins">W: 0</span>
+          <span class="cam-stat l" id="right-losses">L: 0</span>
         </div>
       </div>
-      <div class="cam-live">LIVE</div>
-      <div class="cam-placeholder">
+      <div class="cam-live" id="right-live-badge" style="display:none;">LIVE</div>
+      <div class="cam-placeholder" id="right-placeholder">
         <div class="cam-placeholder-icon">📷</div>
-        <div class="cam-placeholder-text">Camera Feed</div>
+        <div class="cam-placeholder-text">Waiting for fighter...</div>
       </div>
     </div>
     <div class="cam-votebar">
-      <div class="cam-votebar-fill" id="vbar-right" style="width: 38%;"></div>
+      <div class="cam-votebar-fill" id="vbar-right" style="width: 50%;"></div>
     </div>
     <div class="cam-footer">
       <button class="vote-btn" id="vote-btn-right" onclick="castVote('right')">VOTE</button>
-      <div class="vote-pct" id="pct-right">38%</div>
+      <div class="vote-pct" id="pct-right">50%</div>
     </div>
+  </div>
+
+  <!-- TIMER BAR BOTTOM -->
+  <div class="timer-bar-bottom">
+    <div class="timer-bar-progress-bg" id="timer-bg"></div>
+    <div class="timer-bar-label">ROUND</div>
+    <div class="timer-bar-track">
+      <div class="timer-bar-fill" id="timer-fill" style="width:90%;"></div>
+    </div>
+    <div class="timer-bar-num" id="timer-display">2:00</div>
+    <div class="timer-bar-track">
+      <div class="timer-bar-fill" id="timer-fill-right" style="width:90%;"></div>
+    </div>
+    <div class="timer-bar-label">LEFT</div>
   </div>
 
   <!-- CHAT PANEL -->
   <div class="chat-panel">
     <div class="chat-header">
       <div class="chat-title">Global Chat</div>
-      <div class="chat-count" id="chat-count">1,204 chatting</div>
     </div>
     <div class="chat-tabs">
       <button class="chat-tab active" onclick="switchTab(this,'chat')">Chat</button>
@@ -1196,20 +1211,7 @@
 
     <!-- CHAT VIEW -->
     <div class="chat-messages" id="chat-view">
-      <div class="chat-msg system"><span class="msg-text">⚡ Round started — 2 minutes on the clock</span></div>
-      <div class="chat-msg"><span class="msg-name gold">💰 HYPEKING <span class="msg-badge badge-sub">SUB</span></span><span class="msg-text">jakefury is BUILT different bro</span></div>
-      <div class="chat-msg"><span class="msg-name gray">quickshot99</span> <span class="msg-text">neonrider fumbling rn lmaooo</span></div>
-      <div class="chat-msg"><span class="msg-name blue">coldwave <span class="msg-badge badge-mod">MOD</span></span><span class="msg-text">keep it civil chat</span></div>
-      <div class="chat-msg"><span class="msg-name red">FIRESTARTER</span><span class="msg-text">drop a bounty on neonrider lets go</span></div>
-      <div class="chat-msg"><span class="msg-name gray">anon_viewer</span><span class="msg-text">both of them kinda bad ngl</span></div>
-      <div class="chat-msg bounty-alert"><span class="msg-text">💰 HYPEKING dropped a 500-coin bounty on JAKEFURY!</span></div>
-      <div class="chat-msg"><span class="msg-name green">SHADOWBOX</span><span class="msg-text">LETS GOOO JAKE</span></div>
-      <div class="chat-msg"><span class="msg-name gray">viewer_442</span><span class="msg-text">neon counter it!!!</span></div>
-      <div class="chat-msg"><span class="msg-name gold">RICHKID <span class="msg-badge badge-sub">SUB</span></span><span class="msg-text">i got 1000 coins on neon, we fighting back</span></div>
-      <div class="chat-msg bounty-alert"><span class="msg-text">⚔️ BOUNTY WAR triggered — JAKEFURY vs NEONRIDER!</span></div>
-      <div class="chat-msg"><span class="msg-name gray">chaos_fan</span><span class="msg-text">THIS IS THE BEST ONE YET</span></div>
-      <div class="chat-msg"><span class="msg-name red">blastzone</span><span class="msg-text">jake gonna lose watch</span></div>
-      <div class="chat-msg"><span class="msg-name gray">lurker_mode</span><span class="msg-text">first time here this is wild</span></div>
+      <div class="chat-msg system"><span class="msg-text">⚡ Welcome to BattleChat — log in and vote!</span></div>
     </div>
 
     <!-- LEADERBOARD VIEW -->
@@ -1249,9 +1251,10 @@
 
 <script>
   // ── TIMER ──
-  let seconds = 108;
+  let seconds = 120;
   const timerEl = document.getElementById('timer-display');
   const fillEl = document.getElementById('timer-fill');
+  const fillElRight = document.getElementById('timer-fill-right');
 
   setInterval(() => {
     if (seconds > 0) seconds--;
@@ -1263,11 +1266,22 @@
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     timerEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
-    fillEl.style.height = ((seconds / 120) * 100) + '%';
+    const pct = ((seconds / 120) * 100) + '%';
+    fillEl.style.width = pct;
+    fillElRight.style.width = pct;
+    // label swap
+    const leftLabel = document.querySelector('.timer-bar-label:last-child');
+    if (seconds <= 10) {
+      timerEl.style.color = 'var(--red-hot)';
+      if (leftLabel) leftLabel.style.color = 'var(--red-hot)';
+    } else {
+      timerEl.style.color = 'var(--gold)';
+      if (leftLabel) leftLabel.style.color = 'var(--muted)';
+    }
   }, 1000);
 
   // ── VOTE ──
-  let leftVotes = 62, rightVotes = 38;
+  let leftVotes = 50, rightVotes = 50;
   let hasVoted = false;
 
   function castVote(side) {
@@ -1305,13 +1319,6 @@
     document.getElementById('vbar-right').style.width = rp + '%';
   }
 
-  // natural vote drift
-  setInterval(() => {
-    leftVotes = Math.min(85, Math.max(15, leftVotes + (Math.random() - 0.49) * 1.5));
-    rightVotes = Math.min(85, Math.max(15, rightVotes + (Math.random() - 0.51) * 1.5));
-    updateVoteDisplay();
-  }, 2200);
-
   // reset votes each round
   function resetRound() {
     hasVoted = false;
@@ -1329,7 +1336,6 @@
 
   // ── LOGO ALIGNMENT ──
   function alignLogo() {
-    const main = document.querySelector('.main');
     const centerCol = document.querySelector('.center-col');
     const logo = document.getElementById('logo');
     const rect = centerCol.getBoundingClientRect();
@@ -1348,40 +1354,12 @@
     main.classList.toggle('chat-collapsed', !chatOpen);
     icon.textContent = chatOpen ? '▶▶' : '◀◀';
     label.textContent = chatOpen ? 'HIDE CHAT' : 'SHOW CHAT';
-    // re-align logo after transition
     setTimeout(alignLogo, 360);
   }
-  let viewers = 4821;
-  setInterval(() => {
-    viewers += Math.floor((Math.random() - 0.45) * 12);
-    viewers = Math.max(4000, viewers);
-    document.getElementById('viewer-count').textContent = viewers.toLocaleString();
-  }, 3000);
 
   // ── CHAT ──
-  const chatMessages = [
-    { name: 'ghost_mode', color: 'gray', text: 'neon wake UP' },
-    { name: 'HYPEKING', color: 'gold', badge: 'sub', text: 'jake too smooth 💀' },
-    { name: 'viewer_882', color: 'gray', text: 'lmaooo he fumbled' },
-    { name: 'FIRESTARTER', color: 'red', text: 'BOUNTY WAR LETS GO' },
-    { name: 'quiettype', color: 'gray', text: 'this is actually insane' },
-    { name: 'coldwave', color: 'blue', badge: 'mod', text: 'no spam pls' },
-    { name: 'RICHKID', color: 'gold', badge: 'sub', text: 'im dropping another 500' },
-    { name: 'rando44', color: 'gray', text: 'new here, how do i vote?' },
-    { name: 'SHADOWBOX', color: 'green', text: '🔥🔥🔥🔥' },
-    { name: 'anon_7721', color: 'gray', text: 'jake gonna choke' },
-    { name: 'fasttalker', color: 'gray', text: 'neon coming back tho' },
-    { name: 'VOLTAGE', color: 'red', text: 'bounty countered!!!' },
-  ];
-
   let msgIdx = 0;
   const chatView = document.getElementById('chat-view');
-
-
-  setInterval(() => {
-    addChatMessage(chatMessages[msgIdx % chatMessages.length]);
-    msgIdx++;
-  }, 2400);
 
   function sendMessage() {
     const input = document.getElementById('chat-input');
@@ -2042,8 +2020,8 @@
         document.getElementById('queue-pos').textContent = '▶';
         document.getElementById('queue-pos').style.color = '#4CAF50';
         setTimeout(() => {
-          closeArenaModal();
-          showToast('🎙️ You\'re LIVE, ' + currentUser.username + '! Good luck!');
+          closeModal('arena-overlay');
+          goLiveOnStage();
         }, 2200);
       }
     }, 3500 + Math.random() * 2000);
@@ -2073,6 +2051,32 @@
       closeModal('arena-overlay');
       stopCameraPreview();
     }
+  }
+
+  // ── GO LIVE ON STAGE ──
+  function goLiveOnStage() {
+    if (!currentUser || !arenaStream) return;
+
+    // Put user's camera on the left slot
+    const video = document.getElementById('live-video-left');
+    video.srcObject = arenaStream;
+    video.style.display = 'block';
+
+    // Show nameplate with their real info
+    document.getElementById('left-avatar').textContent = currentUser.avatar;
+    document.getElementById('left-username').textContent = currentUser.username;
+    document.getElementById('left-wins').textContent = 'W: ' + currentUser.wins;
+    document.getElementById('left-losses').textContent = 'L: ' + currentUser.losses;
+    document.getElementById('left-nameplate').style.display = 'flex';
+    document.getElementById('left-live-badge').style.display = 'flex';
+    document.getElementById('left-placeholder').style.display = 'none';
+
+    addChatMessage({ name: 'SYSTEM', color: 'red', text: `⚡ ${currentUser.username} has entered the arena!`, isSystem: true });
+    showToast('🎙️ You\'re LIVE, ' + currentUser.username + '!');
+
+    // Make username clickable
+    document.getElementById('left-username').style.cursor = 'pointer';
+    document.getElementById('left-username').onclick = () => openProfile(currentUser.username);
   }
 
   // Wire up Enter Arena button
