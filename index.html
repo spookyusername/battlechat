@@ -73,16 +73,12 @@
   /* CENTER */
   .center-col { background: var(--dark); border-left: 1px solid var(--border); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; position: relative; z-index: 2; }
   .vs-hex { width: 48px; height: 48px; background: var(--red); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: white; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); box-shadow: 0 0 20px rgba(217,43,43,0.5); flex-shrink: 0; }
-  .bounty-trigger { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); writing-mode: vertical-rl; transform: rotate(180deg); opacity: 0.5; cursor: pointer; transition: opacity 0.2s; }
-  .bounty-trigger:hover { opacity: 1; }
 
   /* TIMER BAR */
-  .timer-bar-bottom { grid-column: 1 / 4; grid-row: 2; background: var(--dark2); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: center; gap: 20px; padding: 0 24px; position: relative; overflow: hidden; }
-  .timer-bar-bottom::before { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: linear-gradient(to right, transparent, var(--red), transparent); opacity: 0.4; }
-  .timer-bar-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); flex-shrink: 0; }
-  .timer-bar-track { flex: 1; height: 3px; background: rgba(255,255,255,0.05); overflow: hidden; max-width: 300px; }
-  .timer-bar-fill { height: 100%; background: linear-gradient(to right, #8B0000, var(--red-hot)); transition: width 1s linear; }
-  .timer-bar-num { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 2px; color: var(--gold); text-shadow: 0 0 16px rgba(201,168,76,0.4); flex-shrink: 0; line-height: 1; transition: color 0.3s; }
+  .timer-bar-bottom { grid-column: 1 / 4; grid-row: 2; background: var(--dark2); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: center; gap: 16px; padding: 0 28px; position: relative; overflow: hidden; }
+  .timer-track-wrap { flex: 1; height: 2px; background: rgba(255,255,255,0.06); overflow: hidden; border-radius: 1px; }
+  .timer-bar-fill { height: 100%; background: linear-gradient(to right, rgba(217,43,43,0.5), var(--red-hot)); transition: width 0.5s linear; border-radius: 1px; }
+  .timer-bar-num { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 3px; color: var(--gold); text-shadow: 0 0 12px rgba(201,168,76,0.3); flex-shrink: 0; line-height: 1; transition: color 0.3s; min-width: 60px; text-align: center; }
 
   /* CHAT PANEL */
   .chat-panel { grid-column: 4; grid-row: 1 / 3; background: var(--dark2); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: border-color 0.35s ease; }
@@ -270,7 +266,6 @@
   <!-- CENTER -->
   <div class="center-col">
     <div class="vs-hex">VS</div>
-    <div class="bounty-trigger" onclick="showToast('💰 Bounty Wars — Coming Soon!')">💰 BOUNTY</div>
   </div>
 
   <!-- RIGHT CAM -->
@@ -300,11 +295,13 @@
 
   <!-- TIMER BAR -->
   <div class="timer-bar-bottom">
-    <div class="timer-bar-label">ROUND</div>
-    <div class="timer-bar-track"><div class="timer-bar-fill" id="tfill-l" style="width:100%;"></div></div>
+    <div class="timer-track-wrap">
+      <div class="timer-bar-fill" id="tfill-l" style="width:100%;"></div>
+    </div>
     <div class="timer-bar-num" id="timer-display">2:00</div>
-    <div class="timer-bar-track"><div class="timer-bar-fill" id="tfill-r" style="width:100%;"></div></div>
-    <div class="timer-bar-label" id="tlbl-r">LEFT</div>
+    <div class="timer-track-wrap">
+      <div class="timer-bar-fill" id="tfill-r" style="width:100%;"></div>
+    </div>
   </div>
 
   <!-- CHAT -->
@@ -533,7 +530,7 @@ let me = null, myProfile = null;
 let localStream = null, lkRoom = null, mySlot = null;
 let stageUids = { left: null, right: null };
 let signupAv = '🥊', editAv = '🥊';
-let chatOpen = true, hasVoted = false, lv = 50, rv = 50, roundSec = 120;
+let chatOpen = true, hasVoted = false, roundSec = 120;
 let timerInterval = null;
 let queueUnsubStage = null, queueUnsubList = null;
 
@@ -681,7 +678,8 @@ onAuthStateChanged(auth, async user => {
     myProfile = null;
   }
   renderTopbar();
-  if (me) { listenChat(); listenStage(); }
+  listenStage(); // everyone sees stage updates
+  if (me) listenChat();
   joinAsViewer();
 });
 
@@ -1082,29 +1080,106 @@ window.leaveQueue = async () => {
   closeArenaModal();
 };
 
-// ── VOTE ──
-window.castVote = side => {
+// ── VOTES (Firebase-backed, real-time) ──
+// rtdb/votes/{roundIndex}/left/{uid} = true
+// rtdb/votes/{roundIndex}/right/{uid} = true
+// rtdb/votes/{roundIndex}/total = number of unique voters this round
+
+let currentRoundIndex = -1;
+let voteUnsub = null;
+
+function listenVotes(roundIndex) {
+  if (voteUnsub) { voteUnsub(); voteUnsub = null; }
+  currentRoundIndex = roundIndex;
+
+  voteUnsub = onValue(ref(rtdb, 'votes/' + roundIndex), snap => {
+    const data    = snap.val() || {};
+    const leftVotes  = data.left  ? Object.keys(data.left).length  : 0;
+    const rightVotes = data.right ? Object.keys(data.right).length : 0;
+    const total   = leftVotes + rightVotes;
+
+    // Percentages based on actual votes cast (0% each if nobody voted yet)
+    const lp = total > 0 ? Math.round((leftVotes  / total) * 100) : 0;
+    const rp = total > 0 ? Math.round((rightVotes / total) * 100) : 0;
+
+    document.getElementById('pct-left').textContent  = lp + '%';
+    document.getElementById('pct-right').textContent = rp + '%';
+    document.getElementById('vbar-left').style.width  = lp + '%';
+    document.getElementById('vbar-right').style.width = rp + '%';
+
+    // Check if current user already voted this round
+    if (me && ((data.left && data.left[me.uid]) || (data.right && data.right[me.uid]))) {
+      hasVoted = true;
+      const mySide = data.left && data.left[me.uid] ? 'left' : 'right';
+      document.getElementById('vbtn-left').disabled  = true;
+      document.getElementById('vbtn-right').disabled = true;
+      document.getElementById('vbtn-'+mySide).classList.add('voted-'+mySide);
+      document.getElementById('vbtn-'+mySide).textContent = 'VOTED';
+    }
+  });
+}
+
+window.castVote = async side => {
   if (hasVoted) return;
   if (!me){ showToast('Log in to vote!'); return; }
+  if (currentRoundIndex < 0) return;
   hasVoted = true;
-  if (side==='left') lv+=5; else rv+=5;
   document.getElementById('vbtn-left').disabled  = true;
   document.getElementById('vbtn-right').disabled = true;
   document.getElementById('vbtn-'+side).classList.add('voted-'+side);
   document.getElementById('vbtn-'+side).textContent = 'VOTED';
-  updateVote(); showToast('Vote locked in!');
+  await set(ref(rtdb, 'votes/' + currentRoundIndex + '/' + side + '/' + me.uid), true);
+  showToast('Vote locked in!');
 };
-function updateVote() {
-  const tot=lv+rv, lp=Math.round(lv/tot*100), rp=100-lp;
-  document.getElementById('pct-left').textContent  = lp+'%';
-  document.getElementById('pct-right').textContent = rp+'%';
-  document.getElementById('vbar-left').style.width  = lp+'%';
-  document.getElementById('vbar-right').style.width = rp+'%';
+
+async function resolveRound(roundIndex) {
+  // Only fighters resolve their own round — loser leaves
+  if (!mySlot || !me) return;
+
+  const snap    = await get(ref(rtdb, 'votes/' + roundIndex));
+  const data    = snap.val() || {};
+  const leftVotes  = data.left  ? Object.keys(data.left).length  : 0;
+  const rightVotes = data.right ? Object.keys(data.right).length : 0;
+
+  // Determine loser's slot
+  let loserSlot = null;
+  if (leftVotes === rightVotes) loserSlot = null; // tie — nobody leaves
+  else loserSlot = leftVotes < rightVotes ? 'left' : 'right';
+
+  if (loserSlot && stageUids[loserSlot] === me.uid) {
+    // I lost — leave the stage
+    addSystemMsg('Round over! You lost the vote and were eliminated.');
+    showToast('You lost the round!');
+    await leaveStage();
+  } else if (loserSlot && stageUids[loserSlot] !== me.uid && mySlot) {
+    // Opponent lost — announce winner
+    const winnerSlot = loserSlot === 'left' ? 'right' : 'left';
+    const winnerName = document.getElementById('un-'+winnerSlot).textContent;
+    addSystemMsg(winnerName + ' wins the round!');
+    showToast('You win the round!');
+    // Update Firestore stats
+    try {
+      await updateDoc(doc(db,'users',me.uid),{ wins: (myProfile.wins||0)+1 });
+      myProfile.wins = (myProfile.wins||0)+1;
+    } catch(e){}
+  }
+
+  // Clean up old votes
+  await remove(ref(rtdb, 'votes/' + (roundIndex - 2))).catch(()=>{});
 }
+
 function resetRound() {
-  hasVoted=false; lv=50; rv=50;
-  ['left','right'].forEach(s=>{const b=document.getElementById('vbtn-'+s);b.disabled=false;b.classList.remove('voted-left','voted-right');b.textContent='VOTE';});
-  updateVote();
+  hasVoted = false;
+  ['left','right'].forEach(s=>{
+    const b=document.getElementById('vbtn-'+s);
+    b.disabled=false;
+    b.classList.remove('voted-left','voted-right');
+    b.textContent='VOTE';
+  });
+  document.getElementById('pct-left').textContent  = '0%';
+  document.getElementById('pct-right').textContent = '0%';
+  document.getElementById('vbar-left').style.width  = '0%';
+  document.getElementById('vbar-right').style.width = '0%';
 }
 
 // ── SYNCED TIMER ──
@@ -1122,7 +1197,6 @@ function updateTimerUI(remainingMs) {
   document.getElementById('timer-display').textContent = m + ':' + ss.toString().padStart(2,'0');
   document.getElementById('tfill-l').style.width = pct;
   document.getElementById('tfill-r').style.width = pct;
-  document.getElementById('tlbl-r').textContent  = m + ':' + ss.toString().padStart(2,'0') + ' LEFT';
   document.getElementById('timer-display').style.color = s <= 10 ? 'var(--red-hot)' : 'var(--gold)';
 }
 
@@ -1139,11 +1213,18 @@ function startSyncedTick(epoch) {
 
     updateTimerUI(remaining);
 
-    // Detect round boundary — reset votes once per round flip
+    // Detect round boundary
     if (roundIndex !== lastRoundIndex) {
       if (lastRoundIndex !== -1) {
-        resetRound();
-        addSystemMsg('New round!');
+        // Resolve who won the PREVIOUS round, then reset
+        resolveRound(lastRoundIndex).then(() => {
+          resetRound();
+          listenVotes(roundIndex);
+          addSystemMsg('New round started!');
+        });
+      } else {
+        // First round on load — just start listening for votes
+        listenVotes(roundIndex);
       }
       lastRoundIndex = roundIndex;
     }
