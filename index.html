@@ -969,7 +969,7 @@
           <div style="font-family:'Bebas Neue',sans-serif;font-size:0.9rem;letter-spacing:2px;color:var(--gold);">PIPES: <span id="fa-pipes">0</span></div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:0.9rem;letter-spacing:2px;color:#4CAF50;">EARNED: <span id="fa-earned">+0</span>🪙</div>
         </div>
-        <canvas id="fa-canvas" width="348" height="280" style="display:block;width:100%;background:#0a0a0a;border:1px solid var(--border);cursor:pointer;"></canvas>
+        <canvas id="fa-canvas" width="348" height="380" style="display:block;width:100%;background:#0a0a0a;border:1px solid var(--border);cursor:pointer;"></canvas>
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);text-align:center;margin-top:6px;">TAP / CLICK or SPACE to flap</div>
         <button class="bj-new-game-btn" id="fa-cashout-btn" onclick="faCashout()" style="margin-top:10px;display:none;border-color:var(--gold);color:var(--gold);">💰 CASH OUT</button>
       </div>
@@ -2979,11 +2979,11 @@ window.faStart = async () => {
 
 // ── FLAPPY GAME CORE ──
 const FA = {
-  W: 348, H: 280,
+  W: 348, H: 380,
   bird: { x: 70, y: 140, vy: 0, r: 13 },
   pipes: [],
   pipeW: 34,
-  gap: 145,
+  gap: 175,
   speed: 1.1,
   gravity: 0.07,
   jumpV: -3.0,
@@ -3039,7 +3039,7 @@ function faFlap() {
 }
 
 function faSpawnPipe() {
-  const minTop = 40, maxTop = FA.H - FA.gap - 40;
+  const minTop = 30, maxTop = FA.H - FA.gap - 30;
   const topH = minTop + Math.random() * (maxTop - minTop);
   FA.pipes.push({ x: FA.W + 10, topH, id: FA.frame });
 }
