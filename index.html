@@ -341,36 +341,13 @@
   .pos-flash { animation: posFlash 0.4s ease; }
 
   /* COMMUNITY TAB */
-  .community-hero { display:flex; flex-direction:column; align-items:center; padding:28px 0 20px; border-bottom:1px solid var(--border); margin-bottom:16px; }
-  .community-logo-wrap { position:relative; width:80px; height:80px; display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
-  @keyframes pulseRing { 0%{transform:scale(0.85);opacity:0.6} 100%{transform:scale(1.6);opacity:0} }
-  .community-pulse-ring { position:absolute; inset:0; border-radius:50%; border:2px solid var(--red); animation:pulseRing 2s ease-out infinite; }
-  .community-pulse-ring.delay { animation-delay:1s; }
-  .community-bb-logo { width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg,var(--dark3),var(--dark2)); border:2px solid var(--red); display:flex; align-items:center; justify-content:center; gap:1px; z-index:1; box-shadow:0 0 24px rgba(217,43,43,0.3); }
-  .bb-letter { font-family:'Bebas Neue',sans-serif; font-size:2rem; letter-spacing:-2px; color:var(--text); }
-  .bb-letter.accent { color:var(--red-hot); }
-  .community-name { font-family:'Bebas Neue',sans-serif; font-size:1.8rem; letter-spacing:6px; color:var(--text); line-height:1; }
-  .community-tagline { font-family:'Barlow Condensed',sans-serif; font-size:0.78rem; letter-spacing:2px; color:var(--muted); margin-top:4px; text-transform:uppercase; }
-
-  .community-stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
-  .community-stat { background:var(--dark3); border:1px solid var(--border); padding:10px 6px; text-align:center; }
-  .community-stat-icon { font-size:1.1rem; margin-bottom:3px; }
-  .community-stat-val { font-family:'Bebas Neue',sans-serif; font-size:0.85rem; letter-spacing:2px; color:var(--text); }
-  .community-stat-label { font-family:'Barlow Condensed',sans-serif; font-size:0.66rem; color:var(--muted); letter-spacing:1px; margin-top:2px; }
-
-  .community-perks { background:var(--dark3); border:1px solid var(--border); margin-bottom:16px; overflow:hidden; }
-  .community-perk-title { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:0.65rem; letter-spacing:4px; color:var(--muted); padding:8px 14px; border-bottom:1px solid var(--border); }
-  .community-perk { display:flex; align-items:center; gap:12px; padding:11px 14px; border-bottom:1px solid rgba(255,255,255,0.04); }
-  .community-perk:last-child { border-bottom:none; }
-  .perk-icon { font-size:1.3rem; flex-shrink:0; width:28px; text-align:center; }
-  .perk-name { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:0.85rem; letter-spacing:1px; color:var(--text); }
-  .perk-desc { font-family:'Barlow',sans-serif; font-size:0.72rem; color:var(--muted); margin-top:1px; }
-
-  @keyframes discordPulse { 0%,100%{box-shadow:0 0 0 0 rgba(88,101,242,0.5)} 50%{box-shadow:0 0 0 8px rgba(88,101,242,0)} }
-  .community-join-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:14px 0; background:linear-gradient(135deg,#3a40b8,#5865F2); border:none; color:#fff; font-family:'Bebas Neue',sans-serif; font-size:1.2rem; letter-spacing:5px; cursor:pointer; clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%); text-decoration:none; animation:discordPulse 2s ease infinite; transition:filter 0.2s,transform 0.1s; margin-bottom:10px; }
-  .community-join-btn:hover { filter:brightness(1.15); transform:translateY(-1px); }
-  .discord-icon { width:20px; height:20px; flex-shrink:0; }
-  .community-footer { font-family:'Barlow Condensed',sans-serif; font-size:0.72rem; letter-spacing:2px; color:rgba(255,255,255,0.15); text-align:center; padding-bottom:8px; }
+  .discord-redirect { display:flex; align-items:center; justify-content:space-between; background:var(--dark3); border:1px solid var(--border); padding:14px 16px; text-decoration:none; transition:border-color 0.2s,background 0.2s; }
+  .discord-redirect:hover { border-color:#5865F2; background:rgba(88,101,242,0.06); }
+  .discord-redirect-left { display:flex; align-items:center; gap:12px; color:#5865F2; }
+  .discord-redirect-name { font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:3px; color:var(--text); }
+  .discord-redirect-url { font-family:'Barlow Condensed',sans-serif; font-size:0.72rem; color:var(--muted); margin-top:1px; }
+  .discord-redirect-arrow { font-size:1.4rem; color:var(--muted); }
+  .discord-redirect:hover .discord-redirect-arrow { color:#5865F2; }
 
   /* BLACKJACK */
   .bj-header { text-align: center; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
@@ -923,50 +900,16 @@
 
   <!-- COMMUNITY TAB -->
   <div class="menu-tab" id="mtab-community" style="display:none;">
-    <div class="community-hero">
-      <div class="community-logo-wrap">
-        <div class="community-bb-logo">
-          <span class="bb-letter">B</span><span class="bb-letter accent">B</span>
+    <a class="discord-redirect" href="https://discord.gg/wqNEHs2AqF" target="_blank" rel="noopener">
+      <div class="discord-redirect-left">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;opacity:0.85;"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.031.054a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+        <div>
+          <div class="discord-redirect-name">BIGBLOCKS</div>
+          <div class="discord-redirect-url">discord.gg/wqNEHs2AqF</div>
         </div>
-        <div class="community-pulse-ring"></div>
-        <div class="community-pulse-ring delay"></div>
       </div>
-      <div class="community-name">BIGBLOCKS</div>
-      <div class="community-tagline">The official BattleChat community</div>
-    </div>
-
-    <div class="community-stats-row">
-      <div class="community-stat">
-        <div class="community-stat-icon">🔴</div>
-        <div class="community-stat-val">LIVE</div>
-        <div class="community-stat-label">Always Active</div>
-      </div>
-      <div class="community-stat">
-        <div class="community-stat-icon">⚔️</div>
-        <div class="community-stat-val">FIGHTERS</div>
-        <div class="community-stat-label">Meet Competitors</div>
-      </div>
-      <div class="community-stat">
-        <div class="community-stat-icon">📢</div>
-        <div class="community-stat-val">NEWS</div>
-        <div class="community-stat-label">Updates & Events</div>
-      </div>
-    </div>
-
-    <div class="community-perks">
-      <div class="community-perk-title">WHAT YOU GET</div>
-      <div class="community-perk"><span class="perk-icon">🏆</span><div><div class="perk-name">Exclusive Tournaments</div><div class="perk-desc">Members-only events with coin prizes</div></div></div>
-      <div class="community-perk"><span class="perk-icon">🎙️</span><div><div class="perk-name">Fighter Lounge</div><div class="perk-desc">Voice chat with other arena regulars</div></div></div>
-      <div class="community-perk"><span class="perk-icon">💬</span><div><div class="perk-name">Strategy & Tips</div><div class="perk-desc">Learn from the best fighters on the platform</div></div></div>
-      <div class="community-perk"><span class="perk-icon">🔔</span><div><div class="perk-name">Drop Alerts</div><div class="perk-desc">Get notified when big battles go live</div></div></div>
-    </div>
-
-    <a class="community-join-btn" href="https://discord.gg/wqNEHs2AqF" target="_blank" rel="noopener">
-      <svg class="discord-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.031.054a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
-      JOIN DISCORD
+      <span class="discord-redirect-arrow">›</span>
     </a>
-
-    <div class="community-footer">discord.gg/wqNEHs2AqF</div>
   </div>
 
   <!-- SETTINGS TAB -->
