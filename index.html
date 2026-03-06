@@ -3073,11 +3073,11 @@ function faLoop() {
         FA.scored.add(p.id);
         faPipes++;
         const pct     = faGetPct(faPipes - 1);
-        const gained  = Math.floor(faBet * pct * 10) / 10;
-        faEarned     += gained;
+        const gained  = Math.round(faBet * pct * 10) / 10;
+        faEarned     = Math.round((faEarned + gained) * 10) / 10;
 
         document.getElementById('fa-pipes').textContent  = faPipes;
-        document.getElementById('fa-earned').textContent = '+' + Math.floor(faEarned * 10) / 10;
+        document.getElementById('fa-earned').textContent = '+' + (Math.round(faEarned * 10) / 10);
         document.getElementById('fa-cashout-btn').style.display = 'block';
 
         sfxTone(880, 'sine', 0.1, 0.2);
@@ -3274,7 +3274,7 @@ function faShowResult(cashedOut) {
   document.getElementById('fa-game-screen').style.display   = 'none';
   document.getElementById('fa-result-screen').style.display = 'block';
 
-  const totalReturn = Math.floor(faEarned * 10) / 10;
+  const totalReturn = Math.round(faEarned * 10) / 10;
   const net = totalReturn - faBet + faBet; // they already paid bet, this is what they GET back
 
   const icon  = cashedOut ? '💰' : (faPipes > 0 ? '💸' : '💀');
@@ -3326,7 +3326,7 @@ window.faClaim = async () => {
   if (claimBtn) { claimBtn.disabled = true; claimBtn.style.pointerEvents = 'none'; }
 
   if (earned > 0) {
-    const newCoins = (myProfile.coins || 0) + earned;
+    const newCoins = Math.round((myProfile.coins || 0) + earned);
     myProfile.coins = newCoins;
     try { await updateDoc(doc(db,'users',me.uid),{coins:newCoins}); } catch(e){}
     updateCoinDisplays(newCoins);
