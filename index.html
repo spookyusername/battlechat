@@ -75,8 +75,18 @@
   .cam-panel.right-cam .vote-pct { color: #60a5fa; }
 
   /* CENTER */
-  .center-col { background: var(--dark); border-left: 1px solid var(--border); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; position: relative; z-index: 2; }
-  .vs-hex { width: 48px; height: 48px; background: var(--red); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: white; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); box-shadow: 0 0 20px rgba(217,43,43,0.5); flex-shrink: 0; }
+  .center-col { background: var(--dark); border-left: 1px solid var(--border); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; position: relative; z-index: 2; transition: width 0.35s ease, opacity 0.35s ease; }
+
+  /* Single-fighter: left cam full width, center+right cam hidden */
+  .main.solo-mode { grid-template-columns: 1fr 0px 0px 280px; }
+  .main.solo-mode.chat-collapsed { grid-template-columns: 1fr 0px 0px 0px; }
+  .main.solo-mode #center-col { overflow: hidden; border: none; opacity: 0; pointer-events: none; min-width: 0; }
+  .main.solo-mode #cam-right { overflow: hidden; opacity: 0; pointer-events: none; min-width: 0; }
+  .main.solo-mode .timer-bar-bottom #tbar-right { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  /* Smooth transitions */
+  .main { transition: grid-template-columns 0.35s ease; }
+  #cam-right { transition: opacity 0.35s ease; }
+  #center-col { transition: opacity 0.35s ease, border 0.35s ease; }
 
   /* TIMER BAR */
   .timer-bar-bottom { grid-column: 1 / 4; grid-row: 2; background: var(--dark2); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; position: relative; overflow: hidden; gap: 12px; }
@@ -481,7 +491,7 @@
 </div>
 
 <!-- MAIN -->
-<div class="main" id="main-grid">
+<div class="main solo-mode" id="main-grid">
 
   <!-- LEFT CAM -->
   <div class="cam-panel" id="cam-left">
@@ -511,8 +521,7 @@
   </div>
 
   <!-- CENTER -->
-  <div class="center-col">
-    <div class="vs-hex">VS</div>
+  <div class="center-col" id="center-col">
   </div>
 
   <!-- RIGHT CAM -->
@@ -575,8 +584,9 @@
     </div>
     <div class="chat-messages" id="lb-view" style="display:none;flex-direction:column;">
       <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0;">
-        <button class="lb-tab active" id="lbt-wins" onclick="switchLbTab('wins')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.85rem;letter-spacing:2px;background:none;border:none;border-bottom:2px solid var(--red-hot);color:var(--text);cursor:pointer;">⚔️ W/L</button>
-        <button class="lb-tab" id="lbt-coins" onclick="switchLbTab('coins')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.85rem;letter-spacing:2px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;">🪙 COINS</button>
+        <button class="lb-tab active" id="lbt-wins" onclick="switchLbTab('wins')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.78rem;letter-spacing:1.5px;background:none;border:none;border-bottom:2px solid var(--red-hot);color:var(--text);cursor:pointer;">⚔️ WINS</button>
+        <button class="lb-tab" id="lbt-losses" onclick="switchLbTab('losses')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.78rem;letter-spacing:1.5px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;">💀 LOSSES</button>
+        <button class="lb-tab" id="lbt-coins" onclick="switchLbTab('coins')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.78rem;letter-spacing:1.5px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;">🪙 COINS</button>
       </div>
       <div id="lb-list" style="overflow-y:auto;flex:1;"></div>
     </div>
@@ -627,24 +637,29 @@
       </div>
 
       <!-- Trimmer panel (hidden until needed) -->
-      <div id="sfx-trimmer-panel" style="display:none;flex-direction:column;gap:8px;background:var(--dark3);border:1px solid var(--border);padding:10px;">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:0.85rem;letter-spacing:2px;color:var(--gold);">✂ TRIM TO 5 SECONDS</div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);">Drag the handles to select up to 5 seconds. Orange = selected region.</div>
+      <div id="sfx-trimmer-panel" style="display:none;flex-direction:column;gap:10px;background:var(--dark3);border:1px solid var(--border);padding:12px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:0.85rem;letter-spacing:2px;color:var(--gold);">✂ SELECT 5-SECOND CLIP</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);">Drag the slider to choose where your 5-second clip starts.</div>
         <!-- Waveform canvas -->
         <div style="position:relative;user-select:none;">
-          <canvas id="sfx-waveform" width="360" height="64" style="width:100%;height:64px;background:#111;border:1px solid var(--border);cursor:crosshair;display:block;"></canvas>
-          <!-- time labels -->
-          <div id="sfx-trim-labels" style="display:flex;justify-content:space-between;font-family:'Barlow Condensed',sans-serif;font-size:0.65rem;color:var(--muted);margin-top:2px;"></div>
+          <canvas id="sfx-waveform" width="360" height="72" style="width:100%;height:72px;background:#111;border:1px solid var(--border);display:block;border-radius:2px;"></canvas>
+          <div id="sfx-trim-labels" style="display:flex;justify-content:space-between;font-family:'Barlow Condensed',sans-serif;font-size:0.65rem;color:var(--muted);margin-top:3px;padding:0 2px;"></div>
+        </div>
+        <!-- Slider -->
+        <div>
+          <input type="range" id="sfx-trim-slider" min="0" max="100" step="0.1" value="0"
+            style="width:100%;accent-color:#ffa500;cursor:pointer;height:20px;"
+            oninput="sfxSliderMove(this.value)">
         </div>
         <!-- Trim time display -->
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;color:var(--muted);">Start: <span id="sfx-trim-start-lbl" style="color:var(--gold);">0.00s</span></div>
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;color:var(--muted);">End: <span id="sfx-trim-end-lbl" style="color:var(--gold);">5.00s</span></div>
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;color:var(--muted);">Dur: <span id="sfx-trim-dur-lbl" style="color:var(--text);">5.00s</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(255,170,0,0.06);border:1px solid rgba(255,170,0,0.2);padding:6px 10px;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;color:var(--muted);">Start: <span id="sfx-trim-start-lbl" style="color:var(--gold);font-weight:700;">0.00s</span></div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;color:var(--muted);">End: <span id="sfx-trim-end-lbl" style="color:var(--gold);font-weight:700;">5.00s</span></div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;color:var(--muted);">Dur: <span id="sfx-trim-dur-lbl" style="color:var(--text);font-weight:700;">5.00s</span></div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="bj-preset" style="flex:1;padding:8px 0;font-size:0.8rem;" onclick="sfxTrimPreview()">▶ PREVIEW TRIM</button>
-          <button class="auth-btn" style="flex:1;margin:0;padding:8px 0;font-size:0.8rem;" onclick="sfxApplyTrim()">✂ USE THIS CLIP</button>
+          <button class="bj-preset" style="flex:1;padding:8px 0;font-size:0.8rem;" onclick="sfxTrimPreview()">▶ PREVIEW</button>
+          <button class="auth-btn" style="flex:1;margin:0;padding:8px 0;font-size:0.8rem;" onclick="sfxApplyTrim()">✂ USE CLIP</button>
         </div>
       </div>
 
@@ -861,6 +876,10 @@
 
   <!-- SHOP TAB -->
   <div class="menu-tab" id="mtab-shop">
+    <div class="shop-coins-bar" style="margin-bottom:14px;margin-top:0;">
+      <span>Your coins:</span>
+      <span class="shop-coins-num" id="shop-coins">🪙 0</span>
+    </div>
     <div class="menu-section-title">Name Colors</div>
     <div class="shop-grid">
       <div class="shop-item" onclick="buyItem('color_crimson',300)">
@@ -926,10 +945,6 @@
         <div class="shop-item-name">Black Mold</div>
         <div class="shop-price">🪙 2200</div>
       </div>
-    </div>
-    <div class="shop-coins-bar">
-      <span>Your coins:</span>
-      <span class="shop-coins-num" id="shop-coins">🪙 0</span>
     </div>
   </div>
 
@@ -1467,16 +1482,30 @@ window.saveProfile = async () => {
 };
 
 // ── LEADERBOARD ──
+let _currentLbTab = 'wins';
 async function loadLeaderboard() {
-  const q=query(collection(db,'users'),orderBy('wins','desc'),limit(10));
-  const snap=await getDocs(q);
-  const list=document.getElementById('lb-list'); list.innerHTML='';
-  snap.docs.forEach((d,i)=>{
-    const p=d.data(), rc=i===0?'g':i===1?'s':i===2?'b':'';
-    const row=document.createElement('div'); row.className='lb-row';
+  await _loadLbTab(_currentLbTab);
+}
+
+async function _loadLbTab(tab) {
+  const orderField = tab === 'coins' ? 'coins' : tab === 'losses' ? 'losses' : 'wins';
+  const q = query(collection(db,'users'), orderBy(orderField,'desc'), limit(10));
+  const snap = await getDocs(q);
+  const list = document.getElementById('lb-list'); list.innerHTML = '';
+  snap.docs.forEach((d,i) => {
+    const p = d.data(), rc = i===0?'g':i===1?'s':i===2?'b':'';
+    const row = document.createElement('div'); row.className = 'lb-row';
     const rowLvl = calcLevel(p.xp||0).level;
-    row.innerHTML=`<span class="lb-rank ${rc}">${i+1}</span><span class="lb-name">${p.username}</span><span class="msg-lvl" style="margin-right:6px;">LVL ${rowLvl}</span><span class="lb-stat w">${p.wins}W</span><span style="color:rgba(255,255,255,0.1);font-size:0.7rem;">/</span><span class="lb-stat l">${p.losses}L</span>`;
-    row.onclick=()=>openProfileByUid(d.id); list.appendChild(row);
+    let statHtml;
+    if (tab === 'wins') {
+      statHtml = `<span class="lb-stat w">${p.wins||0}W</span>`;
+    } else if (tab === 'losses') {
+      statHtml = `<span class="lb-stat l">${p.losses||0}L</span>`;
+    } else {
+      statHtml = `<span class="lb-stat" style="color:var(--gold);">🪙${p.coins||0}</span>`;
+    }
+    row.innerHTML = `<span class="lb-rank ${rc}">${i+1}</span><span class="lb-name">${p.username}</span><span class="msg-lvl" style="margin-right:6px;">LVL ${rowLvl}</span>${statHtml}`;
+    row.onclick = () => openProfileByUid(d.id); list.appendChild(row);
   });
 }
 
@@ -1996,6 +2025,15 @@ let roundEpoch = null; // when the current round actually started (set when stag
 function checkStageFull() {
   const wasFullBefore = stageFull;
   stageFull = !!(stageUids.left && stageUids.right);
+  const mainGrid = document.getElementById('main-grid');
+  const anyFighter = !!(stageUids.left || stageUids.right);
+  if (stageFull) {
+    mainGrid.classList.remove('solo-mode');
+  } else if (anyFighter) {
+    mainGrid.classList.add('solo-mode');
+  } else {
+    mainGrid.classList.add('solo-mode');
+  }
   if (stageFull && !wasFullBefore) {
     // Both fighters just arrived — start a fresh round epoch
     roundEpoch = Date.now();
@@ -2089,6 +2127,20 @@ window.switchTab = (btn,tab) => {
   document.getElementById('chat-view').style.display = tab==='chat'?'flex':'none';
   document.getElementById('lb-view').style.display   = tab==='leaderboard'?'flex':'none';
   if (tab==='leaderboard') loadLeaderboard();
+};
+
+window.switchLbTab = (tab) => {
+  _currentLbTab = tab;
+  const tabs = {wins:'lbt-wins', losses:'lbt-losses', coins:'lbt-coins'};
+  const colors = {wins:'var(--red-hot)', losses:'#ff6b6b', coins:'var(--gold)'};
+  Object.entries(tabs).forEach(([t, id]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const active = t === tab;
+    el.style.borderBottomColor = active ? colors[t] : 'transparent';
+    el.style.color = active ? 'var(--text)' : 'var(--muted)';
+  });
+  _loadLbTab(tab);
 };
 
 // ── MODALS ──
@@ -3632,13 +3684,11 @@ window.sendTts = async () => {
 };
 
 // ── SFX TRIMMER STATE ──
-let _sfxAudioBuffer = null;   // decoded AudioBuffer of loaded file
-let _sfxTrimStart   = 0;      // trim start in seconds
-let _sfxTrimEnd     = 5;      // trim end in seconds
-let _sfxDuration    = 0;      // total file duration
-let _sfxDragging    = null;   // 'start' | 'end' | 'region' | null
-let _sfxDragOffsetX = 0;
-const SFX_MAX_DUR   = 5;      // max clip seconds allowed
+let _sfxAudioBuffer = null;
+let _sfxTrimStart   = 0;
+let _sfxTrimEnd     = 5;
+let _sfxDuration    = 0;
+const SFX_MAX_DUR   = 5;
 
 window.openSfxModal = () => {
   if (!me) { showToast('Log in first!'); return; }
@@ -3661,8 +3711,6 @@ window.sfxHandleFile = async (input) => {
   if (!file) return;
   const err = document.getElementById('sfx-err');
   err.textContent = '';
-
-  // Read file into ArrayBuffer for Web Audio decoding
   const arrayBuf = await file.arrayBuffer();
   const actx = new (window.AudioContext || window.webkitAudioContext)();
   let decoded;
@@ -3675,12 +3723,10 @@ window.sfxHandleFile = async (input) => {
   _sfxTrimEnd     = Math.min(_sfxDuration, SFX_MAX_DUR);
 
   if (_sfxDuration <= SFX_MAX_DUR) {
-    // Short enough — encode directly and skip trimmer
     const wav = _sfxEncodeWav(_sfxSliceBuffer(decoded, 0, _sfxDuration));
     window._customSfxData = wav;
     _sfxShowReady(_sfxDuration);
   } else {
-    // Too long — open trimmer
     _sfxOpenTrimmer();
   }
 };
@@ -3690,32 +3736,32 @@ function _sfxOpenTrimmer() {
   document.getElementById('sfx-ready-panel').style.display = 'none';
   const panel = document.getElementById('sfx-trimmer-panel');
   panel.style.display = 'flex';
+
+  // Configure slider: max = duration - SFX_MAX_DUR (latest start point)
+  const slider = document.getElementById('sfx-trim-slider');
+  const maxStart = Math.max(0, _sfxDuration - SFX_MAX_DUR);
+  slider.min = 0;
+  slider.max = maxStart;
+  slider.step = 0.01;
+  slider.value = 0;
+
+  _sfxTrimStart = 0;
+  _sfxTrimEnd = Math.min(_sfxDuration, SFX_MAX_DUR);
+
   _sfxDrawWaveform();
   _sfxUpdateTrimLabels();
-  // Bind drag events on canvas
-  const cv = document.getElementById('sfx-waveform');
-  cv.onmousedown  = _sfxMouseDown;
-  cv.onmousemove  = _sfxMouseMove;
-  cv.onmouseup    = _sfxMouseUp;
-  cv.onmouseleave = _sfxMouseUp;
-  cv.ontouchstart = _sfxTouchStart;
-  cv.ontouchmove  = _sfxTouchMove;
-  cv.ontouchend   = _sfxMouseUp;
 }
+
+// Called when slider moves
+window.sfxSliderMove = (val) => {
+  _sfxTrimStart = parseFloat(val);
+  _sfxTrimEnd   = Math.min(_sfxDuration, _sfxTrimStart + SFX_MAX_DUR);
+  _sfxDrawWaveform();
+  _sfxUpdateTrimLabels();
+};
 
 function _sfxGetHandleX(cv, time) {
   return (time / _sfxDuration) * cv.width;
-}
-function _sfxTimeFromX(cv, x) {
-  return Math.max(0, Math.min(_sfxDuration, (x / cv.width) * _sfxDuration));
-}
-function _sfxClampTrim() {
-  // Ensure selection <= SFX_MAX_DUR
-  if (_sfxTrimEnd - _sfxTrimStart > SFX_MAX_DUR) {
-    _sfxTrimEnd = _sfxTrimStart + SFX_MAX_DUR;
-  }
-  if (_sfxTrimEnd > _sfxDuration) _sfxTrimEnd = _sfxDuration;
-  if (_sfxTrimStart < 0) _sfxTrimStart = 0;
 }
 
 function _sfxDrawWaveform() {
@@ -3726,22 +3772,15 @@ function _sfxDrawWaveform() {
   const data = _sfxAudioBuffer.getChannelData(0);
   const step = Math.ceil(data.length / W);
 
-  // Background
   ctx.fillStyle = '#111';
   ctx.fillRect(0, 0, W, H);
 
-  // Selected region highlight
   const sx = _sfxGetHandleX(cv, _sfxTrimStart);
   const ex = _sfxGetHandleX(cv, _sfxTrimEnd);
-  ctx.fillStyle = 'rgba(255,170,0,0.13)';
-  ctx.fillRect(sx, 0, ex - sx, H);
 
-  // Waveform
-  ctx.strokeStyle = '#555';
-  ctx.lineWidth = 1;
+  // Dim regions outside selection
   for (let i = 0; i < W; i++) {
     const inRegion = i >= sx && i <= ex;
-    ctx.strokeStyle = inRegion ? '#ffa500' : '#444';
     let min = 1, max = -1;
     for (let j = 0; j < step; j++) {
       const d = data[i * step + j] || 0;
@@ -3750,29 +3789,38 @@ function _sfxDrawWaveform() {
     }
     const y1 = ((1 - max) / 2) * H;
     const y2 = ((1 - min) / 2) * H;
+    ctx.strokeStyle = inRegion ? '#ffa500' : '#2a2a2a';
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(i, y1);
     ctx.lineTo(i, Math.max(y2, y1 + 1));
     ctx.stroke();
   }
 
-  // Handle lines
-  const drawHandle = (x, col) => {
-    ctx.strokeStyle = col;
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
-    // Triangle cap
-    ctx.fillStyle = col;
-    ctx.beginPath(); ctx.moveTo(x-6,0); ctx.lineTo(x+6,0); ctx.lineTo(x,10); ctx.closePath(); ctx.fill();
-  };
-  drawHandle(sx, '#ffa500');
-  drawHandle(ex, '#ff4444');
+  // Selected region glow overlay
+  ctx.fillStyle = 'rgba(255,170,0,0.08)';
+  ctx.fillRect(sx, 0, ex - sx, H);
 
-  // 5-second cap marker if selection at max
-  if (_sfxTrimEnd - _sfxTrimStart >= SFX_MAX_DUR - 0.01) {
-    ctx.fillStyle = 'rgba(255,68,68,0.25)';
-    ctx.fillRect(ex, 0, W - ex, H);
-  }
+  // Start marker
+  ctx.strokeStyle = '#ffa500';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, H); ctx.stroke();
+  ctx.fillStyle = '#ffa500';
+  ctx.beginPath(); ctx.moveTo(sx-7,0); ctx.lineTo(sx+7,0); ctx.lineTo(sx,12); ctx.closePath(); ctx.fill();
+
+  // End marker
+  ctx.strokeStyle = '#ff4444';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(ex, 0); ctx.lineTo(ex, H); ctx.stroke();
+  ctx.fillStyle = '#ff4444';
+  ctx.beginPath(); ctx.moveTo(ex-7,0); ctx.lineTo(ex+7,0); ctx.lineTo(ex,12); ctx.closePath(); ctx.fill();
+
+  // Label inside region
+  const clipDur = _sfxTrimEnd - _sfxTrimStart;
+  ctx.fillStyle = 'rgba(255,170,0,0.85)';
+  ctx.font = 'bold 11px Barlow Condensed, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(clipDur.toFixed(2) + 's', (sx + ex) / 2, H - 5);
 }
 
 function _sfxUpdateTrimLabels() {
@@ -3781,11 +3829,9 @@ function _sfxUpdateTrimLabels() {
   const dur = _sfxTrimEnd - _sfxTrimStart;
   const dl = document.getElementById('sfx-trim-dur-lbl');
   dl.textContent = dur.toFixed(2) + 's';
-  dl.style.color = dur > SFX_MAX_DUR ? 'var(--red-hot)' : 'var(--text)';
+  dl.style.color = 'var(--text)';
 
-  // Time ticks
-  const cv = document.getElementById('sfx-waveform');
-  if (!cv) return;
+  // Time tick labels
   const tl = document.getElementById('sfx-trim-labels');
   if (!tl) return;
   const steps = Math.min(10, Math.floor(_sfxDuration));
@@ -3797,62 +3843,6 @@ function _sfxUpdateTrimLabels() {
     tl.appendChild(sp);
   }
 }
-
-function _sfxCanvasX(cv, evt) {
-  const rect = cv.getBoundingClientRect();
-  const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
-  return (clientX - rect.left) * (cv.width / rect.width);
-}
-
-function _sfxMouseDown(e) {
-  const cv = document.getElementById('sfx-waveform');
-  const x = _sfxCanvasX(cv, e);
-  const sx = _sfxGetHandleX(cv, _sfxTrimStart);
-  const ex = _sfxGetHandleX(cv, _sfxTrimEnd);
-  const THRESH = 12;
-  if (Math.abs(x - sx) < THRESH) {
-    _sfxDragging = 'start';
-  } else if (Math.abs(x - ex) < THRESH) {
-    _sfxDragging = 'end';
-  } else if (x > sx && x < ex) {
-    _sfxDragging = 'region';
-    _sfxDragOffsetX = x - sx;
-  } else {
-    // Click outside — set new start
-    _sfxDragging = 'start';
-    _sfxTrimStart = _sfxTimeFromX(cv, x);
-    _sfxTrimEnd = Math.min(_sfxDuration, _sfxTrimStart + SFX_MAX_DUR);
-  }
-  e.preventDefault();
-}
-function _sfxTouchStart(e) { _sfxMouseDown(e); }
-
-function _sfxMouseMove(e) {
-  if (!_sfxDragging) return;
-  const cv = document.getElementById('sfx-waveform');
-  const x  = _sfxCanvasX(cv, e);
-  const t  = _sfxTimeFromX(cv, x);
-  if (_sfxDragging === 'start') {
-    _sfxTrimStart = Math.min(t, _sfxTrimEnd - 0.1);
-    // If extending would exceed max, clamp end
-    if (_sfxTrimEnd - _sfxTrimStart > SFX_MAX_DUR) _sfxTrimStart = _sfxTrimEnd - SFX_MAX_DUR;
-  } else if (_sfxDragging === 'end') {
-    _sfxTrimEnd = Math.max(t, _sfxTrimStart + 0.1);
-    if (_sfxTrimEnd - _sfxTrimStart > SFX_MAX_DUR) _sfxTrimEnd = _sfxTrimStart + SFX_MAX_DUR;
-  } else if (_sfxDragging === 'region') {
-    const regionLen = _sfxTrimEnd - _sfxTrimStart;
-    const newStart  = _sfxTimeFromX(cv, x - _sfxDragOffsetX);
-    _sfxTrimStart = Math.max(0, Math.min(_sfxDuration - regionLen, newStart));
-    _sfxTrimEnd   = _sfxTrimStart + regionLen;
-  }
-  _sfxClampTrim();
-  _sfxDrawWaveform();
-  _sfxUpdateTrimLabels();
-  e.preventDefault();
-}
-function _sfxTouchMove(e) { _sfxMouseMove(e); }
-
-function _sfxMouseUp() { _sfxDragging = null; }
 
 window.sfxTrimPreview = () => {
   if (!_sfxAudioBuffer) return;
@@ -3867,7 +3857,6 @@ window.sfxApplyTrim = () => {
   if (!_sfxAudioBuffer) return;
   const dur = _sfxTrimEnd - _sfxTrimStart;
   if (dur < 0.1) { document.getElementById('sfx-err').textContent = 'Selection too short.'; return; }
-  if (dur > SFX_MAX_DUR) { document.getElementById('sfx-err').textContent = 'Max 5 seconds.'; return; }
   const sliced = _sfxSliceBuffer(_sfxAudioBuffer, _sfxTrimStart, _sfxTrimEnd);
   window._customSfxData = _sfxEncodeWav(sliced);
   document.getElementById('sfx-trimmer-panel').style.display = 'none';
