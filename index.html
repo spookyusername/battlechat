@@ -346,6 +346,12 @@
   @keyframes posFlash { 0%{color:var(--gold)} 50%{color:white} 100%{color:var(--gold)} }
   .pos-flash { animation: posFlash 0.4s ease; }
 
+  /* GAMBLE GAME SELECTOR */
+  .gamble-selector { display:flex; gap:6px; margin-bottom:16px; }
+  .gamble-game-btn { flex:1; font-family:'Bebas Neue',sans-serif; font-size:0.9rem; letter-spacing:3px; background:var(--dark3); border:1px solid var(--border); color:var(--muted); padding:9px 0; cursor:pointer; transition:all 0.2s; }
+  .gamble-game-btn:hover { border-color:rgba(255,255,255,0.2); color:var(--text); }
+  .gamble-game-btn.active { background:rgba(217,43,43,0.12); border-color:var(--red); color:var(--red-hot); }
+
   /* COMMUNITY TAB */
   .discord-redirect { display:flex; align-items:center; justify-content:space-between; background:var(--dark3); border:1px solid var(--border); padding:14px 16px; text-decoration:none; transition:border-color 0.2s,background 0.2s; }
   .discord-redirect:hover { border-color:#5865F2; background:rgba(88,101,242,0.06); }
@@ -858,6 +864,14 @@
 
   <!-- GAMBLE TAB -->
   <div class="menu-tab" id="mtab-gamble" style="display:none;">
+    <!-- GAME SELECTOR -->
+    <div class="gamble-selector">
+      <button class="gamble-game-btn active" id="gbtn-blackjack" onclick="switchGambleGame('blackjack')">🃏 BLACKJACK</button>
+      <button class="gamble-game-btn" id="gbtn-flappy" onclick="switchGambleGame('flappy')">🐦 FLAPPY ADAM</button>
+    </div>
+
+    <!-- BLACKJACK SECTION -->
+    <div id="gamble-blackjack">
     <div class="bj-header">
       <div class="bj-title">BLACKJACK</div>
       <div class="bj-subtitle">Get to 21 — beat the dealer to double your bet</div>
@@ -912,6 +926,67 @@
       </div>
       <button class="bj-claim-btn" id="bj-claim-btn" onclick="bjClaim()">COLLECT WINNINGS</button>
     </div>
+    </div> <!-- end gamble-blackjack -->
+
+    <!-- FLAPPY ADAM SECTION -->
+    <div id="gamble-flappy" style="display:none;">
+      <div class="bj-header">
+        <div class="bj-title">FLAPPY ADAM</div>
+        <div class="bj-subtitle">Fly through pipes — earn coins per gap cleared</div>
+        <div class="bj-balance">Balance: <span class="bj-balance-num" id="fa-balance">🪙 0</span></div>
+      </div>
+
+      <!-- BET SCREEN -->
+      <div id="fa-bet-screen">
+        <div class="bj-bet-label">Place your bet</div>
+        <div class="bj-bet-presets">
+          <button class="bj-preset" onclick="faSetBet(10)">10</button>
+          <button class="bj-preset" onclick="faSetBet(25)">25</button>
+          <button class="bj-preset" onclick="faSetBet(50)">50</button>
+          <button class="bj-preset" onclick="faSetBet(100)">100</button>
+          <button class="bj-preset" onclick="faSetBet(250)">250</button>
+          <button class="bj-preset bj-preset-all" onclick="faSetBetAll()">ALL IN</button>
+        </div>
+        <div class="bj-custom-row">
+          <input class="bj-input" id="fa-bet-input" type="number" min="1" placeholder="Custom amount">
+          <span class="bj-coin-icon">🪙</span>
+        </div>
+        <div class="bj-err" id="fa-err"></div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;color:var(--muted);margin-bottom:10px;line-height:1.6;">
+          <span style="color:var(--gold);">+25%/pipe</span> until 10 pipes · 
+          <span style="color:var(--gold);">+35%</span> 10–30 · 
+          <span style="color:var(--gold);">+40%</span> 30–50 · 
+          <span style="color:var(--gold);">+45%</span> 50–100 · 
+          <span style="color:var(--gold);">+50% max</span> 100+
+        </div>
+        <button class="bj-deal-btn" onclick="faStart()">FLY</button>
+      </div>
+
+      <!-- GAME SCREEN -->
+      <div id="fa-game-screen" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div class="bj-bet-display">Bet: <span id="fa-bet-display">🪙 0</span></div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:0.9rem;letter-spacing:2px;color:var(--gold);">PIPES: <span id="fa-pipes">0</span></div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:0.9rem;letter-spacing:2px;color:#4CAF50;">EARNED: <span id="fa-earned">+0</span>🪙</div>
+        </div>
+        <canvas id="fa-canvas" width="348" height="280" style="display:block;width:100%;background:#0a0a0a;border:1px solid var(--border);cursor:pointer;"></canvas>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);text-align:center;margin-top:6px;">TAP / CLICK or SPACE to flap</div>
+        <button class="bj-new-game-btn" id="fa-cashout-btn" onclick="faCashout()" style="margin-top:10px;display:none;border-color:var(--gold);color:var(--gold);">💰 CASH OUT</button>
+      </div>
+
+      <!-- RESULT SCREEN -->
+      <div id="fa-result-screen" style="display:none;position:relative;overflow:hidden;">
+        <canvas id="fa-coin-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:10;"></canvas>
+        <div style="text-align:center;padding:16px 0 8px;">
+          <div class="bj-result-icon" id="fa-result-icon">🐦</div>
+          <div class="bj-result-title" id="fa-result-title">—</div>
+          <div class="bj-result-amount" id="fa-result-amount"></div>
+          <div class="bj-final-hands" id="fa-result-detail"></div>
+        </div>
+        <button class="bj-claim-btn" id="fa-claim-btn" onclick="faClaim()">COLLECT WINNINGS</button>
+      </div>
+    </div> <!-- end gamble-flappy -->
+
   </div>
 
   <!-- COMMUNITY TAB -->
@@ -2832,6 +2907,431 @@ function refreshAllAvatars() {
   setAvatar('q-av', av, un);
   // Stage slots (if on stage)
   if (mySlot) setAvatar('av-'+mySlot, av, un);
+}
+
+// ── GAMBLE GAME SWITCHER ──
+window.switchGambleGame = (game) => {
+  document.getElementById('gamble-blackjack').style.display = game === 'blackjack' ? 'block' : 'none';
+  document.getElementById('gamble-flappy').style.display    = game === 'flappy'    ? 'block' : 'none';
+  document.querySelectorAll('.gamble-game-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('gbtn-' + game).classList.add('active');
+  if (game === 'flappy') fasyncBalance();
+  if (game === 'blackjack') syncBjBalance();
+};
+
+// ── FLAPPY ADAM ENGINE ──
+let faBet = 0, faPipes = 0, faEarned = 0, faGameRunning = false, faAnimFrame = null;
+let faDeadFromCrash = false;
+
+function faGetPct(pipes) {
+  if (pipes >= 100) return 0.50;
+  if (pipes >= 50)  return 0.45;
+  if (pipes >= 30)  return 0.40;
+  if (pipes >= 10)  return 0.35;
+  return 0.25;
+}
+
+function fayncBalance() {
+  const coins = myProfile?.coins || 0;
+  const el = document.getElementById('fa-balance');
+  if (el) el.textContent = '🪙 ' + coins;
+}
+
+window.faSetBet = val => {
+  document.getElementById('fa-bet-input').value = val;
+  document.getElementById('fa-err').textContent = '';
+};
+window.faSetBetAll = () => {
+  document.getElementById('fa-bet-input').value = myProfile?.coins || 0;
+  document.getElementById('fa-err').textContent = '';
+};
+
+window.faStart = async () => {
+  if (!me) { showToast('Log in to gamble!'); return; }
+  const raw   = parseInt(document.getElementById('fa-bet-input').value);
+  const coins = myProfile?.coins || 0;
+  const err   = document.getElementById('fa-err');
+  if (!raw || raw < 1)  { err.textContent = 'Enter a bet'; return; }
+  if (raw > coins)      { err.textContent = 'Not enough coins!'; return; }
+  if (raw > 10000)      { err.textContent = 'Max bet 10,000'; return; }
+
+  faBet     = raw;
+  faPipes   = 0;
+  faEarned  = 0;
+  faDeadFromCrash = false;
+
+  // Deduct bet
+  const newCoins = coins - faBet;
+  myProfile.coins = newCoins;
+  try { await updateDoc(doc(db,'users',me.uid),{coins:newCoins}); } catch(e){}
+  updateCoinDisplays(newCoins);
+
+  document.getElementById('fa-bet-screen').style.display    = 'none';
+  document.getElementById('fa-game-screen').style.display   = 'block';
+  document.getElementById('fa-result-screen').style.display = 'none';
+  document.getElementById('fa-bet-display').textContent = '🪙 ' + faBet;
+  document.getElementById('fa-pipes').textContent  = '0';
+  document.getElementById('fa-earned').textContent = '+0';
+  document.getElementById('fa-cashout-btn').style.display = 'none';
+
+  faInitGame();
+};
+
+// ── FLAPPY GAME CORE ──
+const FA = {
+  W: 348, H: 280,
+  bird: { x: 70, y: 140, vy: 0, r: 13 },
+  pipes: [],
+  pipeW: 36,
+  gap: 82,
+  speed: 2.2,
+  gravity: 0.38,
+  jumpV: -6.2,
+  frame: 0,
+  scored: new Set(),
+  started: false,
+  dead: false,
+  flashFrames: 0,
+  scorePopups: [],
+};
+
+function faInitGame() {
+  FA.bird = { x: 70, y: 140, vy: 0, r: 13 };
+  FA.pipes = [];
+  FA.frame = 0;
+  FA.scored = new Set();
+  FA.started = false;
+  FA.dead = false;
+  FA.flashFrames = 0;
+  FA.scorePopups = [];
+
+  const canvas = document.getElementById('fa-canvas');
+  if (!canvas) return;
+  canvas.width  = FA.W;
+  canvas.height = FA.H;
+
+  // Input
+  canvas.onclick = faFlap;
+  document.addEventListener('keydown', faKeyHandler);
+
+  if (faAnimFrame) cancelAnimationFrame(faAnimFrame);
+  faGameRunning = true;
+  faLoop();
+}
+
+function faKeyHandler(e) {
+  if (e.code === 'Space' && faGameRunning) { e.preventDefault(); faFlap(); }
+}
+
+function faFlap() {
+  if (!faGameRunning) return;
+  if (FA.dead) return;
+  FA.started = true;
+  FA.bird.vy = FA.jumpV;
+  sfxTone(660, 'sine', 0.07, 0.12);
+}
+
+function faSpawnPipe() {
+  const minTop = 40, maxTop = FA.H - FA.gap - 40;
+  const topH = minTop + Math.random() * (maxTop - minTop);
+  FA.pipes.push({ x: FA.W + 10, topH, id: FA.frame });
+}
+
+function faLoop() {
+  if (!faGameRunning) return;
+
+  const canvas = document.getElementById('fa-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  FA.frame++;
+
+  // Spawn pipes every ~90 frames
+  if (FA.started && FA.frame % 90 === 0) faSpawnPipe();
+
+  if (FA.started && !FA.dead) {
+    // Physics
+    FA.bird.vy += FA.gravity;
+    FA.bird.y  += FA.bird.vy;
+
+    // Move pipes
+    FA.pipes.forEach(p => p.x -= FA.speed + Math.min(faPipes * 0.012, 1.5));
+    FA.pipes = FA.pipes.filter(p => p.x > -FA.pipeW - 10);
+
+    // Score pipes
+    FA.pipes.forEach(p => {
+      const midX = p.x + FA.pipeW / 2;
+      if (!FA.scored.has(p.id) && midX < FA.bird.x) {
+        FA.scored.add(p.id);
+        faPipes++;
+        const pct     = faGetPct(faPipes - 1);
+        const gained  = Math.floor(faBet * pct * 10) / 10;
+        faEarned     += gained;
+
+        document.getElementById('fa-pipes').textContent  = faPipes;
+        document.getElementById('fa-earned').textContent = '+' + Math.floor(faEarned * 10) / 10;
+        document.getElementById('fa-cashout-btn').style.display = 'block';
+
+        sfxTone(880, 'sine', 0.1, 0.2);
+        FA.scorePopups.push({ x: FA.bird.x + 20, y: FA.bird.y - 10, text: '+' + gained + '🪙', life: 40 });
+      }
+    });
+
+    // Collision — ceiling / floor
+    if (FA.bird.y - FA.bird.r < 0 || FA.bird.y + FA.bird.r > FA.H) {
+      faDie();
+    }
+
+    // Collision — pipes
+    FA.pipes.forEach(p => {
+      const bx = FA.bird.x, by = FA.bird.y, br = FA.bird.r - 2;
+      if (bx + br > p.x && bx - br < p.x + FA.pipeW) {
+        if (by - br < p.topH || by + br > p.topH + FA.gap) faDie();
+      }
+    });
+  }
+
+  // ── DRAW ──
+  // Background
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, FA.W, FA.H);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  ctx.lineWidth = 1;
+  for (let y = 0; y < FA.H; y += 40) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(FA.W, y); ctx.stroke();
+  }
+
+  // Pipes
+  FA.pipes.forEach(p => {
+    // Top pipe
+    const grad1 = ctx.createLinearGradient(p.x, 0, p.x + FA.pipeW, 0);
+    grad1.addColorStop(0, '#1a3a1a');
+    grad1.addColorStop(0.5, '#2d5a2d');
+    grad1.addColorStop(1, '#1a3a1a');
+    ctx.fillStyle = grad1;
+    ctx.fillRect(p.x, 0, FA.pipeW, p.topH);
+    // Top cap
+    ctx.fillStyle = '#3a7a3a';
+    ctx.fillRect(p.x - 3, p.topH - 14, FA.pipeW + 6, 14);
+    // Bottom pipe
+    const botY = p.topH + FA.gap;
+    ctx.fillStyle = grad1;
+    ctx.fillRect(p.x, botY, FA.pipeW, FA.H - botY);
+    // Bottom cap
+    ctx.fillStyle = '#3a7a3a';
+    ctx.fillRect(p.x - 3, botY, FA.pipeW + 6, 14);
+    // Pipe shine
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    ctx.fillRect(p.x + 4, 0, 4, p.topH);
+    ctx.fillRect(p.x + 4, botY + 14, 4, FA.H - botY);
+  });
+
+  // Bird
+  if (!FA.dead || Math.floor(FA.frame / 4) % 2 === 0) {
+    const bx = FA.bird.x, by = FA.bird.y, br = FA.bird.r;
+    const angle = Math.max(-0.5, Math.min(1.0, FA.bird.vy * 0.08));
+    ctx.save();
+    ctx.translate(bx, by);
+    ctx.rotate(angle);
+    // Body
+    ctx.beginPath();
+    ctx.arc(0, 0, br, 0, Math.PI * 2);
+    ctx.fillStyle = FA.dead ? '#662200' : '#D92B2B';
+    ctx.fill();
+    ctx.strokeStyle = FA.dead ? '#441100' : '#FF3B3B';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Eye
+    ctx.beginPath();
+    ctx.arc(br * 0.4, -br * 0.25, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(br * 0.4 + 1, -br * 0.25 + 1, 1.8, 0, Math.PI * 2);
+    ctx.fillStyle = '#000';
+    ctx.fill();
+    // Wing
+    ctx.beginPath();
+    ctx.ellipse(-2, br * 0.3, 6, 4, -0.3, 0, Math.PI * 2);
+    ctx.fillStyle = FA.dead ? '#881100' : '#FF3B3B';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Score popups
+  FA.scorePopups = FA.scorePopups.filter(p => p.life > 0);
+  FA.scorePopups.forEach(p => {
+    ctx.globalAlpha = p.life / 40;
+    ctx.fillStyle = '#C9A84C';
+    ctx.font = 'bold 11px Barlow Condensed';
+    ctx.fillText(p.text, p.x, p.y - (40 - p.life) * 0.6);
+    p.life--;
+    p.y -= 0.4;
+  });
+  ctx.globalAlpha = 1;
+
+  // HUD
+  ctx.fillStyle = 'rgba(201,168,76,0.9)';
+  ctx.font = 'bold 14px "Bebas Neue"';
+  ctx.letterSpacing = '2px';
+  ctx.fillText('PIPES: ' + faPipes, 8, 20);
+  ctx.fillStyle = '#4CAF50';
+  ctx.fillText('+' + (Math.floor(faEarned * 10) / 10) + ' 🪙', 8, 38);
+
+  // Flash on crash
+  if (FA.flashFrames > 0) {
+    ctx.fillStyle = 'rgba(217,43,43,' + (FA.flashFrames / 12 * 0.4) + ')';
+    ctx.fillRect(0, 0, FA.W, FA.H);
+    FA.flashFrames--;
+  }
+
+  // Start prompt
+  if (!FA.started) {
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(0, FA.H/2 - 30, FA.W, 60);
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = '18px "Bebas Neue"';
+    ctx.textAlign = 'center';
+    ctx.fillText('TAP TO START', FA.W / 2, FA.H / 2 + 7);
+    ctx.textAlign = 'left';
+  }
+
+  if (FA.dead) {
+    // Show death overlay
+    if (FA.flashFrames <= 0 && !faDeadFromCrash) {
+      faDeadFromCrash = true;
+      faGameRunning = false;
+      document.removeEventListener('keydown', faKeyHandler);
+      setTimeout(() => faShowResult(false), 600);
+    }
+  }
+
+  if (faGameRunning) faAnimFrame = requestAnimationFrame(faLoop);
+}
+
+function faDie() {
+  if (FA.dead) return;
+  FA.dead = true;
+  FA.bird.vy = FA.jumpV * 0.5;
+  FA.flashFrames = 12;
+  sfxChord([300, 240, 180], 'sawtooth', 0.4, 0.15);
+}
+
+function faShowResult(cashedOut) {
+  document.getElementById('fa-game-screen').style.display   = 'none';
+  document.getElementById('fa-result-screen').style.display = 'block';
+
+  const totalReturn = Math.floor(faEarned * 10) / 10;
+  const net = totalReturn - faBet + faBet; // they already paid bet, this is what they GET back
+
+  const icon  = cashedOut ? '💰' : (faPipes > 0 ? '💸' : '💀');
+  const title = cashedOut ? 'CASHED OUT' : (faPipes > 0 ? 'CRASHED' : 'DEAD');
+  const titleClass = cashedOut ? 'win' : (faPipes > 0 ? 'push' : 'lose');
+
+  document.getElementById('fa-result-icon').textContent    = icon;
+  const titleEl = document.getElementById('fa-result-title');
+  titleEl.textContent = title;
+  titleEl.className   = 'bj-result-title ' + titleClass;
+
+  const amtEl = document.getElementById('fa-result-amount');
+  if (totalReturn > 0) {
+    amtEl.style.color = 'var(--gold)';
+    amtEl.textContent = '+' + totalReturn + ' 🪙 earned';
+  } else {
+    amtEl.style.color = 'var(--red-hot)';
+    amtEl.textContent = 'No pipes cleared — bet lost';
+  }
+
+  document.getElementById('fa-result-detail').textContent =
+    'Pipes cleared: ' + faPipes + '  ·  Bet: 🪙 ' + faBet;
+
+  window._faEarned = totalReturn;
+
+  const claimBtn = document.getElementById('fa-claim-btn');
+  if (totalReturn > 0) {
+    claimBtn.textContent = '💰 COLLECT ' + totalReturn + ' COINS';
+    claimBtn.className   = 'bj-claim-btn';
+    // Coin burst
+    spawnFaCoins(totalReturn);
+    sfxChord([523, 659, 784], 'sine', 0.6, 0.2);
+  } else {
+    claimBtn.textContent = '▶ PLAY AGAIN';
+    claimBtn.className   = 'bj-claim-btn lose-btn';
+  }
+}
+
+window.faCashout = () => {
+  if (!faGameRunning) return;
+  faGameRunning = false;
+  cancelAnimationFrame(faAnimFrame);
+  document.removeEventListener('keydown', faKeyHandler);
+  faShowResult(true);
+};
+
+window.faClaim = async () => {
+  const earned = window._faEarned || 0;
+  const claimBtn = document.getElementById('fa-claim-btn');
+  claimBtn.disabled = true;
+
+  if (earned > 0) {
+    const newCoins = (myProfile.coins || 0) + earned;
+    myProfile.coins = newCoins;
+    try { await updateDoc(doc(db,'users',me.uid),{coins:newCoins}); } catch(e){}
+    updateCoinDisplays(newCoins);
+    setTimeout(() => faResetToMenu(), 1800);
+  } else {
+    faResetToMenu();
+  }
+};
+
+function faResetToMenu() {
+  faGameRunning = false;
+  if (faAnimFrame) cancelAnimationFrame(faAnimFrame);
+  document.removeEventListener('keydown', faKeyHandler);
+  faBet = 0; faPipes = 0; faEarned = 0; faDeadFromCrash = false;
+  window._faEarned = 0;
+  document.getElementById('fa-bet-input').value = '';
+  document.getElementById('fa-err').textContent = '';
+  document.getElementById('fa-bet-screen').style.display    = 'block';
+  document.getElementById('fa-game-screen').style.display   = 'none';
+  document.getElementById('fa-result-screen').style.display = 'none';
+  fayncBalance();
+}
+
+function spawnFaCoins(count) {
+  const canvas = document.getElementById('fa-coin-canvas');
+  const wrap   = document.getElementById('fa-result-screen');
+  if (!canvas || !wrap) return;
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const n = Math.min(Math.floor(count / 2) + 15, 50);
+  const coins = Array.from({length: n}, () => ({
+    x: W*0.3 + Math.random()*W*0.4, y: H*0.35,
+    vx: (Math.random()-0.5)*9, vy: -(4+Math.random()*10),
+    r: 5+Math.random()*6, rot: Math.random()*Math.PI*2,
+    rotV: (Math.random()-0.5)*0.3, alpha:1,
+    color: Math.random()>0.4?'#C9A84C':'#FFD700', scaleX:1,
+  }));
+  let frame;
+  function tick() {
+    ctx.clearRect(0,0,W,H);
+    let alive=0;
+    for (const c of coins) {
+      c.vy+=0.45; c.vx*=0.98; c.x+=c.vx; c.y+=c.vy;
+      c.rot+=c.rotV; c.scaleX=Math.abs(Math.cos(c.rot));
+      if (c.y>H+20) c.alpha-=0.04;
+      if (c.alpha<=0) continue; alive++;
+      ctx.save(); ctx.globalAlpha=c.alpha; ctx.translate(c.x,c.y); ctx.scale(c.scaleX,1);
+      ctx.beginPath(); ctx.arc(0,0,c.r,0,Math.PI*2); ctx.fillStyle=c.color; ctx.fill();
+      ctx.restore();
+    }
+    if (alive>0) frame=requestAnimationFrame(tick); else ctx.clearRect(0,0,W,H);
+  }
+  frame=requestAnimationFrame(tick);
+  setTimeout(()=>{cancelAnimationFrame(frame);ctx.clearRect(0,0,W,H);},3000);
 }
 
 // ── UTIL ──
