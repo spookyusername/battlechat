@@ -268,16 +268,6 @@
   .shop-coins-bar span { font-family: 'Barlow Condensed', sans-serif; font-size: 0.8rem; color: var(--muted); letter-spacing: 1px; }
   .shop-coins-num { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--gold); }
 
-  /* STORE */
-  .store-grid { display: flex; flex-direction: column; gap: 8px; }
-  .store-item { background: var(--dark3); border: 1px solid var(--border); padding: 12px 14px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: border-color 0.2s, background 0.2s; }
-  .store-item:hover { border-color: var(--gold); background: rgba(201,168,76,0.04); }
-  .store-icon { font-size: 1.6rem; flex-shrink: 0; width: 36px; text-align: center; }
-  .store-item-name { font-family: 'Bebas Neue', sans-serif; font-size: 0.95rem; letter-spacing: 2px; }
-  .store-item-desc { font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
-  .store-price { margin-left: auto; font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--gold); flex-shrink: 0; }
-  .store-note { font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; color: rgba(255,255,255,0.2); text-align: center; padding: 12px 0; border-top: 1px solid var(--border); margin-top: 12px; }
-
   /* SETTINGS */
   .settings-group { background: var(--dark3); border: 1px solid var(--border); overflow: hidden; margin-bottom: 12px; }
   .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.15s; gap: 12px; }
@@ -641,7 +631,6 @@
   </div>
   <div class="menu-nav">
     <button class="menu-nav-btn active" onclick="switchMenuTab(this,'shop')" data-tab="shop">🏪 SHOP</button>
-    <button class="menu-nav-btn" onclick="switchMenuTab(this,'store')" data-tab="store">💰 STORE</button>
     <button class="menu-nav-btn" onclick="switchMenuTab(this,'settings')" data-tab="settings">⚙️ SETTINGS</button>
   </div>
 
@@ -707,50 +696,6 @@
       <span>Your coins:</span>
       <span class="shop-coins-num" id="shop-coins">🪙 0</span>
     </div>
-  </div>
-
-  <!-- STORE TAB (monetised power-ups) -->
-  <div class="menu-tab" id="mtab-store" style="display:none;">
-    <div class="menu-section-title">Arena Power-Ups</div>
-    <div class="store-grid">
-      <div class="store-item" onclick="openPurchase('vote_bomb',2.99,'VOTE BOMB','Instantly adds 200 votes to your chosen fighter for the current round.')">
-        <div class="store-icon">💣</div>
-        <div class="store-item-name">Vote Bomb</div>
-        <div class="store-item-desc">Force +200 votes on a fighter</div>
-        <div class="store-price">$2.99</div>
-      </div>
-      <div class="store-item" onclick="openPurchase('shield',1.99,'VOTE SHIELD','Protects a fighter — their vote count cannot drop for 60 seconds.')">
-        <div class="store-icon">🛡️</div>
-        <div class="store-item-name">Vote Shield</div>
-        <div class="store-item-desc">Lock a fighter's votes for 60s</div>
-        <div class="store-price">$1.99</div>
-      </div>
-      <div class="store-item" onclick="openPurchase('golden_mic',4.99,'GOLDEN MIC','Pin a message to the top of chat for 5 minutes — seen by everyone.')">
-        <div class="store-icon">🎤</div>
-        <div class="store-item-name">Golden Mic</div>
-        <div class="store-item-desc">Pin your message for 5 min</div>
-        <div class="store-price">$4.99</div>
-      </div>
-      <div class="store-item" onclick="openPurchase('elimination',9.99,'INSTANT ELIMINATION','Immediately eliminate the losing fighter — no waiting for round end.')">
-        <div class="store-icon">⚡</div>
-        <div class="store-item-name">Instant Elimination</div>
-        <div class="store-item-desc">Boot the losing fighter NOW</div>
-        <div class="store-price">$9.99</div>
-      </div>
-      <div class="store-item" onclick="openPurchase('coin_pack',4.99,'COIN PACK','Get 2000 coins to spend in the shop on name colors and themes.')">
-        <div class="store-icon">🪙</div>
-        <div class="store-item-name">Coin Pack</div>
-        <div class="store-item-desc">2000 coins for the shop</div>
-        <div class="store-price">$4.99</div>
-      </div>
-      <div class="store-item" onclick="openPurchase('vip',9.99,'VIP PASS','30 days of VIP: gold name, exclusive badge, skip queue priority.')">
-        <div class="store-icon">👑</div>
-        <div class="store-item-name">VIP Pass</div>
-        <div class="store-item-desc">30 days of VIP perks</div>
-        <div class="store-price">$9.99 / mo</div>
-      </div>
-    </div>
-    <div class="store-note">⚠ Payments coming soon — items shown are a preview of upcoming features.</div>
   </div>
 
   <!-- SETTINGS TAB -->
@@ -830,19 +775,6 @@
           <button class="btn-cancel" onclick="document.getElementById('pw-change-form').style.display='none'">CANCEL</button>
         </div>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- PURCHASE CONFIRM MODAL -->
-<div class="modal-overlay" id="purchase-overlay">
-  <div class="modal" style="max-width:360px;">
-    <button class="modal-close" onclick="closeModal('purchase-overlay')">✕</button>
-    <div style="padding:32px 28px 28px;">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:3px;margin-bottom:8px;" id="pur-title">—</div>
-      <div style="font-size:0.88rem;color:var(--muted);line-height:1.7;margin-bottom:20px;" id="pur-desc">—</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--gold);margin-bottom:20px;" id="pur-price">$0.00</div>
-      <button class="auth-submit" style="width:100%;" onclick="closeModal('purchase-overlay');showToast('💳 Payment coming soon!')">BUY NOW</button>
     </div>
   </div>
 </div>
@@ -1869,12 +1801,6 @@ window.buyItem = async (itemId, cost) => {
   } catch(e) { showToast('Purchase failed.'); }
 };
 
-window.openPurchase = (id, price, title, desc) => {
-  document.getElementById('pur-title').textContent = title;
-  document.getElementById('pur-desc').textContent  = desc;
-  document.getElementById('pur-price').textContent = '$' + price;
-  openModal('purchase-overlay');
-};
 
 window.applyTheme = val => {
   activeTheme = val;
