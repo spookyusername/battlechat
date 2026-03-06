@@ -231,6 +231,73 @@
   .cam-panel:first-child .round-bar-fill { background: linear-gradient(to right, #8B0000, var(--red-hot)); }
   .cam-panel.right-cam .round-bar-fill { background: linear-gradient(to right, #1a4fa8, #60a5fa); }
 
+  /* MENU BUTTON */
+  .menu-btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.78rem; letter-spacing: 2px; text-transform: uppercase; border: 1px solid var(--border); background: transparent; color: var(--muted); padding: 5px 12px; cursor: pointer; transition: border-color 0.2s, color 0.2s; }
+  .menu-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+
+  /* MENU PANEL */
+  .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 400; opacity: 0; pointer-events: none; transition: opacity 0.25s; backdrop-filter: blur(3px); }
+  .menu-overlay.open { opacity: 1; pointer-events: all; }
+  .menu-panel { position: fixed; top: 0; left: 0; bottom: 0; width: 380px; background: var(--dark2); border-right: 1px solid rgba(255,255,255,0.08); z-index: 401; transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.22,1,0.36,1); display: flex; flex-direction: column; overflow: hidden; }
+  .menu-panel.open { transform: translateX(0); }
+  .menu-header { height: 48px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 18px; flex-shrink: 0; }
+  .menu-logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 4px; }
+  .menu-logo span { color: var(--red-hot); }
+  .menu-close { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; padding: 4px 8px; }
+  .menu-close:hover { color: var(--text); }
+  .menu-nav { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .menu-nav-btn { flex: 1; font-family: 'Bebas Neue', sans-serif; font-size: 0.82rem; letter-spacing: 2px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer; padding: 11px 6px; transition: color 0.2s, border-color 0.2s; }
+  .menu-nav-btn:hover { color: var(--text); }
+  .menu-nav-btn.active { color: var(--text); border-bottom-color: var(--red); }
+  .menu-tab { flex: 1; overflow-y: auto; padding: 16px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent; }
+  .menu-section-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+
+  /* SHOP */
+  .shop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .shop-item { background: var(--dark3); border: 1px solid var(--border); padding: 10px 8px; cursor: pointer; text-align: center; transition: border-color 0.2s, transform 0.15s; }
+  .shop-item:hover { border-color: var(--gold); transform: translateY(-2px); }
+  .shop-preview { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; margin-bottom: 4px; }
+  .theme-preview { font-size: 0.85rem; padding: 4px 0; }
+  .void-prev { background: #000; color: #888; border: 1px solid #222; }
+  .ember-prev { background: linear-gradient(135deg,#1a0000,#2a0800); color: #ff6b35; }
+  .ice-prev { background: linear-gradient(135deg,#00111a,#001a2e); color: #60d4f5; }
+  .toxic-prev { background: linear-gradient(135deg,#001400,#001a00); color: #39ff14; }
+  .shop-item-name { font-family: 'Barlow Condensed', sans-serif; font-size: 0.72rem; letter-spacing: 1px; color: var(--muted); margin-bottom: 5px; }
+  .shop-price { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; color: var(--gold); }
+  .shop-coins-bar { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; padding: 10px 14px; background: var(--dark3); border: 1px solid rgba(201,168,76,0.2); }
+  .shop-coins-bar span { font-family: 'Barlow Condensed', sans-serif; font-size: 0.8rem; color: var(--muted); letter-spacing: 1px; }
+  .shop-coins-num { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--gold); }
+
+  /* STORE */
+  .store-grid { display: flex; flex-direction: column; gap: 8px; }
+  .store-item { background: var(--dark3); border: 1px solid var(--border); padding: 12px 14px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: border-color 0.2s, background 0.2s; }
+  .store-item:hover { border-color: var(--gold); background: rgba(201,168,76,0.04); }
+  .store-icon { font-size: 1.6rem; flex-shrink: 0; width: 36px; text-align: center; }
+  .store-item-name { font-family: 'Bebas Neue', sans-serif; font-size: 0.95rem; letter-spacing: 2px; }
+  .store-item-desc { font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .store-price { margin-left: auto; font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--gold); flex-shrink: 0; }
+  .store-note { font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; color: rgba(255,255,255,0.2); text-align: center; padding: 12px 0; border-top: 1px solid var(--border); margin-top: 12px; }
+
+  /* SETTINGS */
+  .settings-group { background: var(--dark3); border: 1px solid var(--border); overflow: hidden; margin-bottom: 12px; }
+  .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.15s; gap: 12px; }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-row:hover { background: rgba(255,255,255,0.03); }
+  .settings-row-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+  .settings-row-icon { font-size: 1.1rem; flex-shrink: 0; }
+  .settings-row-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 1px; }
+  .settings-row-desc { font-family: 'Barlow', sans-serif; font-size: 0.75rem; color: var(--muted); }
+  .settings-arrow { color: var(--muted); font-size: 1.2rem; }
+  .settings-select { background: var(--dark2); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 0.8rem; cursor: pointer; outline: none; flex-shrink: 0; }
+
+  /* TOGGLE SWITCH */
+  .toggle-switch { position: relative; display: inline-block; flex-shrink: 0; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle-track { display: block; width: 36px; height: 20px; background: var(--dark); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; transition: background 0.2s; position: relative; }
+  .toggle-switch input:checked + .toggle-track { background: var(--red); border-color: var(--red); }
+  .toggle-thumb { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: var(--muted); border-radius: 50%; transition: transform 0.2s, background 0.2s; }
+  .toggle-switch input:checked + .toggle-track .toggle-thumb { transform: translateX(16px); background: white; }
+
   /* ENTRY/EXIT ANIMATIONS */
   @keyframes slotIn { 0%{opacity:0;transform:translateY(12px) scale(0.97)} 100%{opacity:1;transform:translateY(0) scale(1)} }
   @keyframes slotOut { 0%{opacity:1;transform:scale(1)} 60%{opacity:0;transform:scale(1.04) translateY(-8px)} 100%{opacity:0} }
@@ -275,7 +342,7 @@
 
 <!-- TOPBAR -->
 <div class="topbar">
-  <div class="topbar-left"><div class="chat-online" style="margin-left:4px;"><div class="online-dot"></div><span id="online-count">0 online</span></div></div>
+  <div class="topbar-left"><button class="menu-btn" id="menu-btn" onclick="toggleMenu()">☰ MENU</button><div class="chat-online" style="margin-left:4px;"><div class="online-dot"></div><span id="online-count">0 online</span></div></div>
   <div class="logo" id="logo"><span>BATTLE</span>CHAT</div>
   <div class="topbar-right">
     <button class="collapse-btn" onclick="toggleChat()">
@@ -565,6 +632,221 @@
 </div>
 
 
+<!-- MENU OVERLAY -->
+<div class="menu-overlay" id="menu-overlay" onclick="closeMenu()"></div>
+<div class="menu-panel" id="menu-panel">
+  <div class="menu-header">
+    <div class="menu-logo"><span>BATTLE</span>CHAT</div>
+    <button class="menu-close" onclick="closeMenu()">✕</button>
+  </div>
+  <div class="menu-nav">
+    <button class="menu-nav-btn active" onclick="switchMenuTab(this,'shop')" data-tab="shop">🏪 SHOP</button>
+    <button class="menu-nav-btn" onclick="switchMenuTab(this,'store')" data-tab="store">💰 STORE</button>
+    <button class="menu-nav-btn" onclick="switchMenuTab(this,'settings')" data-tab="settings">⚙️ SETTINGS</button>
+  </div>
+
+  <!-- SHOP TAB -->
+  <div class="menu-tab" id="mtab-shop">
+    <div class="menu-section-title">Name Colors</div>
+    <div class="shop-grid">
+      <div class="shop-item" onclick="buyItem('color_crimson',500)">
+        <div class="shop-preview" style="color:#FF3B3B;">CRIMSON</div>
+        <div class="shop-item-name">Crimson Name</div>
+        <div class="shop-price">🪙 500</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('color_gold',750)">
+        <div class="shop-preview" style="color:#C9A84C;">GOLDEN</div>
+        <div class="shop-item-name">Gold Name</div>
+        <div class="shop-price">🪙 750</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('color_cyan',600)">
+        <div class="shop-preview" style="color:#00e5ff;">NEON</div>
+        <div class="shop-item-name">Neon Name</div>
+        <div class="shop-price">🪙 600</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('color_violet',800)">
+        <div class="shop-preview" style="color:#b45aff;">VIOLET</div>
+        <div class="shop-item-name">Violet Name</div>
+        <div class="shop-price">🪙 800</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('color_toxic',650)">
+        <div class="shop-preview" style="color:#39ff14;">TOXIC</div>
+        <div class="shop-item-name">Toxic Name</div>
+        <div class="shop-price">🪙 650</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('color_white',300)">
+        <div class="shop-preview" style="color:#ffffff;">WHITE</div>
+        <div class="shop-item-name">Pure White</div>
+        <div class="shop-price">🪙 300</div>
+      </div>
+    </div>
+    <div class="menu-section-title" style="margin-top:18px;">Site Themes</div>
+    <div class="shop-grid">
+      <div class="shop-item" onclick="buyItem('theme_void',1000)">
+        <div class="shop-preview theme-preview void-prev">VOID</div>
+        <div class="shop-item-name">Void Theme</div>
+        <div class="shop-price">🪙 1000</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('theme_ember',1200)">
+        <div class="shop-preview theme-preview ember-prev">EMBER</div>
+        <div class="shop-item-name">Ember Theme</div>
+        <div class="shop-price">🪙 1200</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('theme_ice',1200)">
+        <div class="shop-preview theme-preview ice-prev">ICE</div>
+        <div class="shop-item-name">Ice Theme</div>
+        <div class="shop-price">🪙 1200</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('theme_toxic',1500)">
+        <div class="shop-preview theme-preview toxic-prev">TOXIC</div>
+        <div class="shop-item-name">Toxic Theme</div>
+        <div class="shop-price">🪙 1500</div>
+      </div>
+    </div>
+    <div class="shop-coins-bar">
+      <span>Your coins:</span>
+      <span class="shop-coins-num" id="shop-coins">🪙 0</span>
+    </div>
+  </div>
+
+  <!-- STORE TAB (monetised power-ups) -->
+  <div class="menu-tab" id="mtab-store" style="display:none;">
+    <div class="menu-section-title">Arena Power-Ups</div>
+    <div class="store-grid">
+      <div class="store-item" onclick="openPurchase('vote_bomb',2.99,'VOTE BOMB','Instantly adds 200 votes to your chosen fighter for the current round.')">
+        <div class="store-icon">💣</div>
+        <div class="store-item-name">Vote Bomb</div>
+        <div class="store-item-desc">Force +200 votes on a fighter</div>
+        <div class="store-price">$2.99</div>
+      </div>
+      <div class="store-item" onclick="openPurchase('shield',1.99,'VOTE SHIELD','Protects a fighter — their vote count cannot drop for 60 seconds.')">
+        <div class="store-icon">🛡️</div>
+        <div class="store-item-name">Vote Shield</div>
+        <div class="store-item-desc">Lock a fighter's votes for 60s</div>
+        <div class="store-price">$1.99</div>
+      </div>
+      <div class="store-item" onclick="openPurchase('golden_mic',4.99,'GOLDEN MIC','Pin a message to the top of chat for 5 minutes — seen by everyone.')">
+        <div class="store-icon">🎤</div>
+        <div class="store-item-name">Golden Mic</div>
+        <div class="store-item-desc">Pin your message for 5 min</div>
+        <div class="store-price">$4.99</div>
+      </div>
+      <div class="store-item" onclick="openPurchase('elimination',9.99,'INSTANT ELIMINATION','Immediately eliminate the losing fighter — no waiting for round end.')">
+        <div class="store-icon">⚡</div>
+        <div class="store-item-name">Instant Elimination</div>
+        <div class="store-item-desc">Boot the losing fighter NOW</div>
+        <div class="store-price">$9.99</div>
+      </div>
+      <div class="store-item" onclick="openPurchase('coin_pack',4.99,'COIN PACK','Get 2000 coins to spend in the shop on name colors and themes.')">
+        <div class="store-icon">🪙</div>
+        <div class="store-item-name">Coin Pack</div>
+        <div class="store-item-desc">2000 coins for the shop</div>
+        <div class="store-price">$4.99</div>
+      </div>
+      <div class="store-item" onclick="openPurchase('vip',9.99,'VIP PASS','30 days of VIP: gold name, exclusive badge, skip queue priority.')">
+        <div class="store-icon">👑</div>
+        <div class="store-item-name">VIP Pass</div>
+        <div class="store-item-desc">30 days of VIP perks</div>
+        <div class="store-price">$9.99 / mo</div>
+      </div>
+    </div>
+    <div class="store-note">⚠ Payments coming soon — items shown are a preview of upcoming features.</div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div class="menu-tab" id="mtab-settings" style="display:none;">
+    <div class="menu-section-title">Account</div>
+    <div class="settings-group">
+      <div class="settings-row" onclick="openChangePassword()">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">🔑</div>
+          <div>
+            <div class="settings-row-title">Change Password</div>
+            <div class="settings-row-desc">Update your account password</div>
+          </div>
+        </div>
+        <span class="settings-arrow">›</span>
+      </div>
+      <div class="settings-row" id="settings-theme-row">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">🎨</div>
+          <div>
+            <div class="settings-row-title">Active Theme</div>
+            <div class="settings-row-desc" id="active-theme-label">Default</div>
+          </div>
+        </div>
+        <select class="settings-select" id="theme-select" onchange="applyTheme(this.value)">
+          <option value="default">Default</option>
+          <option value="void">Void</option>
+          <option value="ember">Ember</option>
+          <option value="ice">Ice</option>
+          <option value="toxic">Toxic</option>
+        </select>
+      </div>
+      <div class="settings-row" id="settings-namecolor-row">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">🖊️</div>
+          <div>
+            <div class="settings-row-title">Name Color</div>
+            <div class="settings-row-desc">Change your chat name color</div>
+          </div>
+        </div>
+        <select class="settings-select" id="namecolor-select" onchange="applyNameColor(this.value)">
+          <option value="default">Default</option>
+          <option value="color_crimson">Crimson</option>
+          <option value="color_gold">Gold</option>
+          <option value="color_cyan">Neon</option>
+          <option value="color_violet">Violet</option>
+          <option value="color_toxic">Toxic</option>
+          <option value="color_white">White</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">🔔</div>
+          <div>
+            <div class="settings-row-title">Sound Effects</div>
+            <div class="settings-row-desc">Arena sounds and notifications</div>
+          </div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="sfx-toggle" checked onchange="toggleSfx(this.checked)">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Change Password Form (hidden by default) -->
+    <div id="pw-change-form" style="display:none;margin-top:16px;">
+      <div class="menu-section-title">Change Password</div>
+      <div class="settings-group">
+        <div class="field-group" style="padding:12px 14px;">
+          <div class="field-label">New Password</div>
+          <input class="field-input" id="new-pw" type="password" placeholder="Min 6 characters">
+          <div class="field-error" id="pw-change-err"></div>
+        </div>
+        <div style="padding:0 14px 14px;display:flex;gap:8px;">
+          <button class="btn-save" style="flex:1;" onclick="doChangePassword()">SAVE</button>
+          <button class="btn-cancel" onclick="document.getElementById('pw-change-form').style.display='none'">CANCEL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PURCHASE CONFIRM MODAL -->
+<div class="modal-overlay" id="purchase-overlay">
+  <div class="modal" style="max-width:360px;">
+    <button class="modal-close" onclick="closeModal('purchase-overlay')">✕</button>
+    <div style="padding:32px 28px 28px;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:3px;margin-bottom:8px;" id="pur-title">—</div>
+      <div style="font-size:0.88rem;color:var(--muted);line-height:1.7;margin-bottom:20px;" id="pur-desc">—</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--gold);margin-bottom:20px;" id="pur-price">$0.00</div>
+      <button class="auth-submit" style="width:100%;" onclick="closeModal('purchase-overlay');showToast('💳 Payment coming soon!')">BUY NOW</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -748,7 +1030,7 @@ onAuthStateChanged(auth, async user => {
   }
   renderTopbar();
   listenStage(); // everyone sees stage updates
-  if (me) listenChat();
+  if (me) { listenChat(); applyUserPrefs(myProfile); }
   joinAsViewer();
 });
 
@@ -881,7 +1163,7 @@ window.sendMessage = async () => {
   if(!me||!myProfile){showToast('Log in to chat!');return;}
   const xp = myProfile.xp || 0;
   const lvl = calcLevel(xp).level;
-  await push(ref(rtdb,'chat'),{uid:me.uid,username:myProfile.username,avatar:myProfile.avatar,text,level:lvl,ts:Date.now()});
+  await push(ref(rtdb,'chat'),{uid:me.uid,username:myProfile.username,avatar:myProfile.avatar,text,level:lvl,nameColor:activeNameColor,ts:Date.now()});
   input.value='';
   await grantXp(2);
 };
@@ -890,7 +1172,9 @@ function addChatBubble(msg) {
   const div=document.createElement('div'); div.className='chat-msg';
   const color=me&&msg.uid===me.uid?'me':'other';
   const lvlBadge = msg.level ? `<span class="msg-lvl">LVL ${msg.level}</span>` : '';
-  div.innerHTML=`${lvlBadge}<span class="msg-name ${color}" onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.username)}</span><span class="msg-text">${escHtml(msg.text)}</span>`;
+  const nc = msg.nameColor ? NAME_COLORS[msg.nameColor] : null;
+  const nameStyle = nc ? `style="color:${nc};"` : '';
+  div.innerHTML=`${lvlBadge}<span class="msg-name ${color}" ${nameStyle} onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.username)}</span><span class="msg-text">${escHtml(msg.text)}</span>`;
   view.appendChild(div); view.scrollTop=view.scrollHeight;
   while(view.children.length>100) view.removeChild(view.firstChild);
 }
@@ -1513,6 +1797,180 @@ async function grantXp(amount) {
   const newXp = (myProfile.xp || 0) + amount;
   myProfile.xp = newXp;
   try { await updateDoc(doc(db, 'users', me.uid), { xp: newXp }); } catch(e) {}
+}
+
+// ── MENU SYSTEM ──
+const NAME_COLORS = {
+  default:       null,
+  color_crimson: '#FF3B3B',
+  color_gold:    '#C9A84C',
+  color_cyan:    '#00e5ff',
+  color_violet:  '#b45aff',
+  color_toxic:   '#39ff14',
+  color_white:   '#ffffff',
+};
+
+const THEMES = {
+  default: { red:'#D92B2B', redHot:'#FF3B3B', gold:'#C9A84C', black:'#080808', dark:'#0e0e0e', dark2:'#141414', dark3:'#1c1c1c' },
+  void:    { red:'#555', redHot:'#888', gold:'#aaa', black:'#000', dark:'#080808', dark2:'#0d0d0d', dark3:'#141414' },
+  ember:   { red:'#ff4500', redHot:'#ff6b35', gold:'#ffaa00', black:'#0a0300', dark:'#120500', dark2:'#180800', dark3:'#200b00' },
+  ice:     { red:'#0088cc', redHot:'#00bbff', gold:'#60d4f5', black:'#000d14', dark:'#001520', dark2:'#001c2a', dark3:'#002235' },
+  toxic:   { red:'#00cc00', redHot:'#39ff14', gold:'#aaff00', black:'#000a00', dark:'#001200', dark2:'#001800', dark3:'#001e00' },
+};
+
+let sfxEnabled = true;
+let userCoins = 0;
+let ownedItems = [];
+let activeTheme = 'default';
+let activeNameColor = 'default';
+
+function toggleMenu() {
+  document.getElementById('menu-panel').classList.toggle('open');
+  document.getElementById('menu-overlay').classList.toggle('open');
+  refreshMenuCoins();
+}
+function closeMenu() {
+  document.getElementById('menu-panel').classList.remove('open');
+  document.getElementById('menu-overlay').classList.remove('open');
+}
+window.toggleMenu = toggleMenu;
+window.closeMenu  = closeMenu;
+
+window.switchMenuTab = (btn, tab) => {
+  document.querySelectorAll('.menu-nav-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.menu-tab').forEach(t=>t.style.display='none');
+  document.getElementById('mtab-'+tab).style.display='block';
+  if (tab==='settings') loadSettingsState();
+};
+
+function refreshMenuCoins() {
+  if (!me || !myProfile) return;
+  userCoins = myProfile.coins || 0;
+  document.getElementById('shop-coins').textContent = '🪙 ' + userCoins;
+}
+
+window.buyItem = async (itemId, cost) => {
+  if (!me) { showToast('Log in to buy items!'); return; }
+  const coins = myProfile.coins || 0;
+  if (coins < cost) { showToast('Not enough coins! 🪙 Need ' + cost); return; }
+  const owned = myProfile.items || [];
+  if (owned.includes(itemId)) { showToast('You already own this!'); return; }
+  const newCoins = coins - cost;
+  const newItems = [...owned, itemId];
+  try {
+    await updateDoc(doc(db,'users',me.uid), { coins: newCoins, items: newItems });
+    myProfile.coins = newCoins; myProfile.items = newItems;
+    userCoins = newCoins;
+    document.getElementById('shop-coins').textContent = '🪙 ' + newCoins;
+    showToast('Purchased! 🎉');
+    SFX.win();
+    loadSettingsState();
+  } catch(e) { showToast('Purchase failed.'); }
+};
+
+window.openPurchase = (id, price, title, desc) => {
+  document.getElementById('pur-title').textContent = title;
+  document.getElementById('pur-desc').textContent  = desc;
+  document.getElementById('pur-price').textContent = '$' + price;
+  openModal('purchase-overlay');
+};
+
+window.applyTheme = val => {
+  activeTheme = val;
+  const t = THEMES[val] || THEMES.default;
+  const r = document.documentElement.style;
+  r.setProperty('--red',    t.red);
+  r.setProperty('--red-hot',t.redHot);
+  r.setProperty('--gold',   t.gold);
+  r.setProperty('--black',  t.black);
+  r.setProperty('--dark',   t.dark);
+  r.setProperty('--dark2',  t.dark2);
+  r.setProperty('--dark3',  t.dark3);
+  document.getElementById('active-theme-label').textContent = val.charAt(0).toUpperCase()+val.slice(1);
+  if (me) updateDoc(doc(db,'users',me.uid),{activeTheme:val}).catch(()=>{});
+  showToast('Theme applied!');
+};
+
+window.applyNameColor = val => {
+  activeNameColor = val;
+  if (me) updateDoc(doc(db,'users',me.uid),{nameColor:val}).catch(()=>{});
+  showToast('Name color updated!');
+};
+
+window.toggleSfx = enabled => { sfxEnabled = enabled; };
+
+// Override SFX to respect toggle
+const _origSfxTone = window.sfxTone;
+function maybeSfx(fn) { return (...args) => { if (sfxEnabled) fn(...args); }; }
+
+function loadSettingsState() {
+  const owned = myProfile?.items || [];
+  // Theme select — only show owned themes
+  const ts = document.getElementById('theme-select');
+  if (ts) {
+    Array.from(ts.options).forEach(o => {
+      if (o.value === 'default') return;
+      o.disabled = !owned.includes('theme_'+o.value.replace('theme_',''));
+      o.text = o.text.replace(' (locked)','') + (o.disabled?' (locked)':'');
+    });
+    ts.value = myProfile?.activeTheme || 'default';
+  }
+  // Name color select
+  const ns = document.getElementById('namecolor-select');
+  if (ns) {
+    Array.from(ns.options).forEach(o => {
+      if (o.value === 'default') return;
+      o.disabled = !owned.includes(o.value);
+      o.text = o.text.replace(' (locked)','') + (o.disabled?' (locked)':'');
+    });
+    ns.value = myProfile?.nameColor || 'default';
+  }
+  document.getElementById('sfx-toggle').checked = sfxEnabled;
+  refreshMenuCoins();
+}
+
+window.openChangePassword = () => {
+  const f = document.getElementById('pw-change-form');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+};
+
+window.doChangePassword = async () => {
+  const { updatePassword } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+  const val = document.getElementById('new-pw').value;
+  const err = document.getElementById('pw-change-err');
+  err.textContent = '';
+  if (val.length < 6) { err.textContent = 'Min 6 characters'; return; }
+  try {
+    await updatePassword(auth, val);
+    document.getElementById('pw-change-form').style.display = 'none';
+    showToast('Password updated!');
+  } catch(e) {
+    err.textContent = e.code === 'auth/requires-recent-login'
+      ? 'Please log out and log back in first.'
+      : e.message;
+  }
+};
+
+// Load saved theme/namecolor on login
+function applyUserPrefs(profile) {
+  if (!profile) return;
+  if (profile.activeTheme && profile.activeTheme !== 'default') {
+    const owned = profile.items || [];
+    if (owned.includes('theme_'+profile.activeTheme)) {
+      applyTheme(profile.activeTheme);
+      const ts = document.getElementById('theme-select');
+      if (ts) ts.value = profile.activeTheme;
+    }
+  }
+  if (profile.nameColor) {
+    activeNameColor = profile.nameColor;
+    const ns = document.getElementById('namecolor-select');
+    if (ns) ns.value = profile.nameColor;
+  }
+  if (profile.coins !== undefined) {
+    document.getElementById('shop-coins').textContent = '🪙 ' + (profile.coins||0);
+  }
 }
 
 // ── UTIL ──
