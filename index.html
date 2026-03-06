@@ -2982,16 +2982,19 @@ const FA = {
   W: 348, H: 280,
   bird: { x: 70, y: 140, vy: 0, r: 13 },
   pipes: [],
-  pipeW: 36,
-  gap: 82,
-  speed: 2.2,
-  gravity: 0.38,
-  jumpV: -6.2,
+  pipeW: 34,
+  gap: 110,
+  speed: 1.6,
+  gravity: 0.22,
+  jumpV: -4.8,
   frame: 0,
   scored: new Set(),
   started: false,
   dead: false,
   flashFrames: 0,
+  countdown: 3,
+  countdownFrames: 0,
+  countdownDone: false,
   scorePopups: [],
 };
 
@@ -3004,6 +3007,9 @@ function faInitGame() {
   FA.dead = false;
   FA.flashFrames = 0;
   FA.scorePopups = [];
+  FA.countdown = 3;
+  FA.countdownFrames = 0;
+  FA.countdownDone = false;
 
   const canvas = document.getElementById('fa-canvas');
   if (!canvas) return;
@@ -3026,6 +3032,7 @@ function faKeyHandler(e) {
 function faFlap() {
   if (!faGameRunning) return;
   if (FA.dead) return;
+  if (!FA.countdownDone) return; // block flap during countdown
   FA.started = true;
   FA.bird.vy = FA.jumpV;
   sfxTone(660, 'sine', 0.07, 0.12);
@@ -3047,9 +3054,9 @@ function faLoop() {
   FA.frame++;
 
   // Spawn pipes every ~90 frames
-  if (FA.started && FA.frame % 90 === 0) faSpawnPipe();
+  if (FA.countdownDone && FA.started && FA.frame % 90 === 0) faSpawnPipe();
 
-  if (FA.started && !FA.dead) {
+  if (FA.countdownDone && FA.started && !FA.dead) {
     // Physics
     FA.bird.vy += FA.gravity;
     FA.bird.y  += FA.bird.vy;
@@ -3187,15 +3194,53 @@ function faLoop() {
     FA.flashFrames--;
   }
 
-  // Start prompt
-  if (!FA.started) {
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.fillRect(0, FA.H/2 - 30, FA.W, 60);
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.font = '18px "Bebas Neue"';
-    ctx.textAlign = 'center';
-    ctx.fillText('TAP TO START', FA.W / 2, FA.H / 2 + 7);
-    ctx.textAlign = 'left';
+  // Countdown overlay
+  if (!FA.countdownDone) {
+    FA.countdownFrames++;
+    // Each number shows for 50 frames (~0.83s at 60fps)
+    const step = Math.floor(FA.countdownFrames / 50);
+    if (step < 3) {
+      FA.countdown = 3 - step;
+      // Tick beep on each new number
+      if (FA.countdownFrames % 50 === 1) sfxTone(660, 'sine', 0.08, 0.15);
+    } else {
+      // GO!
+      FA.countdownDone = true;
+      sfxTone(880, 'sine', 0.12, 0.2);
+      setTimeout(() => sfxTone(1100, 'sine', 0.1, 0.15), 100);
+    }
+
+    if (!FA.countdownDone) {
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(0, FA.H/2 - 50, FA.W, 100);
+      // Big countdown number
+      const scale = 1 + 0.4 * (1 - (FA.countdownFrames % 50) / 50);
+      ctx.save();
+      ctx.translate(FA.W/2, FA.H/2 + 10);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = '#FF3B3B';
+      ctx.font = 'bold 56px "Bebas Neue"';
+      ctx.textAlign = 'center';
+      ctx.fillText(FA.countdown, 0, 0);
+      ctx.restore();
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = '13px "Bebas Neue"';
+      ctx.textAlign = 'center';
+      ctx.fillText('GET READY', FA.W/2, FA.H/2 + 34);
+      ctx.textAlign = 'left';
+    } else {
+      // Flash GO!
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(0, FA.H/2 - 50, FA.W, 100);
+      ctx.fillStyle = '#4CAF50';
+      ctx.font = 'bold 48px "Bebas Neue"';
+      ctx.textAlign = 'center';
+      ctx.fillText('GO!', FA.W/2, FA.H/2 + 10);
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = '13px "Bebas Neue"';
+      ctx.fillText('TAP TO FLAP', FA.W/2, FA.H/2 + 34);
+      ctx.textAlign = 'left';
+    }
   }
 
   if (FA.dead) {
