@@ -388,6 +388,12 @@
   .bj-action-btn.double { background: rgba(201,168,76,0.1); border-color: var(--gold); color: var(--gold); }
   .bj-action-btn.double:hover { background: rgba(201,168,76,0.2); }
   .bj-action-btn:disabled { opacity: 0.3; cursor: default; }
+  /* CLAIM BUTTON */
+  @keyframes claimPulse { 0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,0.5)} 50%{box-shadow:0 0 0 10px rgba(201,168,76,0)} }
+  .bj-claim-btn { width:100%; font-family:'Bebas Neue',sans-serif; font-size:1.3rem; letter-spacing:5px; background:linear-gradient(135deg,#8B6914,var(--gold)); border:none; color:#000; padding:14px 0; cursor:pointer; clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%); margin-top:14px; animation:claimPulse 1.5s ease infinite; transition:filter 0.2s,transform 0.1s; }
+  .bj-claim-btn:hover { filter:brightness(1.15); transform:translateY(-1px); }
+  .bj-claim-btn:active { transform:scale(0.98); }
+  .bj-claim-btn.lose-btn { background:linear-gradient(135deg,#5a0000,var(--red)); color:#fff; animation:none; }
   .bj-result-icon  { font-size: 3.5rem; text-align: center; margin: 8px 0; }
   .bj-result-title { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; letter-spacing: 5px; text-align: center; }
   .bj-result-title.win  { color: var(--gold); text-shadow: 0 0 20px rgba(201,168,76,0.6); }
@@ -842,14 +848,15 @@
     </div>
 
     <!-- RESULT SCREEN -->
-    <div id="bj-result-screen" style="display:none;">
-      <div class="bj-result-title" id="bj-result-title">—</div>
-      <div class="bj-result-section-label">DEALER</div>
-      <div class="bj-result-hand" id="bj-result-dealer-hand"></div>
-      <div class="bj-result-section-label" style="margin-top:12px;">YOU</div>
-      <div class="bj-result-hand" id="bj-result-player-hand"></div>
-      <div class="bj-result-amount" id="bj-result-amount"></div>
-      <button class="bj-deal-btn" onclick="bjReset()" style="margin-top:16px;">PLAY AGAIN</button>
+    <div id="bj-result-screen" style="display:none;position:relative;overflow:hidden;">
+      <canvas id="bj-coin-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:10;"></canvas>
+      <div style="text-align:center;padding:16px 0 8px;">
+        <div class="bj-result-icon" id="bj-result-icon">🃏</div>
+        <div class="bj-result-title" id="bj-result-title">—</div>
+        <div class="bj-result-amount" id="bj-result-amount"></div>
+        <div class="bj-final-hands" id="bj-final-hands"></div>
+      </div>
+      <button class="bj-claim-btn" id="bj-claim-btn" onclick="bjClaim()">COLLECT WINNINGS</button>
     </div>
   </div>
 
@@ -2444,13 +2451,10 @@ async function bjResolve() {
   else if (p === d)             { outcome = 'PUSH';             coinChange = bjBet;                   titleClass = 'push'; }
   else                          { outcome = 'DEALER WINS';      coinChange = 0;                       titleClass = 'lose'; }
 
-  // Award winnings
-  if (coinChange > 0) {
-    const newCoins = (myProfile.coins || 0) + coinChange;
-    myProfile.coins = newCoins;
-    try { await updateDoc(doc(db,'users',me.uid),{coins:newCoins}); } catch(e){}
-    updateCoinDisplays(newCoins);
-  }
+  // Don't award coins yet — wait for player to click Collect
+  // Store for bjClaim()
+  window._bjOutcome    = titleClass;
+  window._bjCoinChange = coinChange;
 
   // Title
   const titleEl = document.getElementById('bj-result-title');
@@ -2459,55 +2463,25 @@ async function bjResolve() {
 
   // Amount
   const amtEl = document.getElementById('bj-result-amount');
-  if      (titleClass === 'win')  { amtEl.style.color = 'var(--gold)';    amtEl.textContent = '+' + coinChange + ' 🪙'; }
-  else if (titleClass === 'push') { amtEl.style.color = 'var(--muted)';   amtEl.textContent = 'Push — ' + coinChange + ' 🪙 returned'; }
-  else                            { amtEl.style.color = 'var(--red-hot)'; amtEl.textContent = '-' + bjBet + ' 🪙'; }
+  if      (titleClass === 'win')  { amtEl.style.color='var(--gold)';    amtEl.textContent='+'+coinChange+' 🪙'; }
+  else if (titleClass === 'push') { amtEl.style.color='var(--muted)';   amtEl.textContent='Push — '+coinChange+' 🪙 returned'; }
+  else                            { amtEl.style.color='var(--red-hot)'; amtEl.textContent='-'+bjBet+' 🪙'; }
 
-  // Render result hands with key card highlighted
-  // Key card = the card that decided the outcome
-  function renderResultHand(containerId, hand, keyIndex, cardClass) {
-    const el = document.getElementById(containerId);
-    el.innerHTML = '';
-    hand.forEach((card, i) => {
-      const cardEl = renderCard(card, false);
-      cardEl.style.animationDelay = (i * 80) + 'ms';
-      if (i === keyIndex) {
-        cardEl.classList.add(cardClass);
-        // stagger the key animation slightly after the reveal
-        cardEl.style.animationDelay = (i * 80) + 'ms';
-      }
-      el.appendChild(cardEl);
-    });
-    if (titleClass === 'lose') el.classList.add('shake-hand');
-    else el.classList.remove('shake-hand');
-  }
+  document.getElementById('bj-result-icon').textContent = icon;
 
-  // Determine which card was the deciding one
-  let playerKeyIdx = -1, dealerKeyIdx = -1;
+  document.getElementById('bj-final-hands').innerHTML =
+    'Your hand: '+bjPlayerHand.map(c=>c.v+c.s).join(' ')+' ('+p+')<br>'+
+    'Dealer: '+bjDealerHand.map(c=>c.v+c.s).join(' ')+' ('+d+')';
 
-  if (p > 21) {
-    // Player busted — highlight the bust card (last card)
-    playerKeyIdx = bjPlayerHand.length - 1;
-  } else if (d > 21) {
-    // Dealer busted — highlight their bust card
-    dealerKeyIdx = bjDealerHand.length - 1;
-  } else if (titleClass === 'win') {
-    // Winning card — highlight player's highest contributing card (last dealt)
-    playerKeyIdx = bjPlayerHand.length - 1;
-  } else if (titleClass === 'lose') {
-    // Dealer's winning card — last dealer card that put them over player
-    dealerKeyIdx = bjDealerHand.length - 1;
-  } else {
-    // Push — highlight both final cards
-    playerKeyIdx = bjPlayerHand.length - 1;
-    dealerKeyIdx = bjDealerHand.length - 1;
-  }
+  // Style claim button
+  const claimBtn = document.getElementById('bj-claim-btn');
+  if (titleClass === 'win')       { claimBtn.textContent='💰 COLLECT '+coinChange+' COINS'; claimBtn.className='bj-claim-btn'; }
+  else if (titleClass === 'push') { claimBtn.textContent='🤝 TAKE BACK '+coinChange+' COINS'; claimBtn.className='bj-claim-btn'; }
+  else                            { claimBtn.textContent='PLAY AGAIN'; claimBtn.className='bj-claim-btn lose-btn'; }
 
-  const cardClass = titleClass === 'win' ? 'key-win' : titleClass === 'lose' ? 'key-lose' : 'key-push';
-  renderResultHand('bj-result-dealer-hand', bjDealerHand, dealerKeyIdx, cardClass);
-  renderResultHand('bj-result-player-hand', bjPlayerHand, playerKeyIdx, cardClass);
+  highlightOutcomeCards(titleClass === 'win' ? 'win' : titleClass === 'lose' ? 'lose' : 'push');
 
-  // SFX with slight delay so cards appear first
+  // SFX
   setTimeout(() => {
     if      (titleClass === 'win')  { sfxChord([523,659,784,1046],'sine',0.6,0.2); }
     else if (titleClass === 'lose') { sfxChord([300,240,180],'sawtooth',0.5,0.15); }
@@ -2517,14 +2491,131 @@ async function bjResolve() {
   setTimeout(() => bjShowScreen('bj-result-screen'), 1200);
 }
 
-window.bjReset = () => {
-  bjGameActive = false;
-  bjStanding = false;
-  syncBjBalance();
-  document.getElementById('bj-bet-input').value = '';
-  document.getElementById('bj-err').textContent = '';
-  bjShowScreen('bj-bet-screen');
+// ── COIN PARTICLE BURST ──
+function spawnCoins(count = 40) {
+  const canvas  = document.getElementById('bj-coin-canvas');
+  const wrap    = document.getElementById('bj-result-screen');
+  if (!canvas || !wrap) return;
+  const W = wrap.clientWidth;
+  const H = wrap.clientHeight;
+  canvas.width  = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  const coins = Array.from({length: count}, () => ({
+    x:  W * 0.3 + Math.random() * W * 0.4,
+    y:  H * 0.35,
+    vx: (Math.random() - 0.5) * 9,
+    vy: -(4 + Math.random() * 10),
+    r:  6 + Math.random() * 7,
+    rot: Math.random() * Math.PI * 2,
+    rotV: (Math.random() - 0.5) * 0.3,
+    alpha: 1,
+    color: Math.random() > 0.4 ? '#C9A84C' : '#FFD700',
+    scaleX: 1,
+  }));
+
+  let frame;
+  const GRAVITY = 0.45;
+  const DRAG    = 0.98;
+
+  function tick() {
+    ctx.clearRect(0, 0, W, H);
+    let alive = 0;
+    for (const c of coins) {
+      c.vy  += GRAVITY;
+      c.vx  *= DRAG;
+      c.x   += c.vx;
+      c.y   += c.vy;
+      c.rot += c.rotV;
+      c.scaleX = Math.abs(Math.cos(c.rot));
+      if (c.y > H + 20) c.alpha -= 0.04;
+      if (c.alpha <= 0) continue;
+      alive++;
+      ctx.save();
+      ctx.globalAlpha = c.alpha;
+      ctx.translate(c.x, c.y);
+      ctx.scale(c.scaleX, 1);
+      // Gold coin circle
+      ctx.beginPath();
+      ctx.arc(0, 0, c.r, 0, Math.PI * 2);
+      ctx.fillStyle = c.color;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(0, 0, c.r * 0.65, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fill();
+      ctx.restore();
+    }
+    if (alive > 0) frame = requestAnimationFrame(tick);
+    else ctx.clearRect(0, 0, W, H);
+  }
+  frame = requestAnimationFrame(tick);
+
+  // Clear after 3s
+  setTimeout(() => { cancelAnimationFrame(frame); ctx.clearRect(0,0,W,H); }, 3000);
+}
+
+// ── CLAIM HANDLER ──
+window.bjClaim = async () => {
+  const outcome    = window._bjOutcome;
+  const coinChange = window._bjCoinChange || 0;
+  const claimBtn   = document.getElementById('bj-claim-btn');
+  claimBtn.disabled = true;
+
+  if (outcome === 'win' || outcome === 'push') {
+    // Award the coins
+    const newCoins = (myProfile.coins || 0) + coinChange;
+    myProfile.coins = newCoins;
+    try { await updateDoc(doc(db,'users',me.uid),{coins:newCoins}); } catch(e){}
+    updateCoinDisplays(newCoins);
+
+    // Coin burst + triumphant SFX
+    spawnCoins(outcome === 'win' ? 55 : 25);
+    sfxChord([523,659,784,1046], 'sine', 0.8, 0.25);
+    setTimeout(() => sfxTone(1046,'sine',0.4,0.3), 350);
+
+    // Brief pause then sweep table and reset
+    setTimeout(() => sweepAndReset(), 1800);
+  } else {
+    // Lose — just sweep and reset immediately
+    sweepAndReset();
+  }
 };
+
+function sweepAndReset() {
+  // Animate game screen cards sliding off
+  const gameScreen = document.getElementById('bj-game-screen');
+  const resultScreen = document.getElementById('bj-result-screen');
+
+  // Fade out result screen, then reset
+  if (resultScreen) {
+    resultScreen.style.transition = 'opacity 0.4s, transform 0.4s';
+    resultScreen.style.opacity    = '0';
+    resultScreen.style.transform  = 'translateY(12px)';
+  }
+
+  setTimeout(() => {
+    // Full reset
+    if (resultScreen) { resultScreen.style.opacity=''; resultScreen.style.transform=''; resultScreen.style.transition=''; }
+    bjGameActive = false;
+    bjStanding   = false;
+    bjPlayerHand = []; bjDealerHand = [];
+    bjPlayerCardEls = []; bjDealerCardEls = []; bjHoleCardEl = null;
+    document.getElementById('player-hand').innerHTML = '';
+    document.getElementById('dealer-hand').innerHTML = '';
+    document.getElementById('player-score').textContent = '0';
+    document.getElementById('dealer-score').textContent = '?';
+    document.getElementById('bj-actions').querySelectorAll('button').forEach(b=>b.disabled=false);
+    window._bjOutcome = null; window._bjCoinChange = 0;
+    syncBjBalance();
+    document.getElementById('bj-bet-input').value = '';
+    document.getElementById('bj-err').textContent = '';
+    bjShowScreen('bj-bet-screen');
+  }, 450);
+}
+
+window.bjReset = () => sweepAndReset();
 
 function updateCoinDisplays(coins) {
   const shopEl    = document.getElementById('shop-coins');
