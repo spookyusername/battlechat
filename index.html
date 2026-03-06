@@ -19,7 +19,7 @@
   .topbar { height: 48px; background: var(--dark); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; position: relative; z-index: 10; }
   .topbar-left, .topbar-right { display: flex; align-items: center; gap: 10px; flex: 1; }
   .topbar-right { justify-content: flex-end; }
-  .logo { position: absolute; font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 4px; color: var(--text); pointer-events: none; transform: translateX(-50%); transition: left 0.35s ease; }
+  .logo { position: absolute; left: 50%; font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 4px; color: var(--text); pointer-events: none; transform: translateX(-50%); }
   .logo span { color: var(--red-hot); }
   .topbar-coins { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 2px; color: var(--gold); margin-left: 8px; }
   .topbar-btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.78rem; letter-spacing: 2px; text-transform: uppercase; border: 1px solid var(--border); background: transparent; color: var(--muted); padding: 5px 14px; cursor: pointer; transition: border-color 0.2s, color 0.2s; }
@@ -35,8 +35,8 @@
   .topbar-username { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; }
 
   /* MAIN GRID */
-  .main { display: grid; grid-template-columns: 1fr 56px 1fr 280px; grid-template-rows: 1fr 48px; height: calc(100vh - 48px); gap: 0; transition: grid-template-columns 0.35s ease; }
-  .main.chat-collapsed { grid-template-columns: 1fr 56px 1fr 0px; }
+  .main { display: grid; grid-template-columns: 1fr 4px 1fr 280px; grid-template-rows: 1fr 48px; height: calc(100vh - 48px); gap: 0; transition: grid-template-columns 0.35s ease; }
+  .main.chat-collapsed { grid-template-columns: 1fr 4px 1fr 0px; }
 
   /* CAM PANELS */
   .cam-panel { position: relative; background: var(--dark2); overflow: hidden; display: flex; flex-direction: column; }
@@ -75,7 +75,7 @@
   .cam-panel.right-cam .vote-pct { color: #60a5fa; }
 
   /* CENTER */
-  .center-col { background: var(--dark); border-left: 1px solid var(--border); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; position: relative; z-index: 2; transition: width 0.35s ease, opacity 0.35s ease; }
+  .center-col { background: var(--border); border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; z-index: 2; transition: width 0.35s ease, opacity 0.35s ease; }
 
   /* Single-fighter: left cam full width, center+right cam hidden */
   .main.solo-mode { grid-template-columns: 1fr 0px 0px 280px; }
@@ -2104,10 +2104,9 @@ onValue(timerRef, async snap => {
 
 // ── LOGO ALIGN ──
 function alignLogo() {
-  const col=document.querySelector('.center-col'), logo=document.getElementById('logo');
-  if (!col||!logo) return;
-  const r=col.getBoundingClientRect();
-  logo.style.left=(r.left+r.width/2)+'px';
+  const logo=document.getElementById('logo');
+  if (!logo) return;
+  logo.style.left = '50%';
 }
 alignLogo(); window.addEventListener('resize', alignLogo);
 
