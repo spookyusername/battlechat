@@ -40,7 +40,7 @@
   .cam-panel { position: relative; background: var(--dark2); overflow: hidden; display: flex; flex-direction: column; }
   .cam-feed { flex: 1; background: var(--dark); position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .cam-feed::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px); pointer-events: none; z-index: 3; }
-  .cam-feed video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+  .cam-feed video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; background: #000; }
   .cam-feed video.mirror { transform: scaleX(-1); }
   .cam-placeholder { display: flex; flex-direction: column; align-items: center; gap: 12px; opacity: 0.15; z-index: 2; position: relative; }
   .cam-placeholder-icon { width: 72px; height: 72px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 2rem; }
@@ -214,11 +214,53 @@
   .q-chip.you { border-color: rgba(217,43,43,0.4); color: var(--red-hot); background: rgba(217,43,43,0.08); }
   .q-leave-btn { font-family: 'Bebas Neue', sans-serif; font-size: 0.95rem; letter-spacing: 2px; background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 10px 28px; cursor: pointer; clip-path: polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); transition: all 0.2s; }
   .q-leave-btn:hover { border-color: var(--red); color: var(--red-hot); }
+  /* ROUND COUNTDOWN BAR */
+  .round-bar-wrap { height: 3px; background: var(--dark3); flex-shrink: 0; overflow: hidden; }
+  .round-bar-fill { height: 100%; width: 100%; transform-origin: left; transition: none; }
+  .cam-panel:first-child .round-bar-fill { background: linear-gradient(to right, #8B0000, var(--red-hot)); }
+  .cam-panel.right-cam .round-bar-fill { background: linear-gradient(to right, #1a4fa8, #60a5fa); }
+
+  /* ENTRY/EXIT ANIMATIONS */
+  @keyframes slotIn { 0%{opacity:0;transform:translateY(12px) scale(0.97)} 100%{opacity:1;transform:translateY(0) scale(1)} }
+  @keyframes slotOut { 0%{opacity:1;transform:scale(1)} 60%{opacity:0;transform:scale(1.04) translateY(-8px)} 100%{opacity:0} }
+  @keyframes nameIn { 0%{opacity:0;transform:translateX(-8px)} 100%{opacity:1;transform:translateX(0)} }
+  @keyframes liveFlash { 0%,100%{opacity:1;box-shadow:0 0 8px rgba(217,43,43,0.4)} 50%{opacity:0.7;box-shadow:0 0 20px rgba(255,59,59,0.8)} }
+  @keyframes votePulse { 0%{transform:scale(1)} 50%{transform:scale(1.06)} 100%{transform:scale(1)} }
+  @keyframes roundWin { 0%{background:var(--dark2)} 30%{background:rgba(76,175,80,0.15)} 100%{background:var(--dark2)} }
+  @keyframes roundLose { 0%{background:var(--dark2)} 30%{background:rgba(217,43,43,0.15)} 100%{background:var(--dark2)} }
+  @keyframes scanline { 0%{transform:translateY(-100%)} 100%{transform:translateY(400%)} }
+
+  .slot-enter { animation: slotIn 0.45s cubic-bezier(0.22,1,0.36,1) forwards; }
+  .slot-exit  { animation: slotOut 0.4s ease-in forwards; }
+  .nameplate-enter { animation: nameIn 0.3s ease forwards; }
+  .cam-live { animation: liveFlash 2s ease-in-out infinite !important; }
+  .vote-btn.voted-left, .vote-btn.voted-right { animation: votePulse 0.3s ease; }
+  .cam-panel.win-flash { animation: roundWin 1.5s ease; }
+  .cam-panel.lose-flash { animation: roundLose 1.5s ease; }
+
+  /* SCANLINE EFFECT on live cams */
+  .cam-feed.is-live::before { content:''; position:absolute; top:0; left:0; right:0; height:40%; background:linear-gradient(to bottom, transparent, rgba(255,255,255,0.03), transparent); animation: scanline 4s linear infinite; pointer-events:none; z-index:4; }
+
+  /* VS pulse */
+  @keyframes vsPulse { 0%,100%{box-shadow:0 0 20px rgba(217,43,43,0.5)} 50%{box-shadow:0 0 40px rgba(255,59,59,0.9), 0 0 60px rgba(217,43,43,0.3)} }
+  .vs-hex { animation: vsPulse 2.5s ease-in-out infinite; }
+
+  /* Queue position flash */
+  @keyframes posFlash { 0%{color:var(--gold)} 50%{color:white} 100%{color:var(--gold)} }
+  .pos-flash { animation: posFlash 0.4s ease; }
+
   .toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-10px); background: var(--gold); color: var(--black); font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; padding: 10px 28px; clip-path: polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%); opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.3s; z-index: 999; white-space: nowrap; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
+<script>
+  // Unlock AudioContext on first interaction (browser policy)
+  document.addEventListener('click', function unlock() {
+    if (window._actx) window._actx.resume();
+    document.removeEventListener('click', unlock);
+  }, { once: true });
+</script>
 
 <!-- TOPBAR -->
 <div class="topbar">
@@ -256,11 +298,12 @@
         <div class="cam-placeholder-text">Waiting for fighter...</div>
       </div>
     </div>
-    <div class="cam-votebar"><div class="cam-votebar-fill" id="vbar-left" style="width:50%;margin-left:auto;"></div></div>
+    <div class="cam-votebar"><div class="cam-votebar-fill" id="vbar-left" style="width:0%;margin-left:auto;"></div></div>
     <div class="cam-footer">
-      <div class="vote-pct" id="pct-left">50%</div>
+      <div class="vote-pct" id="pct-left">0%</div>
       <button class="vote-btn" id="vbtn-left" onclick="castVote('left')">VOTE</button>
     </div>
+    <div class="round-bar-wrap"><div class="round-bar-fill" id="rbar-left"></div></div>
   </div>
 
   <!-- CENTER -->
@@ -286,11 +329,12 @@
         <div class="cam-placeholder-text">Waiting for fighter...</div>
       </div>
     </div>
-    <div class="cam-votebar"><div class="cam-votebar-fill" id="vbar-right" style="width:50%;"></div></div>
+    <div class="cam-votebar"><div class="cam-votebar-fill" id="vbar-right" style="width:0%;"></div></div>
     <div class="cam-footer">
       <button class="vote-btn" id="vbtn-right" onclick="castVote('right')">VOTE</button>
-      <div class="vote-pct" id="pct-right">50%</div>
+      <div class="vote-pct" id="pct-right">0%</div>
     </div>
+    <div class="round-bar-wrap"><div class="round-bar-fill" id="rbar-right"></div></div>
   </div>
 
   <!-- TIMER BAR -->
@@ -839,6 +883,7 @@ function listenStage() {
 }
 
 function showSlot(slot, data) {
+  const wasEmpty = document.getElementById('np-'+slot).style.display === 'none';
   document.getElementById('av-'+slot).textContent = data.avatar||'🥊';
   document.getElementById('un-'+slot).textContent = data.username||'—';
   document.getElementById('w-'+slot).textContent  = 'W: '+(data.wins||0);
@@ -846,9 +891,13 @@ function showSlot(slot, data) {
   document.getElementById('np-'+slot).style.display   = 'flex';
   document.getElementById('live-'+slot).style.display = 'flex';
   document.getElementById('ph-'+slot).style.display   = 'none';
+  if (wasEmpty) { animateSlotEnter(slot); SFX.join(); }
 }
 
 function clearSlotUI(slot) {
+  if (document.getElementById('np-'+slot).style.display !== 'none') {
+    animateSlotExit(slot); SFX.leave();
+  }
   document.getElementById('np-'+slot).style.display   = 'none';
   document.getElementById('live-'+slot).style.display = 'none';
   document.getElementById('ph-'+slot).style.display   = 'flex';
@@ -1133,7 +1182,7 @@ window.castVote = async side => {
   document.getElementById('vbtn-'+side).classList.add('voted-'+side);
   document.getElementById('vbtn-'+side).textContent = 'VOTED';
   await set(ref(rtdb, 'votes/' + currentRoundIndex + '/' + side + '/' + me.uid), true);
-  showToast('Vote locked in!');
+  SFX.vote(); showToast('Vote locked in!');
 };
 
 async function resolveRound(roundIndex) {
@@ -1151,17 +1200,20 @@ async function resolveRound(roundIndex) {
   else loserSlot = leftVotes < rightVotes ? 'left' : 'right';
 
   if (loserSlot && stageUids[loserSlot] === me.uid) {
-    // I lost — leave the stage
+    SFX.lose(); animateLose(mySlot);
     addSystemMsg('Round over! You lost the vote and were eliminated.');
     showToast('You lost the round!');
-    await leaveStage();
+    try {
+      await updateDoc(doc(db,'users',me.uid),{ losses: (myProfile.losses||0)+1 });
+      myProfile.losses = (myProfile.losses||0)+1;
+    } catch(e){}
+    setTimeout(async () => await leaveStage(), 1200);
   } else if (loserSlot && stageUids[loserSlot] !== me.uid && mySlot) {
-    // Opponent lost — announce winner
     const winnerSlot = loserSlot === 'left' ? 'right' : 'left';
     const winnerName = document.getElementById('un-'+winnerSlot).textContent;
+    SFX.win(); animateWin(winnerSlot); animateLose(loserSlot);
     addSystemMsg(winnerName + ' wins the round!');
     showToast('You win the round!');
-    // Update Firestore stats
     try {
       await updateDoc(doc(db,'users',me.uid),{ wins: (myProfile.wins||0)+1 });
       myProfile.wins = (myProfile.wins||0)+1;
@@ -1195,13 +1247,23 @@ const ROUND_DURATION_MS = 120_000; // 2 minutes in ms
 const timerRef = ref(rtdb, 'timer/epoch');
 
 function updateTimerUI(remainingMs) {
-  const s  = Math.max(0, Math.ceil(remainingMs / 1000));
-  const m  = Math.floor(s / 60), ss = s % 60;
+  const s   = Math.max(0, Math.ceil(remainingMs / 1000));
+  const m   = Math.floor(s / 60), ss = s % 60;
   const pct = ((s / 120) * 100) + '%';
   document.getElementById('timer-display').textContent = m + ':' + ss.toString().padStart(2,'0');
   document.getElementById('tfill-l').style.width = pct;
   document.getElementById('tfill-r').style.width = pct;
   document.getElementById('timer-display').style.color = s <= 10 ? 'var(--red-hot)' : 'var(--gold)';
+  // Drive round countdown bars under vote buttons — smooth CSS transition handled by scaleX
+  const rb = document.getElementById('rbar-left');
+  const rr = document.getElementById('rbar-right');
+  if (rb) { rb.style.transition = 'width 0.5s linear'; rb.style.width = pct; }
+  if (rr) { rr.style.transition = 'width 0.5s linear'; rr.style.width = pct; }
+  // Flash red in last 10s
+  if (s <= 10) {
+    rb && (rb.style.background = 'linear-gradient(to right,#8B0000,var(--red-hot))');
+    rr && (rr.style.background = 'linear-gradient(to right,#8B0000,var(--red-hot))');
+  }
 }
 
 let lastRoundIndex = -1;
@@ -1216,6 +1278,8 @@ function startSyncedTick(epoch) {
     const remaining   = ROUND_DURATION_MS - (now - roundStart);
 
     updateTimerUI(remaining);
+    const remSec = Math.ceil(remaining / 1000);
+    if (remSec <= 5 && remSec > 0 && remaining % 1000 < 500) SFX.tick();
 
     // Detect round boundary
     if (roundIndex !== lastRoundIndex) {
@@ -1224,6 +1288,7 @@ function startSyncedTick(epoch) {
         resolveRound(lastRoundIndex).then(() => {
           resetRound();
           listenVotes(roundIndex);
+          SFX.newRound();
           addSystemMsg('New round started!');
         });
       } else {
@@ -1312,6 +1377,70 @@ window.showToast = msg => {
   const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
   clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
 };
+
+// ── SFX ENGINE ──
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let _actx = null;
+function getACtx() { if (!_actx) _actx = new AudioCtx(); return _actx; }
+
+function sfxTone(freq, type, duration, vol=0.3, fadeOut=true) {
+  try {
+    const ctx = getACtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    if (fadeOut) gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + duration);
+  } catch(e) {}
+}
+
+function sfxChord(freqs, type, duration, vol=0.2) {
+  freqs.forEach((f,i) => setTimeout(() => sfxTone(f, type, duration, vol), i*60));
+}
+
+// Named SFX
+const SFX = {
+  join()    { sfxChord([330,440,550], 'sine', 0.4, 0.2); },           // fighter joins
+  leave()   { sfxChord([440,330,220], 'sine', 0.4, 0.15); },          // fighter leaves
+  vote()    { sfxTone(660, 'sine', 0.15, 0.25); setTimeout(()=>sfxTone(880,'sine',0.2,0.2),80); },
+  win()     { sfxChord([523,659,784,1046], 'sine', 0.6, 0.22); },     // round win
+  lose()    { sfxChord([300,240,180], 'sawtooth', 0.5, 0.15); },      // round lose
+  newRound(){ sfxTone(440,'square',0.08,0.1); setTimeout(()=>sfxTone(550,'square',0.1,0.12),90); },
+  tick()    { sfxTone(880,'sine',0.05,0.08,true); },                   // last 5s tick
+};
+
+// ── SLOT ANIMATIONS ──
+function animateSlotEnter(slot) {
+  const panel = document.getElementById('cam-' + slot);
+  if (!panel) return;
+  panel.classList.remove('slot-exit','lose-flash','win-flash');
+  panel.classList.add('slot-enter');
+  setTimeout(() => panel.classList.remove('slot-enter'), 500);
+  // Add scanline to live feed
+  document.getElementById('feed-' + slot).classList.add('is-live');
+  // Animate nameplate
+  const np = document.getElementById('np-' + slot);
+  if (np) { np.classList.add('nameplate-enter'); setTimeout(()=>np.classList.remove('nameplate-enter'),400); }
+}
+
+function animateSlotExit(slot) {
+  const panel = document.getElementById('cam-' + slot);
+  if (!panel) return;
+  panel.classList.add('slot-exit');
+  document.getElementById('feed-' + slot).classList.remove('is-live');
+  setTimeout(() => panel.classList.remove('slot-exit'), 500);
+}
+
+function animateWin(slot) {
+  const panel = document.getElementById('cam-' + slot);
+  if (panel) { panel.classList.add('win-flash'); setTimeout(()=>panel.classList.remove('win-flash'),1600); }
+}
+function animateLose(slot) {
+  const panel = document.getElementById('cam-' + slot);
+  if (panel) { panel.classList.add('lose-flash'); setTimeout(()=>panel.classList.remove('lose-flash'),1600); }
+}
 
 // ── UTIL ──
 function escHtml(s='') { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
