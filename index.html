@@ -409,6 +409,9 @@
           <div class="p-stat"><div class="p-stat-num blue" id="p-streak">0</div><div class="p-stat-label">Best Streak</div></div>
         </div>
         <div class="profile-joined-text" id="p-joined">—</div>
+        <div id="p-logout-wrap" style="display:none; margin-top:20px; text-align:center;">
+          <button class="profile-edit-btn" style="color:var(--red-hot);border-color:rgba(217,43,43,0.3);width:100%;padding:10px;" onclick="doLogout()">LOG OUT</button>
+        </div>
       </div>
       <div id="p-edit" style="display:none;">
         <div class="field-label" style="margin-bottom:14px;letter-spacing:3px;">EDIT PROFILE</div>
@@ -687,7 +690,7 @@ onAuthStateChanged(auth, async user => {
 function renderTopbar() {
   const a = document.getElementById('topbar-user-area');
   a.innerHTML = me && myProfile
-    ? `<div class="topbar-user" onclick="openOwnProfile()"><div class="topbar-avatar">${myProfile.avatar}</div><span class="topbar-username">${myProfile.username}</span></div><button class="topbar-btn" onclick="doLogout()">LOG OUT</button>`
+    ? `<div class="topbar-user" onclick="openOwnProfile()"><div class="topbar-avatar">${myProfile.avatar}</div><span class="topbar-username">${myProfile.username}</span></div>`
     : `<button class="topbar-btn" onclick="openModal('auth-overlay')">LOG IN</button>`;
 }
 window.openOwnProfile = () => me && openProfileByUid(me.uid);
@@ -752,6 +755,7 @@ window.openProfileByUid = async uid => {
   document.getElementById('p-streak').textContent=p.bestStreak||0;
   document.getElementById('p-joined').textContent='Joined '+p.joined;
   document.getElementById('p-edit-btn').style.display=(me&&me.uid===uid)?'block':'none';
+  document.getElementById('p-logout-wrap').style.display=(me&&me.uid===uid)?'block':'none';
   document.getElementById('p-view').style.display='block';
   document.getElementById('p-edit').style.display='none';
   openModal('profile-overlay');
