@@ -844,6 +844,11 @@
         <div class="shop-item-name">Black Mold</div>
         <div class="shop-price">🪙 2000</div>
       </div>
+      <div class="shop-item" onclick="buyItem('theme_rash',1600)">
+        <div class="shop-preview" style="color:#cc2200;">RASH</div>
+        <div class="shop-item-name">Red Rash</div>
+        <div class="shop-price">🪙 1600</div>
+      </div>
     </div>
     <div class="shop-coins-bar">
       <span>Your coins:</span>
@@ -952,6 +957,7 @@
           <option value="toxic">Green Septic</option>
           <option value="gold">Yellow Earwax</option>
           <option value="coal">Black Mold</option>
+          <option value="rash">Red Rash</option>
         </select>
       </div>
       <div class="settings-row" id="settings-namecolor-row">
@@ -2091,6 +2097,7 @@ const THEMES = {
   toxic:   { red:'#00b300', redHot:'#39ff14', gold:'#aaff00', black:'#000800', dark:'#000f00', dark2:'#001500', dark3:'#001c00' },
   gold:    { red:'#b8860b', redHot:'#C9A84C', gold:'#ffd700', black:'#0a0800', dark:'#141000', dark2:'#1e1800', dark3:'#282200' },
   coal:    { red:'#1a1a1a', redHot:'#2a2a2a', gold:'#333', black:'#000', dark:'#020202', dark2:'#050505', dark3:'#080808' },
+  rash:    { red:'#aa1100', redHot:'#cc2200', gold:'#ff4422', black:'#0a0000', dark:'#130000', dark2:'#1c0000', dark3:'#260000' },
 };
 
 let sfxEnabled = true;
