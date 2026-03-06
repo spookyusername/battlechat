@@ -3149,49 +3149,93 @@ function faLoop() {
     ctx.fillRect(p.x + 4, botY + 14, 4, FA.H - botY);
   });
 
-  // Bird — Adam face with flapping wings
+  // Bird — Adam face with cartoon side wings
   if (!FA.dead || Math.floor(FA.frame / 4) % 2 === 0) {
     const bx = FA.bird.x, by = FA.bird.y, br = FA.bird.r + 6;
     const angle = Math.max(-0.4, Math.min(0.8, FA.bird.vy * 0.07));
 
-    // Wing flap — beats up/down on top and bottom
-    const flapAngle = FA.dead ? 0.5 : Math.sin(FA.frame * 0.32) * 1.0;
-    const wingColor = FA.dead ? '#444' : '#cc1100';
-    const wingHi    = FA.dead ? '#666' : '#ff5533';
+    // Flap: smooth sine wave, faster beat, wider arc
+    const t = FA.frame * 0.38;
+    const flapY = FA.dead ? br * 0.6 : Math.sin(t) * br * 0.85;
+    const flapCurl = FA.dead ? 0.4 : Math.sin(t) * 0.35; // feather curl
 
     ctx.save();
     ctx.translate(bx, by);
     ctx.rotate(angle);
 
-    // === TOP WING (above face, behind) ===
-    ctx.save();
-    ctx.translate(0, -br * 0.55);
-    ctx.rotate(-flapAngle);
-    ctx.beginPath();
-    ctx.ellipse(0, -br * 0.35, br * 0.6, br * 0.24, 0, 0, Math.PI * 2);
-    ctx.fillStyle = wingColor;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(br * 0.05, -br * 0.32, br * 0.32, br * 0.11, 0.2, 0, Math.PI * 2);
-    ctx.fillStyle = wingHi;
-    ctx.fill();
-    ctx.restore();
+    // Helper: draw one cartoon wing on a given side
+    // side: -1 = left, +1 = right
+    function drawWing(side, flip) {
+      ctx.save();
+      ctx.scale(side, 1); // mirror for right wing
+      const wx = br * 0.9; // wing root X offset from center
+      const wy = 0;
 
-    // === BOTTOM WING (below face, behind) ===
-    ctx.save();
-    ctx.translate(0, br * 0.55);
-    ctx.rotate(flapAngle);
-    ctx.beginPath();
-    ctx.ellipse(0, br * 0.35, br * 0.6, br * 0.24, 0, 0, Math.PI * 2);
-    ctx.fillStyle = wingColor;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(br * 0.05, br * 0.32, br * 0.32, br * 0.11, -0.2, 0, Math.PI * 2);
-    ctx.fillStyle = wingHi;
-    ctx.fill();
-    ctx.restore();
+      // Wing base shadow
+      ctx.save();
+      ctx.translate(wx, wy + flapY * 0.5);
+      ctx.rotate(-0.15 + flapCurl);
+      ctx.beginPath();
+      // Main wing shape — rounded triangle with feather bumps
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(br * 0.3, -br * 0.2, br * 1.1, -br * 0.1 + flapY, br * 1.0, br * 0.25 + flapY);
+      ctx.bezierCurveTo(br * 0.8, br * 0.55 + flapY, br * 0.3, br * 0.45, 0, br * 0.15);
+      ctx.closePath();
+      ctx.fillStyle = FA.dead ? '#2a2a2a' : '#8B0000';
+      ctx.fill();
+      ctx.restore();
 
-    // === FACE ===
+      // Main wing body
+      ctx.save();
+      ctx.translate(wx, wy + flapY * 0.5);
+      ctx.rotate(-0.15 + flapCurl);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(br * 0.25, -br * 0.25, br * 1.0, -br * 0.05 + flapY, br * 0.92, br * 0.22 + flapY);
+      ctx.bezierCurveTo(br * 0.72, br * 0.5 + flapY, br * 0.25, br * 0.38, 0, br * 0.12);
+      ctx.closePath();
+      ctx.fillStyle = FA.dead ? '#444' : '#D92B2B';
+      ctx.fill();
+
+      // Wing highlight streak
+      ctx.beginPath();
+      ctx.moveTo(br * 0.05, -br * 0.02);
+      ctx.bezierCurveTo(br * 0.3, -br * 0.18, br * 0.75, br * 0.05 + flapY * 0.8, br * 0.65, br * 0.18 + flapY * 0.8);
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = FA.dead ? 'rgba(150,150,150,0.3)' : 'rgba(255,120,80,0.55)';
+      ctx.stroke();
+      ctx.restore();
+
+      // Feather tips — 3 rounded bumps at bottom of wing
+      ctx.save();
+      ctx.translate(wx, wy + flapY * 0.5);
+      ctx.rotate(-0.15 + flapCurl);
+      const featherPositions = [
+        { x: br * 0.92, y: br * 0.22 + flapY },
+        { x: br * 0.72, y: br * 0.46 + flapY },
+        { x: br * 0.48, y: br * 0.52 + flapY },
+      ];
+      featherPositions.forEach((fp, i) => {
+        ctx.beginPath();
+        ctx.arc(fp.x, fp.y, br * 0.12 - i * 0.01, 0, Math.PI * 2);
+        ctx.fillStyle = FA.dead ? '#555' : '#FF4422';
+        ctx.fill();
+        ctx.strokeStyle = FA.dead ? '#222' : '#8B0000';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      });
+      ctx.restore();
+
+      ctx.restore();
+    }
+
+    // Draw left wing (behind face)
+    drawWing(-1, false);
+
+    // Draw right wing (behind face)
+    drawWing(1, true);
+
+    // === FACE (on top of wings) ===
     if (FA_IMG.complete) {
       ctx.save();
       ctx.beginPath();
