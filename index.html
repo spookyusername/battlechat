@@ -969,9 +969,8 @@
           <div style="font-family:'Bebas Neue',sans-serif;font-size:0.9rem;letter-spacing:2px;color:var(--gold);">PIPES: <span id="fa-pipes">0</span></div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:0.9rem;letter-spacing:2px;color:#4CAF50;">EARNED: <span id="fa-earned">+0</span>🪙</div>
         </div>
-        <canvas id="fa-canvas" width="348" height="380" style="display:block;width:100%;background:#0a0a0a;border:1px solid var(--border);cursor:pointer;"></canvas>
+        <canvas id="fa-canvas" width="348" height="460" style="display:block;width:100%;background:#0a0a0a;border:1px solid var(--border);cursor:pointer;"></canvas>
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);text-align:center;margin-top:6px;">TAP / CLICK or SPACE to flap</div>
-        <button class="bj-new-game-btn" id="fa-cashout-btn" onclick="faCashout()" style="margin-top:10px;display:none;border-color:var(--gold);color:var(--gold);">💰 CASH OUT</button>
       </div>
 
       <!-- RESULT SCREEN -->
@@ -2971,19 +2970,18 @@ window.faStart = async () => {
   document.getElementById('fa-bet-display').textContent = '🪙 ' + faBet;
   document.getElementById('fa-pipes').textContent  = '0';
   document.getElementById('fa-earned').textContent = '+0';
-  document.getElementById('fa-cashout-btn').style.display = 'none';
 
   faInitGame();
 };
 
 // ── FLAPPY GAME CORE ──
 const FA = {
-  W: 348, H: 380,
+  W: 348, H: 460,
   bird: { x: 70, y: 140, vy: 0, r: 13 },
   pipes: [],
   pipeW: 34,
   gap: 175,
-  speed: 1.1,
+  speed: 0.8,
   gravity: 0.07,
   jumpV: -2.6,
   frame: 0,
@@ -3078,7 +3076,6 @@ function faLoop() {
 
         document.getElementById('fa-pipes').textContent  = faPipes;
         document.getElementById('fa-earned').textContent = '+' + (Math.round(faEarned * 10) / 10);
-        document.getElementById('fa-cashout-btn').style.display = 'block';
 
         sfxTone(880, 'sine', 0.1, 0.2);
         FA.scorePopups.push({ x: FA.bird.x + 20, y: FA.bird.y - 10, text: '+' + gained + '🪙', life: 40 });
