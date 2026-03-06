@@ -498,13 +498,14 @@
   </div>
 </div>
 
+
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import { getDatabase, ref, push, onChildAdded, set, onValue, remove, off } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, push, onChildAdded, set, onValue, remove, off, get, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-// ── FIREBASE ──
+// ── FIREBASE INIT ──
 const app = initializeApp({
   apiKey: "AIzaSyCgbh87jN-iaJ2RuATj4axWxO_ILp9OUK0",
   authDomain: "fdsdsdfsdf-5432e.firebaseapp.com",
@@ -519,151 +520,141 @@ const db   = getFirestore(app);
 const rtdb = getDatabase(app);
 
 // ── LIVEKIT ──
-const LK_URL        = 'wss://battlechat-ef3iejkp.livekit.cloud';
-const TOKEN_URL     = 'https://battlechat-tokens.realeazybot.workers.dev';
-const ROOM_NAME     = 'battlechat-stage';
-const { Room, RoomEvent, Track, createLocalVideoTrack, createLocalAudioTrack } = LivekitClient;
+const LK_URL    = 'wss://battlechat-ef3iejkp.livekit.cloud';
+const TOKEN_URL = 'https://battlechat-tokens.realeazybot.workers.dev';
+const ROOM_NAME = 'battlechat-stage';
+const { Room, RoomEvent, Track } = LivekitClient;
+
+// ── CONSTANTS ──
+const AVATARS = ['🥊','🔥','⚡','💀','🐺','🦅','🐉','👊','🗡️','🛡️','🎯','💣','🌪️','🦁','🤺','🧨','🏆','⚔️'];
 
 // ── STATE ──
 let me = null, myProfile = null;
-let localStream = null;
-let lkRoom = null;
-let mySlot = null;
+let localStream = null, lkRoom = null, mySlot = null;
 let stageUids = { left: null, right: null };
 let signupAv = '🥊', editAv = '🥊';
 let chatOpen = true, hasVoted = false, lv = 50, rv = 50, roundSec = 120;
-let queueInt = null, queuePos = 0;
+let queueUnsubStage = null, queueUnsubList = null;
 
-const AVATARS = ['🥊','🔥','⚡','💀','🐺','🦅','🐉','👊','🗡️','🛡️','🎯','💣','🌪️','🦁','🤺','🧨','🏆','⚔️'];
-
-
-// ── FETCH LIVEKIT TOKEN ──
+// ── LIVEKIT TOKEN ──
 async function getToken(identity, canPublish) {
   const url = `${TOKEN_URL}?identity=${encodeURIComponent(identity)}&room=${ROOM_NAME}&publish=${canPublish}`;
   const res  = await fetch(url);
   const data = await res.json();
+  if (!data.token) throw new Error('No token returned');
   return data.token;
 }
 
-// ── JOIN LIVEKIT AS VIEWER (subscribe only) ──
+// ── JOIN AS VIEWER ──
 async function joinAsViewer() {
   if (lkRoom) return;
-  const identity = 'viewer-' + Math.random().toString(36).slice(2, 8);
-  const token    = await getToken(identity, false);
-  lkRoom = new Room();
-  lkRoom.on(RoomEvent.TrackSubscribed, (track, pub, participant) => {
-    handleRemoteTrack(track, participant.identity);
-  });
-  lkRoom.on(RoomEvent.TrackUnsubscribed, (track, pub, participant) => {
-    handleRemoteTrackRemoved(participant.identity);
-  });
-  lkRoom.on(RoomEvent.ParticipantConnected, p => updateOnlineCount());
-  lkRoom.on(RoomEvent.ParticipantDisconnected, p => {
-    handleRemoteTrackRemoved(p.identity);
-    updateOnlineCount();
-  });
-  await lkRoom.connect(LK_URL, token);
-  updateOnlineCount();
-  // Attach any tracks already in the room
-  lkRoom.remoteParticipants.forEach(p => {
-    p.trackPublications.forEach(pub => {
-      if (pub.track) handleRemoteTrack(pub.track, p.identity);
+  try {
+    const identity = 'viewer-' + Math.random().toString(36).slice(2,8);
+    const token    = await getToken(identity, false);
+    lkRoom = new Room();
+    lkRoom.on(RoomEvent.TrackSubscribed,    (track, pub, p) => attachRemoteTrack(track, p.identity));
+    lkRoom.on(RoomEvent.TrackUnsubscribed,  (track, pub, p) => detachRemoteTrack(p.identity));
+    lkRoom.on(RoomEvent.ParticipantDisconnected, p => detachRemoteTrack(p.identity));
+    lkRoom.on(RoomEvent.Connected, updateOnlineCount);
+    lkRoom.on(RoomEvent.ParticipantConnected, updateOnlineCount);
+    lkRoom.on(RoomEvent.ParticipantDisconnected, updateOnlineCount);
+    await lkRoom.connect(LK_URL, token);
+    // Attach any already-publishing participants
+    lkRoom.remoteParticipants.forEach(p => {
+      p.trackPublications.forEach(pub => { if (pub.track) attachRemoteTrack(pub.track, p.identity); });
     });
-  });
+    updateOnlineCount();
+  } catch(e) { console.warn('Viewer join failed:', e); }
 }
 
-// ── JOIN LIVEKIT AS FIGHTER (publish camera) ──
+// ── JOIN AS FIGHTER ──
 async function joinAsFighter(slot) {
-  const identity = `fighter-${slot}-${myProfile.username}`;
-  // Disconnect viewer session first if exists
+  // Disconnect viewer session first
   if (lkRoom) { await lkRoom.disconnect(); lkRoom = null; }
 
-  const token = await getToken(identity, true);
+  const identity = `fighter-${slot}-${me.uid}`;
+  const token    = await getToken(identity, true);
   lkRoom = new Room();
 
-  lkRoom.on(RoomEvent.TrackSubscribed, (track, pub, participant) => {
-    handleRemoteTrack(track, participant.identity);
-  });
-  lkRoom.on(RoomEvent.TrackUnsubscribed, (track, pub, participant) => {
-    handleRemoteTrackRemoved(participant.identity);
-  });
-  lkRoom.on(RoomEvent.ParticipantConnected, p => updateOnlineCount());
-  lkRoom.on(RoomEvent.ParticipantDisconnected, p => {
-    handleRemoteTrackRemoved(p.identity);
-    updateOnlineCount();
-  });
+  lkRoom.on(RoomEvent.TrackSubscribed,    (track, pub, p) => attachRemoteTrack(track, p.identity));
+  lkRoom.on(RoomEvent.TrackUnsubscribed,  (track, pub, p) => detachRemoteTrack(p.identity));
+  lkRoom.on(RoomEvent.ParticipantDisconnected, p => detachRemoteTrack(p.identity));
+  lkRoom.on(RoomEvent.Connected, updateOnlineCount);
+  lkRoom.on(RoomEvent.ParticipantConnected, updateOnlineCount);
+  lkRoom.on(RoomEvent.ParticipantDisconnected, updateOnlineCount);
 
   await lkRoom.connect(LK_URL, token);
 
-  // Publish local tracks from the localStream we already have
-  const [videoTrack] = localStream.getVideoTracks();
-  const [audioTrack] = localStream.getAudioTracks();
-
-  if (videoTrack) {
-    const lkVideo = await LivekitClient.LocalVideoTrack.createFromMediaStreamTrack(videoTrack);
-    await lkRoom.localParticipant.publishTrack(lkVideo);
+  // Publish local camera+mic
+  if (localStream) {
+    for (const track of localStream.getTracks()) {
+      try {
+        if (track.kind === 'video') {
+          const lkTrack = new LivekitClient.LocalVideoTrack(track);
+          await lkRoom.localParticipant.publishTrack(lkTrack);
+        } else if (track.kind === 'audio') {
+          const lkTrack = new LivekitClient.LocalAudioTrack(track);
+          await lkRoom.localParticipant.publishTrack(lkTrack);
+        }
+      } catch(e) { console.warn('Publish track error:', e); }
+    }
   }
-  if (audioTrack) {
-    const lkAudio = await LivekitClient.LocalAudioTrack.createFromMediaStreamTrack(audioTrack);
-    await lkRoom.localParticipant.publishTrack(lkAudio);
-  }
 
-  // Show own preview in the slot
-  const myVid = document.getElementById(`vid-${slot}`);
+  // Show own video in correct slot
+  const myVid = document.getElementById('vid-' + slot);
   myVid.srcObject = localStream;
   myVid.style.display = 'block';
 
-  updateOnlineCount();
-  // Attach any existing remote participants
+  // Attach any already-publishing remote participants
   lkRoom.remoteParticipants.forEach(p => {
-    p.trackPublications.forEach(pub => {
-      if (pub.track) handleRemoteTrack(pub.track, p.identity);
-    });
+    p.trackPublications.forEach(pub => { if (pub.track) attachRemoteTrack(pub.track, p.identity); });
   });
+
+  updateOnlineCount();
 }
 
-// ── MAP REMOTE TRACK TO CORRECT SLOT ──
-function handleRemoteTrack(track, identity) {
+// ── ATTACH/DETACH REMOTE TRACKS ──
+// Identity format: fighter-left-{uid} or fighter-right-{uid}
+function getSlotFromIdentity(identity) {
+  if (identity.startsWith('fighter-left-'))  return 'left';
+  if (identity.startsWith('fighter-right-')) return 'right';
+  return null;
+}
+
+function attachRemoteTrack(track, identity) {
   if (track.kind !== Track.Kind.Video) return;
-  const slot = identity.startsWith('fighter-left') ? 'left'
-             : identity.startsWith('fighter-right') ? 'right'
-             : null;
-  if (!slot) return;
-  const vid = document.getElementById(`vid-${slot}`);
+  const slot = getSlotFromIdentity(identity);
+  if (!slot || slot === mySlot) return; // don't overwrite own slot
+  const vid = document.getElementById('vid-' + slot);
   track.attach(vid);
   vid.style.display = 'block';
-  document.getElementById(`ph-${slot}`).style.display = 'none';
+  document.getElementById('ph-' + slot).style.display = 'none';
 }
 
-function handleRemoteTrackRemoved(identity) {
-  const slot = identity.startsWith('fighter-left') ? 'left'
-             : identity.startsWith('fighter-right') ? 'right'
-             : null;
+function detachRemoteTrack(identity) {
+  const slot = getSlotFromIdentity(identity);
   if (!slot || slot === mySlot) return;
-  const vid = document.getElementById(`vid-${slot}`);
-  vid.style.display = 'none'; vid.srcObject = null;
+  const vid = document.getElementById('vid-' + slot);
+  vid.style.display = 'none';
+  vid.srcObject = null;
 }
 
 function updateOnlineCount() {
   if (!lkRoom) return;
-  const count = lkRoom.remoteParticipants.size + 1;
-  document.getElementById('online-count').textContent = count + ' online';
+  document.getElementById('online-count').textContent = (lkRoom.remoteParticipants.size + 1) + ' online';
 }
 
 // ── AUTH STATE ──
 onAuthStateChanged(auth, async user => {
   me = user;
   if (user) {
-    const snap = await getDoc(doc(db, 'users', user.uid));
+    const snap = await getDoc(doc(db,'users',user.uid));
     myProfile = snap.exists() ? snap.data() : null;
-    renderTopbar();
-    listenChat();
-    listenStage();
   } else {
     myProfile = null;
-    renderTopbar();
   }
-  // Everyone joins as viewer on load
+  renderTopbar();
+  if (me) { listenChat(); listenStage(); }
   joinAsViewer();
 });
 
@@ -690,48 +681,42 @@ window.switchAuthTab = t => {
 };
 
 window.doLogin = async () => {
-  const eEl = document.getElementById('login-email');
-  const errEl = document.getElementById('login-err');
-  const btn = document.getElementById('login-btn');
-  errEl.textContent = ''; eEl.classList.remove('error');
-  btn.disabled = true; btn.textContent = 'LOGGING IN...';
+  const eEl=document.getElementById('login-email'), errEl=document.getElementById('login-err'), btn=document.getElementById('login-btn');
+  errEl.textContent=''; eEl.classList.remove('error'); btn.disabled=true; btn.textContent='LOGGING IN...';
   try {
     await signInWithEmailAndPassword(auth, eEl.value.trim(), document.getElementById('login-pw').value);
-    closeModal('auth-overlay'); showToast('⚡ Welcome back!');
-  } catch(e) { errEl.textContent = 'Invalid email or password'; eEl.classList.add('error'); }
-  btn.disabled = false; btn.textContent = 'LOG IN';
+    closeModal('auth-overlay'); showToast('Welcome back!');
+  } catch(e) { errEl.textContent='Invalid email or password'; eEl.classList.add('error'); }
+  btn.disabled=false; btn.textContent='LOG IN';
 };
 
 window.doSignup = async () => {
-  const uEl = document.getElementById('su-username');
-  const eEl = document.getElementById('su-email');
-  const pEl = document.getElementById('su-pw');
-  ['su-username-err','su-email-err','su-pw-err'].forEach(id => { const e=document.getElementById(id); if(e) e.textContent=''; });
-  [uEl,eEl,pEl].forEach(el => el.classList.remove('error'));
+  const uEl=document.getElementById('su-username'), eEl=document.getElementById('su-email'), pEl=document.getElementById('su-pw');
+  ['su-username-err','su-email-err','su-pw-err'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent='';});
+  [uEl,eEl,pEl].forEach(el=>el.classList.remove('error'));
   const username=uEl.value.trim(), email=eEl.value.trim(), pw=pEl.value;
   let ok=true;
-  if (!username||username.length<3){document.getElementById('su-username-err').textContent='Min 3 characters';uEl.classList.add('error');ok=false;}
-  if (!email.includes('@')){document.getElementById('su-email-err').textContent='Valid email required';eEl.classList.add('error');ok=false;}
-  if (pw.length<6){document.getElementById('su-pw-err').textContent='Min 6 characters';pEl.classList.add('error');ok=false;}
-  if (!ok) return;
-  const allUsers = await getDocs(collection(db,'users'));
-  if (allUsers.docs.some(d=>d.data().username?.toLowerCase()===username.toLowerCase())){document.getElementById('su-username-err').textContent='Username taken';uEl.classList.add('error');return;}
-  const btn=document.getElementById('su-btn');
-  btn.disabled=true; btn.textContent='CREATING...';
+  if(!username||username.length<3){document.getElementById('su-username-err').textContent='Min 3 characters';uEl.classList.add('error');ok=false;}
+  if(!email.includes('@')){document.getElementById('su-email-err').textContent='Valid email required';eEl.classList.add('error');ok=false;}
+  if(pw.length<6){document.getElementById('su-pw-err').textContent='Min 6 characters';pEl.classList.add('error');ok=false;}
+  if(!ok) return;
+  const allUsers=await getDocs(collection(db,'users'));
+  if(allUsers.docs.some(d=>d.data().username?.toLowerCase()===username.toLowerCase())){document.getElementById('su-username-err').textContent='Username taken';uEl.classList.add('error');return;}
+  const btn=document.getElementById('su-btn'); btn.disabled=true; btn.textContent='CREATING...';
   try {
-    const cred = await createUserWithEmailAndPassword(auth, email, pw);
-    const profile = {uid:cred.user.uid,username:username.toUpperCase(),avatar:signupAv,desc:'',wins:0,losses:0,bestStreak:0,currentStreak:0,joined:new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'})};
-    await setDoc(doc(db,'users',cred.user.uid), profile);
-    myProfile=profile; closeModal('auth-overlay'); showToast('🎉 Welcome, '+profile.username+'!');
+    const cred=await createUserWithEmailAndPassword(auth,email,pw);
+    const profile={uid:cred.user.uid,username:username.toUpperCase(),avatar:signupAv,desc:'',wins:0,losses:0,bestStreak:0,currentStreak:0,joined:new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'})};
+    await setDoc(doc(db,'users',cred.user.uid),profile);
+    myProfile=profile; closeModal('auth-overlay'); showToast('Welcome, '+profile.username+'!');
   } catch(e){document.getElementById('su-email-err').textContent=e.message;eEl.classList.add('error');}
   btn.disabled=false; btn.textContent='CREATE ACCOUNT';
 };
 
 // ── PROFILE ──
 window.openProfileByUid = async uid => {
-  const snap = await getDoc(doc(db,'users',uid));
-  if (!snap.exists()) return;
-  const p = snap.data();
+  const snap=await getDoc(doc(db,'users',uid));
+  if(!snap.exists()) return;
+  const p=snap.data();
   document.getElementById('p-avatar').textContent=p.avatar;
   document.getElementById('p-username').textContent=p.username;
   document.getElementById('p-desc').textContent=p.desc||'No description yet.';
@@ -749,7 +734,7 @@ window.openProfileByUid = async uid => {
 window.openProfileBySlot = slot => { const uid=stageUids[slot]; if(uid) openProfileByUid(uid); };
 
 window.startEditProfile = () => {
-  if (!myProfile) return;
+  if(!myProfile) return;
   editAv=myProfile.avatar;
   document.getElementById('ed-username').value=myProfile.username;
   document.getElementById('ed-desc').value=myProfile.desc||'';
@@ -760,18 +745,18 @@ window.startEditProfile = () => {
 window.cancelEdit=()=>{document.getElementById('p-view').style.display='block';document.getElementById('p-edit').style.display='none';};
 
 window.saveProfile = async () => {
-  if (!me||!myProfile) return;
+  if(!me||!myProfile) return;
   const uEl=document.getElementById('ed-username'); uEl.classList.remove('error');
   document.getElementById('ed-username-err').textContent='';
   const newUser=uEl.value.trim().toUpperCase(), newDesc=document.getElementById('ed-desc').value.trim();
-  if (!newUser||newUser.length<3){document.getElementById('ed-username-err').textContent='Min 3 characters';uEl.classList.add('error');return;}
-  if (newUser!==myProfile.username){
+  if(!newUser||newUser.length<3){document.getElementById('ed-username-err').textContent='Min 3 characters';uEl.classList.add('error');return;}
+  if(newUser!==myProfile.username){
     const all=await getDocs(collection(db,'users'));
     if(all.docs.some(d=>d.id!==me.uid&&d.data().username?.toLowerCase()===newUser.toLowerCase())){document.getElementById('ed-username-err').textContent='Username taken';uEl.classList.add('error');return;}
   }
   await updateDoc(doc(db,'users',me.uid),{username:newUser,avatar:editAv,desc:newDesc});
   myProfile.username=newUser; myProfile.avatar=editAv; myProfile.desc=newDesc;
-  renderTopbar(); cancelEdit(); openProfileByUid(me.uid); showToast('✓ Profile saved!');
+  renderTopbar(); cancelEdit(); openProfileByUid(me.uid); showToast('Profile saved!');
 };
 
 // ── LEADERBOARD ──
@@ -787,15 +772,14 @@ async function loadLeaderboard() {
   });
 }
 
-// ── CHAT (Firebase RTDB) ──
+// ── CHAT ──
 function listenChat() {
-  onChildAdded(ref(rtdb,'chat'), snap => addChatBubble(snap.val()));
+  onChildAdded(ref(rtdb,'chat'), snap=>addChatBubble(snap.val()));
 }
 window.sendMessage = async () => {
-  const input=document.getElementById('chat-input');
-  const text=input.value.trim();
-  if (!text) return;
-  if (!me||!myProfile){showToast('Log in to chat!');return;}
+  const input=document.getElementById('chat-input'), text=input.value.trim();
+  if(!text) return;
+  if(!me||!myProfile){showToast('Log in to chat!');return;}
   await push(ref(rtdb,'chat'),{uid:me.uid,username:myProfile.username,avatar:myProfile.avatar,text,ts:Date.now()});
   input.value='';
 };
@@ -814,71 +798,98 @@ function addSystemMsg(text) {
   view.appendChild(d); view.scrollTop=view.scrollHeight;
 }
 
-// ── STAGE (Firebase RTDB for metadata) ──
+// ── STAGE METADATA (who is on stage — shown to all viewers) ──
 function listenStage() {
-  onValue(ref(rtdb,'stage'), snap => {
+  onValue(ref(rtdb,'stage'), snap=>{
     const d=snap.val()||{};
-    stageUids.left=d.left?.uid||null;
-    stageUids.right=d.right?.uid||null;
-    d.left  ? showSlot('left',d.left)   : clearSlotMeta('left');
-    d.right ? showSlot('right',d.right) : clearSlotMeta('right');
+    stageUids.left  = d.left?.uid  || null;
+    stageUids.right = d.right?.uid || null;
+    d.left  ? showSlot('left',d.left)   : clearSlotUI('left');
+    d.right ? showSlot('right',d.right) : clearSlotUI('right');
   });
 }
 
 function showSlot(slot, data) {
-  document.getElementById(`av-${slot}`).textContent=data.avatar||'🥊';
-  document.getElementById(`un-${slot}`).textContent=data.username||'—';
-  document.getElementById(`w-${slot}`).textContent='W: '+(data.wins||0);
-  document.getElementById(`l-${slot}`).textContent='L: '+(data.losses||0);
-  document.getElementById(`np-${slot}`).style.display='flex';
-  document.getElementById(`live-${slot}`).style.display='flex';
-  document.getElementById(`ph-${slot}`).style.display='none';
+  document.getElementById('av-'+slot).textContent = data.avatar||'🥊';
+  document.getElementById('un-'+slot).textContent = data.username||'—';
+  document.getElementById('w-'+slot).textContent  = 'W: '+(data.wins||0);
+  document.getElementById('l-'+slot).textContent  = 'L: '+(data.losses||0);
+  document.getElementById('np-'+slot).style.display   = 'flex';
+  document.getElementById('live-'+slot).style.display = 'flex';
+  document.getElementById('ph-'+slot).style.display   = 'none';
 }
-function clearSlotMeta(slot) {
-  document.getElementById(`np-${slot}`).style.display='none';
-  document.getElementById(`live-${slot}`).style.display='none';
-  document.getElementById(`ph-${slot}`).style.display='flex';
+
+function clearSlotUI(slot) {
+  document.getElementById('np-'+slot).style.display   = 'none';
+  document.getElementById('live-'+slot).style.display = 'none';
+  document.getElementById('ph-'+slot).style.display   = 'flex';
   if (slot !== mySlot) {
-    const v=document.getElementById(`vid-${slot}`);
+    const v=document.getElementById('vid-'+slot);
     v.style.display='none'; v.srcObject=null;
   }
 }
 
+// ── GO LIVE — atomically claim a slot using Firebase transaction ──
 async function goLive(slot) {
-  // Double-check slot is still free before claiming
-  const snap = await new Promise(res => onValue(ref(rtdb,`stage/${slot}`), res, {onlyOnce:true}));
-  if (snap.exists()) {
-    // Slot was taken by someone else — find the other slot
-    const otherSlot = slot === 'left' ? 'right' : 'left';
-    const snap2 = await new Promise(res => onValue(ref(rtdb,`stage/${otherSlot}`), res, {onlyOnce:true}));
-    if (snap2.exists()) { showToast('Both slots taken — back in queue!'); enterQueue(); return; }
-    slot = otherSlot;
+  let claimed = false;
+  try {
+    const result = await runTransaction(ref(rtdb,'stage/'+slot), current => {
+      // Only claim if slot is empty
+      if (current !== null && current !== undefined) return; // abort
+      return { uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, wins:myProfile.wins||0, losses:myProfile.losses||0 };
+    });
+    claimed = result.committed;
+  } catch(e) { console.warn('Transaction error:', e); }
+
+  if (!claimed) {
+    // Try the other slot
+    const other = slot === 'left' ? 'right' : 'left';
+    try {
+      const result2 = await runTransaction(ref(rtdb,'stage/'+other), current => {
+        if (current !== null && current !== undefined) return;
+        return { uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, wins:myProfile.wins||0, losses:myProfile.losses||0 };
+      });
+      if (result2.committed) { claimed = true; slot = other; }
+    } catch(e) { console.warn('Transaction error 2:', e); }
   }
-  mySlot=slot;
-  // Write stage metadata to Firebase
-  await set(ref(rtdb,`stage/${slot}`),{uid:me.uid,username:myProfile.username,avatar:myProfile.avatar,wins:myProfile.wins,losses:myProfile.losses});
-  addSystemMsg(`${myProfile.username} has entered the arena!`);
-  // Join LiveKit as a publishing fighter
+
+  if (!claimed) {
+    showToast('Both slots taken — waiting in queue');
+    return false;
+  }
+
+  mySlot = slot;
+  addSystemMsg(myProfile.username + ' entered the arena!');
   await joinAsFighter(slot);
-  showToast('You are LIVE, '+myProfile.username+'!');
-  document.getElementById('enter-arena-btn').style.display='none';
-  document.getElementById('leave-stage-btn').style.display='block';
+  showToast('You are LIVE!');
+  document.getElementById('enter-arena-btn').style.display = 'none';
+  document.getElementById('leave-stage-btn').style.display = 'block';
+  return true;
 }
 
+// ── LEAVE STAGE ──
 async function leaveStage() {
   if (!mySlot) return;
-  await remove(ref(rtdb,`stage/${mySlot}`));
-  clearSlotMeta(mySlot);
+  const slot = mySlot; mySlot = null;
+  await remove(ref(rtdb,'stage/'+slot)).catch(()=>{});
+  await remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
+  clearSlotUI(slot);
   if (lkRoom) { await lkRoom.disconnect(); lkRoom=null; }
   if (localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
-  mySlot=null;
-  // Rejoin as viewer
+  document.getElementById('enter-arena-btn').style.display = 'block';
+  document.getElementById('leave-stage-btn').style.display = 'none';
   joinAsViewer();
 }
 
+window.doLeaveStage = async () => {
+  await leaveStage();
+  addSystemMsg(myProfile.username + ' left the stage.');
+  showToast('You left the stage.');
+};
+
 // ── ARENA MODAL ──
 window.openArenaModal = () => {
-  if (!me){openModal('auth-overlay');showToast('Log in first!');return;}
+  if (!me){ openModal('auth-overlay'); showToast('Log in first!'); return; }
   document.getElementById('arena-s1').style.display='block';
   document.getElementById('arena-s2').style.display='none';
   document.getElementById('sdot0').className='sdot active';
@@ -890,10 +901,8 @@ window.openArenaModal = () => {
 window.closeArenaModal = () => { stopCamPreview(); closeModal('arena-overlay'); };
 
 async function startCamPreview() {
-  const video=document.getElementById('arena-preview');
-  const ph=document.getElementById('cam-ph');
-  const lbl=document.getElementById('cam-active-lbl');
-  const err=document.getElementById('cam-err');
+  const video=document.getElementById('arena-preview'), ph=document.getElementById('cam-ph');
+  const lbl=document.getElementById('cam-active-lbl'), err=document.getElementById('cam-err');
   const btn=document.getElementById('arena-next-btn');
   err.classList.remove('on'); btn.disabled=true; btn.textContent='LOOKS GOOD →';
   try {
@@ -911,7 +920,7 @@ async function startCamPreview() {
     document.getElementById('dev-selects').style.display='flex';
   } catch(e) {
     document.getElementById('cam-ph-txt').textContent='Camera blocked';
-    err.classList.add('on'); btn.disabled=false; btn.textContent='CONTINUE ANYWAY →';
+    err.classList.add('on'); btn.disabled=false; btn.textContent='SKIP →';
   }
 }
 
@@ -928,7 +937,10 @@ function stopCamPreview() {
 window.switchCam = async () => {
   if (localStream) localStream.getTracks().forEach(t=>t.stop());
   try {
-    localStream=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:document.getElementById('sel-video').value}},audio:{deviceId:{exact:document.getElementById('sel-audio').value}}});
+    localStream=await navigator.mediaDevices.getUserMedia({
+      video:{deviceId:{exact:document.getElementById('sel-video').value}},
+      audio:{deviceId:{exact:document.getElementById('sel-audio').value}}
+    });
     document.getElementById('arena-preview').srcObject=localStream;
   } catch(e){}
 };
@@ -942,144 +954,205 @@ window.goToQueue = () => {
   enterQueue();
 };
 
-function enterQueue() {
-  document.getElementById('q-av').textContent=myProfile.avatar;
-  document.getElementById('q-name').textContent=myProfile.username;
-  document.getElementById('q-status').textContent='Finding opponent...';
+// ── QUEUE SYSTEM ──
+// Each user in queue: rtdb/queue/{uid} = { uid, username, avatar, ts }
+// When a stage slot opens, the person with the lowest ts (first in line) gets it
+
+async function enterQueue() {
+  document.getElementById('q-av').textContent   = myProfile.avatar;
+  document.getElementById('q-name').textContent = myProfile.username;
+  document.getElementById('q-status').textContent = 'Checking for open slots...';
+  document.getElementById('q-pos').textContent  = '...';
+  document.getElementById('q-chips').innerHTML  = '';
+
+  // Add ourselves to the queue
+  await set(ref(rtdb,'queue/'+me.uid), { uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, ts:Date.now() });
 
   let launched = false;
 
-  // Continuously watch stage for a free slot — no fake queue
-  const stageRef = ref(rtdb,'stage');
-  window._queueStageRef = stageRef;
-  onValue(stageRef, async snap => {
+  async function checkAndClaim() {
     if (launched) return;
-    const d = snap.val()||{};
-    let free = null;
-    if (!d.left) free='left';
-    else if (!d.right) free='right';
 
-    // Update real queue position based on actual waiters in Firebase
-    const qSnap = await getDoc(doc(db,'queue', 'waiters')).catch(()=>null);
+    // Get current stage and queue state simultaneously
+    const [stageSnap, queueSnap] = await Promise.all([
+      get(ref(rtdb,'stage')),
+      get(ref(rtdb,'queue'))
+    ]);
 
-    if (free) {
+    const stage     = stageSnap.val() || {};
+    const queueData = queueSnap.val() || {};
+    const sorted    = Object.values(queueData).sort((a,b)=>a.ts - b.ts);
+    const myPos     = sorted.findIndex(w => w.uid === me.uid);
+
+    // Update queue UI for everyone
+    updateQueueUI(sorted, myPos);
+
+    // Check if there is a free slot
+    const freeSlot = !stage.left ? 'left' : !stage.right ? 'right' : null;
+
+    // Only the first person in queue gets to claim a slot
+    if (freeSlot && myPos === 0) {
       launched = true;
-      off(stageRef);
-      clearInterval(queueInt);
-      document.getElementById('q-status').textContent='Slot open - going live!';
-      document.getElementById('q-pos').textContent='GO';
-      document.getElementById('q-pos').style.color='#4CAF50';
-      document.getElementById('q-chips').innerHTML='';
-      setTimeout(async()=>{
+      stopQueueListeners();
+      await remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
+
+      document.getElementById('q-status').textContent = 'Slot found — going live!';
+      document.getElementById('q-pos').textContent    = 'GO!';
+      document.getElementById('q-pos').style.color    = '#4CAF50';
+
+      setTimeout(async () => {
         closeModal('arena-overlay');
-        await goLive(free);
-      },1000);
-    } else {
-      // Both slots taken — show waiting state, no fake names
-      document.getElementById('q-pos').textContent='...';
-      document.getElementById('q-pos').style.color='var(--muted)';
-      document.getElementById('q-status').textContent='Waiting for a slot to open...';
-      document.getElementById('q-chips').innerHTML='';
-      const you=document.createElement('div'); you.className='q-chip you';
-      you.textContent=myProfile.username+' (you)';
-      document.getElementById('q-chips').appendChild(you);
+        const success = await goLive(freeSlot);
+        if (!success) {
+          // Race condition — someone else grabbed it, re-enter queue
+          launched = false;
+          await set(ref(rtdb,'queue/'+me.uid), { uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, ts:Date.now() });
+          enterQueue();
+        }
+      }, 800);
     }
+  }
+
+  // Watch stage — fires immediately and on every change
+  queueUnsubStage = onValue(ref(rtdb,'stage'), () => checkAndClaim());
+  // Watch queue list — fires immediately and on every change
+  queueUnsubList  = onValue(ref(rtdb,'queue'), async snap => {
+    if (launched) return;
+    const queueData = snap.val() || {};
+    const sorted    = Object.values(queueData).sort((a,b)=>a.ts - b.ts);
+    const myPos     = sorted.findIndex(w => w.uid === me.uid);
+    updateQueueUI(sorted, myPos);
   });
 }
 
-function renderQChips() {}
+function updateQueueUI(sorted, myPos) {
+  if (myPos === -1) return;
+  const pos = myPos + 1;
+  document.getElementById('q-pos').textContent   = pos;
+  document.getElementById('q-pos').style.color   = pos === 1 ? 'var(--gold)' : 'var(--red-hot)';
+  document.getElementById('q-status').textContent = pos === 1 ? 'You are up next!' : 'Waiting in line...';
 
-window.leaveQueue=()=>{
-  clearInterval(queueInt);
-  if(window._queueStageRef) off(window._queueStageRef);
+  const chips = document.getElementById('q-chips');
+  chips.innerHTML = '';
+  sorted.forEach((w,i) => {
+    const chip = document.createElement('div');
+    chip.className = 'q-chip' + (w.uid === me.uid ? ' you' : '');
+    chip.innerHTML = '<span>'+(i+1)+'.</span> ' + escHtml(w.username||'?') + (w.uid===me.uid ? ' <span style="opacity:0.5;font-size:0.7rem;">(you)</span>' : '');
+    chips.appendChild(chip);
+  });
+}
+
+function stopQueueListeners() {
+  if (queueUnsubStage) { queueUnsubStage(); queueUnsubStage=null; }
+  if (queueUnsubList)  { queueUnsubList();  queueUnsubList=null; }
+}
+
+window.leaveQueue = async () => {
+  stopQueueListeners();
+  await remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
   closeArenaModal();
 };
 
 // ── VOTE ──
-window.castVote=side=>{
-  if(hasVoted)return;
-  if(!me){showToast('Log in to vote!');return;}
-  hasVoted=true;
-  if(side==='left')lv+=5;else rv+=5;
-  document.getElementById('vbtn-left').disabled=true;
-  document.getElementById('vbtn-right').disabled=true;
-  document.getElementById(`vbtn-${side}`).classList.add(`voted-${side}`);
-  document.getElementById(`vbtn-${side}`).textContent='✓ VOTED';
-  updateVote(); showToast('✓ Vote locked in!');
+window.castVote = side => {
+  if (hasVoted) return;
+  if (!me){ showToast('Log in to vote!'); return; }
+  hasVoted = true;
+  if (side==='left') lv+=5; else rv+=5;
+  document.getElementById('vbtn-left').disabled  = true;
+  document.getElementById('vbtn-right').disabled = true;
+  document.getElementById('vbtn-'+side).classList.add('voted-'+side);
+  document.getElementById('vbtn-'+side).textContent = 'VOTED';
+  updateVote(); showToast('Vote locked in!');
 };
-function updateVote(){
-  const tot=lv+rv,lp=Math.round(lv/tot*100),rp=100-lp;
-  document.getElementById('pct-left').textContent=lp+'%';
-  document.getElementById('pct-right').textContent=rp+'%';
-  document.getElementById('vbar-left').style.width=lp+'%';
-  document.getElementById('vbar-right').style.width=rp+'%';
+function updateVote() {
+  const tot=lv+rv, lp=Math.round(lv/tot*100), rp=100-lp;
+  document.getElementById('pct-left').textContent  = lp+'%';
+  document.getElementById('pct-right').textContent = rp+'%';
+  document.getElementById('vbar-left').style.width  = lp+'%';
+  document.getElementById('vbar-right').style.width = rp+'%';
 }
-function resetRound(){
-  hasVoted=false;lv=50;rv=50;
-  ['left','right'].forEach(s=>{const b=document.getElementById(`vbtn-${s}`);b.disabled=false;b.classList.remove('voted-left','voted-right');b.textContent='VOTE';});
+function resetRound() {
+  hasVoted=false; lv=50; rv=50;
+  ['left','right'].forEach(s=>{const b=document.getElementById('vbtn-'+s);b.disabled=false;b.classList.remove('voted-left','voted-right');b.textContent='VOTE';});
   updateVote();
 }
 
 // ── TIMER ──
 setInterval(()=>{
-  if(roundSec>0)roundSec--;else{roundSec=120;resetRound();addSystemMsg('🔔 New round!');}
-  const m=Math.floor(roundSec/60),s=roundSec%60,pct=((roundSec/120)*100)+'%';
-  document.getElementById('timer-display').textContent=`${m}:${s.toString().padStart(2,'0')}`;
-  document.getElementById('tfill-l').style.width=pct;
-  document.getElementById('tfill-r').style.width=pct;
-  document.getElementById('tlbl-r').textContent=`${m}:${s.toString().padStart(2,'0')} LEFT`;
-  document.getElementById('timer-display').style.color=roundSec<=10?'var(--red-hot)':'var(--gold)';
-},1000);
+  if (roundSec>0) roundSec--; else { roundSec=120; resetRound(); addSystemMsg('New round!'); }
+  const m=Math.floor(roundSec/60), s=roundSec%60, pct=((roundSec/120)*100)+'%';
+  document.getElementById('timer-display').textContent = m+':'+s.toString().padStart(2,'0');
+  document.getElementById('tfill-l').style.width = pct;
+  document.getElementById('tfill-r').style.width = pct;
+  document.getElementById('tlbl-r').textContent  = m+':'+s.toString().padStart(2,'0')+' LEFT';
+  document.getElementById('timer-display').style.color = roundSec<=10 ? 'var(--red-hot)' : 'var(--gold)';
+}, 1000);
 
 // ── AVATAR GRID ──
-function buildAvatarGrid(id,sel,cb){
-  const g=document.getElementById(id);g.innerHTML='';
-  AVATARS.forEach(av=>{const el=document.createElement('div');el.className='avatar-opt'+(av===sel?' selected':'');el.textContent=av;el.onclick=()=>{g.querySelectorAll('.avatar-opt').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');cb(av);};g.appendChild(el);});
+function buildAvatarGrid(id, sel, cb) {
+  const g=document.getElementById(id); g.innerHTML='';
+  AVATARS.forEach(av=>{
+    const el=document.createElement('div');
+    el.className='avatar-opt'+(av===sel?' selected':'');
+    el.textContent=av;
+    el.onclick=()=>{ g.querySelectorAll('.avatar-opt').forEach(o=>o.classList.remove('selected')); el.classList.add('selected'); cb(av); };
+    g.appendChild(el);
+  });
 }
-buildAvatarGrid('su-avatar-grid',signupAv,av=>signupAv=av);
+buildAvatarGrid('su-avatar-grid', signupAv, av=>signupAv=av);
 
 // ── LOGO ALIGN ──
-function alignLogo(){const col=document.querySelector('.center-col'),logo=document.getElementById('logo');if(!col||!logo)return;const r=col.getBoundingClientRect();logo.style.left=(r.left+r.width/2)+'px';}
-alignLogo();window.addEventListener('resize',alignLogo);
+function alignLogo() {
+  const col=document.querySelector('.center-col'), logo=document.getElementById('logo');
+  if (!col||!logo) return;
+  const r=col.getBoundingClientRect();
+  logo.style.left=(r.left+r.width/2)+'px';
+}
+alignLogo(); window.addEventListener('resize', alignLogo);
 
-// ── COLLAPSE ──
-window.toggleChat=()=>{chatOpen=!chatOpen;document.getElementById('main-grid').classList.toggle('chat-collapsed',!chatOpen);document.getElementById('collapse-icon').textContent=chatOpen?'▶▶':'◀◀';document.getElementById('collapse-label').textContent=chatOpen?'HIDE CHAT':'SHOW CHAT';setTimeout(alignLogo,360);};
-
-// ── TABS ──
-window.switchTab=(btn,tab)=>{document.querySelectorAll('.chat-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');document.getElementById('chat-view').style.display=tab==='chat'?'flex':'none';document.getElementById('lb-view').style.display=tab==='leaderboard'?'flex':'none';if(tab==='leaderboard')loadLeaderboard();};
-
-// ── MODALS ──
-window.openModal=id=>document.getElementById(id).classList.add('open');
-window.closeModal=id=>document.getElementById(id).classList.remove('open');
-
-// ── LEAVE STAGE ──
-window.doLeaveStage = async () => {
-  await leaveStage();
-  document.getElementById('leave-stage-btn').style.display='none';
-  document.getElementById('enter-arena-btn').style.display='block';
-  addSystemMsg(myProfile.username+' has left the stage.');
-  showToast('You left the stage.');
+// ── COLLAPSE CHAT ──
+window.toggleChat = () => {
+  chatOpen=!chatOpen;
+  document.getElementById('main-grid').classList.toggle('chat-collapsed',!chatOpen);
+  document.getElementById('collapse-icon').textContent  = chatOpen?'▶▶':'◀◀';
+  document.getElementById('collapse-label').textContent = chatOpen?'HIDE CHAT':'SHOW CHAT';
+  setTimeout(alignLogo,360);
 };
 
-// ── CLEANUP ON TAB CLOSE ──
+// ── TABS ──
+window.switchTab = (btn,tab) => {
+  document.querySelectorAll('.chat-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('chat-view').style.display = tab==='chat'?'flex':'none';
+  document.getElementById('lb-view').style.display   = tab==='leaderboard'?'flex':'none';
+  if (tab==='leaderboard') loadLeaderboard();
+};
+
+// ── MODALS ──
+window.openModal  = id => document.getElementById(id).classList.add('open');
+window.closeModal = id => document.getElementById(id).classList.remove('open');
+
+// ── ENTER ARENA BTN ──
+document.getElementById('enter-arena-btn').addEventListener('click', ()=>window.openArenaModal());
+
+// ── TAB CLOSE CLEANUP ──
 window.addEventListener('beforeunload', () => {
   if (mySlot && me) {
-    navigator.sendBeacon(
-      'https://fdsdsdfsdf-5432e-default-rtdb.firebaseio.com/stage/'+mySlot+'.json',
-      JSON.stringify(null)
-    );
+    navigator.sendBeacon('https://fdsdsdfsdf-5432e-default-rtdb.firebaseio.com/stage/'+mySlot+'.json', JSON.stringify(null));
+    navigator.sendBeacon('https://fdsdsdfsdf-5432e-default-rtdb.firebaseio.com/queue/'+me.uid+'.json', JSON.stringify(null));
   }
 });
 
-// ── ENTER ARENA BUTTON ──
-document.getElementById('enter-arena-btn').addEventListener('click',()=>window.openArenaModal());
-
 // ── TOAST ──
-let tt;
-window.showToast=msg=>{const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2500);};
+let toastTimer;
+window.showToast = msg => {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+};
 
 // ── UTIL ──
-function escHtml(s=''){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escHtml(s='') { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 </script>
 </body>
 </html>
