@@ -2983,10 +2983,10 @@ const FA = {
   bird: { x: 70, y: 140, vy: 0, r: 13 },
   pipes: [],
   pipeW: 34,
-  gap: 110,
-  speed: 1.6,
-  gravity: 0.22,
-  jumpV: -4.8,
+  gap: 120,
+  speed: 1.1,
+  gravity: 0.10,
+  jumpV: -3.2,
   frame: 0,
   scored: new Set(),
   started: false,
@@ -3062,7 +3062,7 @@ function faLoop() {
     FA.bird.y  += FA.bird.vy;
 
     // Move pipes
-    FA.pipes.forEach(p => p.x -= FA.speed + Math.min(faPipes * 0.012, 1.5));
+    FA.pipes.forEach(p => p.x -= FA.speed + Math.min(faPipes * 0.005, 0.8));
     FA.pipes = FA.pipes.filter(p => p.x > -FA.pipeW - 10);
 
     // Score pipes
