@@ -3154,21 +3154,40 @@ function faLoop() {
     const bx = FA.bird.x, by = FA.bird.y, br = FA.bird.r + 6;
     const angle = Math.max(-0.4, Math.min(0.8, FA.bird.vy * 0.07));
 
-    // Wing flap angle — oscillates when alive, droops when dead
-    const flapCycle = FA.dead ? 0.6 : Math.sin(FA.frame * 0.28) * 0.6;
-    const wingColor = FA.dead ? '#555' : '#D92B2B';
-    const wingDark  = FA.dead ? '#333' : '#aa1100';
+    // Wing flap — beats up/down on top and bottom
+    const flapAngle = FA.dead ? 0.5 : Math.sin(FA.frame * 0.32) * 1.0;
+    const wingColor = FA.dead ? '#444' : '#cc1100';
+    const wingHi    = FA.dead ? '#666' : '#ff5533';
 
     ctx.save();
     ctx.translate(bx, by);
     ctx.rotate(angle);
 
-    // === BACK WING (drawn before face so it appears behind) ===
+    // === TOP WING (above face, behind) ===
     ctx.save();
-    ctx.rotate(-flapCycle); // flap up/down
+    ctx.translate(0, -br * 0.55);
+    ctx.rotate(-flapAngle);
     ctx.beginPath();
-    ctx.ellipse(-br * 0.1, br * 0.1, br * 0.85, br * 0.32, -0.3, 0, Math.PI * 2);
-    ctx.fillStyle = wingDark;
+    ctx.ellipse(0, -br * 0.35, br * 0.6, br * 0.24, 0, 0, Math.PI * 2);
+    ctx.fillStyle = wingColor;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(br * 0.05, -br * 0.32, br * 0.32, br * 0.11, 0.2, 0, Math.PI * 2);
+    ctx.fillStyle = wingHi;
+    ctx.fill();
+    ctx.restore();
+
+    // === BOTTOM WING (below face, behind) ===
+    ctx.save();
+    ctx.translate(0, br * 0.55);
+    ctx.rotate(flapAngle);
+    ctx.beginPath();
+    ctx.ellipse(0, br * 0.35, br * 0.6, br * 0.24, 0, 0, Math.PI * 2);
+    ctx.fillStyle = wingColor;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(br * 0.05, br * 0.32, br * 0.32, br * 0.11, -0.2, 0, Math.PI * 2);
+    ctx.fillStyle = wingHi;
     ctx.fill();
     ctx.restore();
 
@@ -3189,20 +3208,6 @@ function faLoop() {
       ctx.fill();
     }
 
-    // === FRONT WING (drawn over face bottom) ===
-    ctx.save();
-    ctx.rotate(flapCycle);
-    ctx.beginPath();
-    ctx.ellipse(-br * 0.1, br * 0.15, br * 0.8, br * 0.28, -0.2, 0, Math.PI * 2);
-    ctx.fillStyle = wingColor;
-    ctx.fill();
-    // Wing highlight
-    ctx.beginPath();
-    ctx.ellipse(-br * 0.1, br * 0.1, br * 0.5, br * 0.12, -0.2, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,150,150,0.25)';
-    ctx.fill();
-    ctx.restore();
-
     ctx.restore();
   }
 
@@ -3218,13 +3223,18 @@ function faLoop() {
   });
   ctx.globalAlpha = 1;
 
-  // HUD
-  ctx.fillStyle = 'rgba(201,168,76,0.9)';
-  ctx.font = 'bold 14px "Bebas Neue"';
-  ctx.letterSpacing = '2px';
-  ctx.fillText('PIPES: ' + faPipes, 8, 20);
+  // HUD with black stroke
+  ctx.font = 'bold 15px "Bebas Neue"';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(0,0,0,0.95)';
+  ctx.fillStyle = '#C9A84C';
+  ctx.strokeText('PIPES: ' + faPipes, 8, 22);
+  ctx.fillText('PIPES: ' + faPipes, 8, 22);
   ctx.fillStyle = '#4CAF50';
-  ctx.fillText('+' + (Math.floor(faEarned * 10) / 10) + ' 🪙', 8, 38);
+  ctx.strokeText('+' + (Math.round(faEarned * 10) / 10) + ' 🪙', 8, 41);
+  ctx.fillText('+' + (Math.round(faEarned * 10) / 10) + ' 🪙', 8, 41);
+  ctx.lineWidth = 1;
 
   // Flash on crash
   if (FA.flashFrames > 0) {
