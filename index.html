@@ -3155,7 +3155,7 @@ function faLoop() {
     const angle = Math.max(-0.4, Math.min(0.8, FA.bird.vy * 0.07));
 
     // Flap: smooth sine wave, faster beat, wider arc
-    const t = FA.frame * 0.38;
+    const t = FA.frame * 0.10;
     const flapY = FA.dead ? br * 0.6 : Math.sin(t) * br * 0.85;
     const flapCurl = FA.dead ? 0.4 : Math.sin(t) * 0.35; // feather curl
 
