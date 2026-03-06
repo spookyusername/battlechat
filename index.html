@@ -562,7 +562,7 @@ async function joinAsViewer() {
     await lkRoom.connect(LK_URL, token);
     // Attach any already-publishing participants
     lkRoom.remoteParticipants.forEach(p => {
-      p.trackPublications.forEach(pub => { if (pub.track) attachRemoteTrack(pub.track, p.identity); });
+      p.trackPublications.forEach(pub => { if (pub.track && pub.isSubscribed) attachRemoteTrack(pub.track, p.identity); });
     });
     updateOnlineCount();
   } catch(e) { console.warn('Viewer join failed:', e); }
@@ -573,42 +573,51 @@ async function joinAsFighter(slot) {
   // Disconnect viewer session first
   if (lkRoom) { await lkRoom.disconnect(); lkRoom = null; }
 
-  const identity = `fighter-${slot}-${me.uid}`;
+  const identity = 'fighter-' + slot + '-' + me.uid;
   const token    = await getToken(identity, true);
-  lkRoom = new Room();
 
-  lkRoom.on(RoomEvent.TrackSubscribed,    (track, pub, p) => attachRemoteTrack(track, p.identity));
-  lkRoom.on(RoomEvent.TrackUnsubscribed,  (track, pub, p) => detachRemoteTrack(p.identity));
-  lkRoom.on(RoomEvent.ParticipantDisconnected, p => detachRemoteTrack(p.identity));
-  lkRoom.on(RoomEvent.Connected, updateOnlineCount);
-  lkRoom.on(RoomEvent.ParticipantConnected, updateOnlineCount);
-  lkRoom.on(RoomEvent.ParticipantDisconnected, updateOnlineCount);
+  lkRoom = new Room({
+    audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    publishDefaults: { simulcast: false, audioPreset: LivekitClient.AudioPresets.music }
+  });
+
+  lkRoom.on(RoomEvent.TrackSubscribed,         (track, pub, p) => attachRemoteTrack(track, p.identity));
+  lkRoom.on(RoomEvent.TrackUnsubscribed,       (track, pub, p) => detachRemoteTrack(p.identity));
+  lkRoom.on(RoomEvent.ParticipantDisconnected, p => { detachRemoteTrack(p.identity); updateOnlineCount(); });
+  lkRoom.on(RoomEvent.ParticipantConnected,    () => updateOnlineCount());
+  lkRoom.on(RoomEvent.Connected,               () => updateOnlineCount());
 
   await lkRoom.connect(LK_URL, token);
 
-  // Publish local camera+mic
+  // Publish video track
   if (localStream) {
-    for (const track of localStream.getTracks()) {
+    const videoTrack = localStream.getVideoTracks()[0];
+    const audioTrack = localStream.getAudioTracks()[0];
+
+    if (videoTrack) {
       try {
-        if (track.kind === 'video') {
-          const lkTrack = new LivekitClient.LocalVideoTrack(track);
-          await lkRoom.localParticipant.publishTrack(lkTrack);
-        } else if (track.kind === 'audio') {
-          const lkTrack = new LivekitClient.LocalAudioTrack(track);
-          await lkRoom.localParticipant.publishTrack(lkTrack);
-        }
-      } catch(e) { console.warn('Publish track error:', e); }
+        const lkVideo = new LivekitClient.LocalVideoTrack(videoTrack, undefined, false);
+        await lkRoom.localParticipant.publishTrack(lkVideo, { source: LivekitClient.Track.Source.Camera });
+      } catch(e) { console.warn('Video publish error:', e); }
+    }
+
+    if (audioTrack) {
+      try {
+        const lkAudio = new LivekitClient.LocalAudioTrack(audioTrack, undefined, false);
+        await lkRoom.localParticipant.publishTrack(lkAudio, { source: LivekitClient.Track.Source.Microphone });
+      } catch(e) { console.warn('Audio publish error:', e); }
     }
   }
 
-  // Show own video in correct slot
+  // Show own video in the correct slot (muted — we don't need to hear ourselves)
   const myVid = document.getElementById('vid-' + slot);
   myVid.srcObject = localStream;
+  myVid.muted = true;
   myVid.style.display = 'block';
 
   // Attach any already-publishing remote participants
   lkRoom.remoteParticipants.forEach(p => {
-    p.trackPublications.forEach(pub => { if (pub.track) attachRemoteTrack(pub.track, p.identity); });
+    p.trackPublications.forEach(pub => { if (pub.track && pub.isSubscribed) attachRemoteTrack(pub.track, p.identity); });
   });
 
   updateOnlineCount();
@@ -623,13 +632,27 @@ function getSlotFromIdentity(identity) {
 }
 
 function attachRemoteTrack(track, identity) {
-  if (track.kind !== Track.Kind.Video) return;
   const slot = getSlotFromIdentity(identity);
-  if (!slot || slot === mySlot) return; // don't overwrite own slot
-  const vid = document.getElementById('vid-' + slot);
-  track.attach(vid);
-  vid.style.display = 'block';
-  document.getElementById('ph-' + slot).style.display = 'none';
+  if (!slot || slot === mySlot) return;
+
+  if (track.kind === Track.Kind.Video) {
+    const vid = document.getElementById('vid-' + slot);
+    track.attach(vid);
+    vid.muted = false;
+    vid.style.display = 'block';
+    document.getElementById('ph-' + slot).style.display = 'none';
+  } else if (track.kind === Track.Kind.Audio) {
+    // Create a dedicated audio element for this participant
+    // so audio plays independently of the video element
+    const existingAudio = document.getElementById('audio-' + slot);
+    if (existingAudio) existingAudio.remove();
+    const audioEl = document.createElement('audio');
+    audioEl.id = 'audio-' + slot;
+    audioEl.autoplay = true;
+    audioEl.muted = false;
+    document.body.appendChild(audioEl);
+    track.attach(audioEl);
+  }
 }
 
 function detachRemoteTrack(identity) {
@@ -638,6 +661,9 @@ function detachRemoteTrack(identity) {
   const vid = document.getElementById('vid-' + slot);
   vid.style.display = 'none';
   vid.srcObject = null;
+  // Remove audio element too
+  const audioEl = document.getElementById('audio-' + slot);
+  if (audioEl) audioEl.remove();
 }
 
 function updateOnlineCount() {
@@ -875,6 +901,8 @@ async function leaveStage() {
   await remove(ref(rtdb,'stage/'+slot)).catch(()=>{});
   await remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
   clearSlotUI(slot);
+  // Clean up audio elements for both slots
+  ['left','right'].forEach(s => { const a=document.getElementById('audio-'+s); if(a) a.remove(); });
   if (lkRoom) { await lkRoom.disconnect(); lkRoom=null; }
   if (localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
   document.getElementById('enter-arena-btn').style.display = 'block';
