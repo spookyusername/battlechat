@@ -975,15 +975,14 @@
       </div>
 
       <!-- RESULT SCREEN -->
-      <div id="fa-result-screen" style="display:none;position:relative;">
-        <canvas id="fa-coin-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:5;"></canvas>
-        <div style="position:relative;z-index:20;text-align:center;padding:16px 0 8px;">
+      <div id="fa-result-screen" style="display:none;">
+        <div style="text-align:center;padding:16px 0 8px;">
           <div class="bj-result-icon" id="fa-result-icon">🐦</div>
           <div class="bj-result-title" id="fa-result-title">—</div>
           <div class="bj-result-amount" id="fa-result-amount"></div>
           <div class="bj-final-hands" id="fa-result-detail"></div>
         </div>
-        <button class="bj-claim-btn" id="fa-claim-btn" onclick="faClaim()" style="position:relative;z-index:20;">COLLECT WINNINGS</button>
+        <button class="bj-claim-btn" id="fa-claim-btn" onclick="faClaim()" >COLLECT WINNINGS</button>
       </div>
     </div> <!-- end gamble-flappy -->
 
@@ -3306,7 +3305,6 @@ function faShowResult(cashedOut) {
     claimBtn.textContent = '💰 COLLECT ' + totalReturn + ' COINS';
     claimBtn.className   = 'bj-claim-btn';
     // Coin burst
-    spawnFaCoins(totalReturn);
     sfxChord([523, 659, 784], 'sine', 0.6, 0.2);
   } else {
     claimBtn.textContent = '▶ PLAY AGAIN';
@@ -3325,29 +3323,39 @@ window.faCashout = () => {
 window.faClaim = async () => {
   const earned = window._faEarned || 0;
   const claimBtn = document.getElementById('fa-claim-btn');
-  claimBtn.disabled = true;
+  if (claimBtn) { claimBtn.disabled = true; claimBtn.style.pointerEvents = 'none'; }
 
   if (earned > 0) {
     const newCoins = (myProfile.coins || 0) + earned;
     myProfile.coins = newCoins;
     try { await updateDoc(doc(db,'users',me.uid),{coins:newCoins}); } catch(e){}
     updateCoinDisplays(newCoins);
-    setTimeout(() => faResetToMenu(), 1800);
-  } else {
-    faResetToMenu();
   }
+  // Always reset regardless of earn/error, no delay that can get stuck
+  faResetToMenu();
 };
 
 function faResetToMenu() {
   faGameRunning = false;
-  if (faAnimFrame) cancelAnimationFrame(faAnimFrame);
+  if (faAnimFrame) { cancelAnimationFrame(faAnimFrame); faAnimFrame = null; }
   document.removeEventListener('keydown', faKeyHandler);
   faBet = 0; faPipes = 0; faEarned = 0; faDeadFromCrash = false;
   window._faEarned = 0;
-  document.getElementById('fa-err').textContent = '';
-  document.getElementById('fa-bet-screen').style.display    = 'block';
-  document.getElementById('fa-game-screen').style.display   = 'none';
-  document.getElementById('fa-result-screen').style.display = 'none';
+
+  // Re-enable claim btn for next game
+  const claimBtn = document.getElementById('fa-claim-btn');
+  if (claimBtn) { claimBtn.disabled = false; claimBtn.style.pointerEvents = ''; }
+
+  const errEl = document.getElementById('fa-err');
+  if (errEl) errEl.textContent = '';
+
+  const bet  = document.getElementById('fa-bet-screen');
+  const game = document.getElementById('fa-game-screen');
+  const res  = document.getElementById('fa-result-screen');
+  if (bet)  bet.style.display  = 'block';
+  if (game) game.style.display = 'none';
+  if (res)  res.style.display  = 'none';
+
   fayncBalance();
 }
 
