@@ -613,23 +613,52 @@
 
 <!-- SFX MODAL -->
 <div class="modal-overlay" id="sfx-overlay" onclick="if(event.target===this)closeModal('sfx-overlay')">
-  <div class="modal" style="max-width:360px;">
+  <div class="modal" style="max-width:400px;">
     <button class="modal-close" onclick="closeModal('sfx-overlay')">✕</button>
     <div class="auth-header"><div class="auth-title">🎵 PLAY SFX</div><div class="auth-sub">Costs 1250🪙 · Plays for everyone</div></div>
     <div class="auth-form" style="gap:10px;">
-      <div id="sfx-err" style="color:var(--red-hot);font-size:0.75rem;"></div>
+      <div id="sfx-err" style="color:var(--red-hot);font-size:0.75rem;min-height:16px;"></div>
 
-      <!-- Upload custom sound -->
-      <div style="background:var(--dark3);border:1px solid var(--border);padding:10px;display:flex;flex-direction:column;gap:6px;">
+      <!-- Upload panel -->
+      <div id="sfx-upload-panel" style="background:var(--dark3);border:1px solid var(--border);padding:10px;display:flex;flex-direction:column;gap:6px;">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:0.85rem;letter-spacing:2px;color:var(--muted);">UPLOAD CUSTOM SOUND</div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);">MP3 or WAV · max 5 seconds</div>
-        <input type="file" id="sfx-upload" accept="audio/mp3,audio/wav,audio/*" style="font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;color:var(--text);width:100%;" onchange="previewCustomSfx(this)">
-        <div id="sfx-preview-bar" style="display:none;display:flex;gap:8px;align-items:center;">
-          <button class="bj-preset" style="flex:1;padding:10px 0;" onclick="playCustomSfxPreview()">▶ PREVIEW</button>
-          <button class="auth-btn" style="flex:1;margin:0;padding:10px 0;" onclick="sendCustomSfx()">SEND — 1250🪙</button>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);">MP3 or WAV · max 5 seconds · clip trimmer opens if needed</div>
+        <input type="file" id="sfx-upload" accept="audio/mp3,audio/wav,audio/*" style="font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;color:var(--text);width:100%;" onchange="sfxHandleFile(this)">
+      </div>
+
+      <!-- Trimmer panel (hidden until needed) -->
+      <div id="sfx-trimmer-panel" style="display:none;flex-direction:column;gap:8px;background:var(--dark3);border:1px solid var(--border);padding:10px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:0.85rem;letter-spacing:2px;color:var(--gold);">✂ TRIM TO 5 SECONDS</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);">Drag the handles to select up to 5 seconds. Orange = selected region.</div>
+        <!-- Waveform canvas -->
+        <div style="position:relative;user-select:none;">
+          <canvas id="sfx-waveform" width="360" height="64" style="width:100%;height:64px;background:#111;border:1px solid var(--border);cursor:crosshair;display:block;"></canvas>
+          <!-- time labels -->
+          <div id="sfx-trim-labels" style="display:flex;justify-content:space-between;font-family:'Barlow Condensed',sans-serif;font-size:0.65rem;color:var(--muted);margin-top:2px;"></div>
+        </div>
+        <!-- Trim time display -->
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;color:var(--muted);">Start: <span id="sfx-trim-start-lbl" style="color:var(--gold);">0.00s</span></div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;color:var(--muted);">End: <span id="sfx-trim-end-lbl" style="color:var(--gold);">5.00s</span></div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;color:var(--muted);">Dur: <span id="sfx-trim-dur-lbl" style="color:var(--text);">5.00s</span></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="bj-preset" style="flex:1;padding:8px 0;font-size:0.8rem;" onclick="sfxTrimPreview()">▶ PREVIEW TRIM</button>
+          <button class="auth-btn" style="flex:1;margin:0;padding:8px 0;font-size:0.8rem;" onclick="sfxApplyTrim()">✂ USE THIS CLIP</button>
         </div>
       </div>
 
+      <!-- Ready panel (hidden until clip ready) -->
+      <div id="sfx-ready-panel" style="display:none;flex-direction:column;gap:8px;">
+        <div style="background:rgba(0,200,100,0.07);border:1px solid rgba(0,200,100,0.3);padding:8px 12px;font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;color:#4fd97e;">
+          ✅ Clip ready · <span id="sfx-ready-dur"></span>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="bj-preset" style="flex:1;padding:10px 0;" onclick="playCustomSfxPreview()">▶ PREVIEW</button>
+          <button class="auth-btn" style="flex:1;margin:0;padding:10px 0;" onclick="sendCustomSfx()">SEND — 1250🪙</button>
+        </div>
+        <button onclick="sfxReset()" style="background:none;border:none;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;cursor:pointer;text-decoration:underline;text-align:center;">↩ Choose different file</button>
+      </div>
 
     </div>
   </div>
@@ -3602,29 +3631,308 @@ window.sendTts = async () => {
   showToast('TTS sent!');
 };
 
+// ── SFX TRIMMER STATE ──
+let _sfxAudioBuffer = null;   // decoded AudioBuffer of loaded file
+let _sfxTrimStart   = 0;      // trim start in seconds
+let _sfxTrimEnd     = 5;      // trim end in seconds
+let _sfxDuration    = 0;      // total file duration
+let _sfxDragging    = null;   // 'start' | 'end' | 'region' | null
+let _sfxDragOffsetX = 0;
+const SFX_MAX_DUR   = 5;      // max clip seconds allowed
+
 window.openSfxModal = () => {
   if (!me) { showToast('Log in first!'); return; }
-  document.getElementById('sfx-err').textContent = '';
-  const pb = document.getElementById('sfx-preview-bar');
-  if (pb) pb.style.display = 'none';
-  const up = document.getElementById('sfx-upload');
-  if (up) up.value = '';
-  window._customSfxData = null;
+  sfxReset();
   openModal('sfx-overlay');
 };
 
-window.previewCustomSfx = (input) => {
+window.sfxReset = () => {
+  document.getElementById('sfx-err').textContent = '';
+  document.getElementById('sfx-upload').value = '';
+  document.getElementById('sfx-trimmer-panel').style.display = 'none';
+  document.getElementById('sfx-ready-panel').style.display = 'none';
+  document.getElementById('sfx-upload-panel').style.display = 'flex';
+  window._customSfxData = null;
+  _sfxAudioBuffer = null;
+};
+
+window.sfxHandleFile = async (input) => {
   const file = input.files[0];
   if (!file) return;
-  if (file.size > 1024 * 1024) { document.getElementById('sfx-err').textContent = 'File too large (max 1MB)'; return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    window._customSfxData = e.target.result;
-    document.getElementById('sfx-preview-bar').style.display = 'flex';
-    document.getElementById('sfx-err').textContent = '';
-  };
-  reader.readAsDataURL(file);
+  const err = document.getElementById('sfx-err');
+  err.textContent = '';
+
+  // Read file into ArrayBuffer for Web Audio decoding
+  const arrayBuf = await file.arrayBuffer();
+  const actx = new (window.AudioContext || window.webkitAudioContext)();
+  let decoded;
+  try { decoded = await actx.decodeAudioData(arrayBuf); }
+  catch(e) { err.textContent = 'Cannot decode audio file.'; return; }
+
+  _sfxAudioBuffer = decoded;
+  _sfxDuration    = decoded.duration;
+  _sfxTrimStart   = 0;
+  _sfxTrimEnd     = Math.min(_sfxDuration, SFX_MAX_DUR);
+
+  if (_sfxDuration <= SFX_MAX_DUR) {
+    // Short enough — encode directly and skip trimmer
+    const wav = _sfxEncodeWav(_sfxSliceBuffer(decoded, 0, _sfxDuration));
+    window._customSfxData = wav;
+    _sfxShowReady(_sfxDuration);
+  } else {
+    // Too long — open trimmer
+    _sfxOpenTrimmer();
+  }
 };
+
+function _sfxOpenTrimmer() {
+  document.getElementById('sfx-upload-panel').style.display = 'none';
+  document.getElementById('sfx-ready-panel').style.display = 'none';
+  const panel = document.getElementById('sfx-trimmer-panel');
+  panel.style.display = 'flex';
+  _sfxDrawWaveform();
+  _sfxUpdateTrimLabels();
+  // Bind drag events on canvas
+  const cv = document.getElementById('sfx-waveform');
+  cv.onmousedown  = _sfxMouseDown;
+  cv.onmousemove  = _sfxMouseMove;
+  cv.onmouseup    = _sfxMouseUp;
+  cv.onmouseleave = _sfxMouseUp;
+  cv.ontouchstart = _sfxTouchStart;
+  cv.ontouchmove  = _sfxTouchMove;
+  cv.ontouchend   = _sfxMouseUp;
+}
+
+function _sfxGetHandleX(cv, time) {
+  return (time / _sfxDuration) * cv.width;
+}
+function _sfxTimeFromX(cv, x) {
+  return Math.max(0, Math.min(_sfxDuration, (x / cv.width) * _sfxDuration));
+}
+function _sfxClampTrim() {
+  // Ensure selection <= SFX_MAX_DUR
+  if (_sfxTrimEnd - _sfxTrimStart > SFX_MAX_DUR) {
+    _sfxTrimEnd = _sfxTrimStart + SFX_MAX_DUR;
+  }
+  if (_sfxTrimEnd > _sfxDuration) _sfxTrimEnd = _sfxDuration;
+  if (_sfxTrimStart < 0) _sfxTrimStart = 0;
+}
+
+function _sfxDrawWaveform() {
+  const cv = document.getElementById('sfx-waveform');
+  if (!cv || !_sfxAudioBuffer) return;
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const data = _sfxAudioBuffer.getChannelData(0);
+  const step = Math.ceil(data.length / W);
+
+  // Background
+  ctx.fillStyle = '#111';
+  ctx.fillRect(0, 0, W, H);
+
+  // Selected region highlight
+  const sx = _sfxGetHandleX(cv, _sfxTrimStart);
+  const ex = _sfxGetHandleX(cv, _sfxTrimEnd);
+  ctx.fillStyle = 'rgba(255,170,0,0.13)';
+  ctx.fillRect(sx, 0, ex - sx, H);
+
+  // Waveform
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < W; i++) {
+    const inRegion = i >= sx && i <= ex;
+    ctx.strokeStyle = inRegion ? '#ffa500' : '#444';
+    let min = 1, max = -1;
+    for (let j = 0; j < step; j++) {
+      const d = data[i * step + j] || 0;
+      if (d < min) min = d;
+      if (d > max) max = d;
+    }
+    const y1 = ((1 - max) / 2) * H;
+    const y2 = ((1 - min) / 2) * H;
+    ctx.beginPath();
+    ctx.moveTo(i, y1);
+    ctx.lineTo(i, Math.max(y2, y1 + 1));
+    ctx.stroke();
+  }
+
+  // Handle lines
+  const drawHandle = (x, col) => {
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    // Triangle cap
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.moveTo(x-6,0); ctx.lineTo(x+6,0); ctx.lineTo(x,10); ctx.closePath(); ctx.fill();
+  };
+  drawHandle(sx, '#ffa500');
+  drawHandle(ex, '#ff4444');
+
+  // 5-second cap marker if selection at max
+  if (_sfxTrimEnd - _sfxTrimStart >= SFX_MAX_DUR - 0.01) {
+    ctx.fillStyle = 'rgba(255,68,68,0.25)';
+    ctx.fillRect(ex, 0, W - ex, H);
+  }
+}
+
+function _sfxUpdateTrimLabels() {
+  document.getElementById('sfx-trim-start-lbl').textContent = _sfxTrimStart.toFixed(2) + 's';
+  document.getElementById('sfx-trim-end-lbl').textContent   = _sfxTrimEnd.toFixed(2) + 's';
+  const dur = _sfxTrimEnd - _sfxTrimStart;
+  const dl = document.getElementById('sfx-trim-dur-lbl');
+  dl.textContent = dur.toFixed(2) + 's';
+  dl.style.color = dur > SFX_MAX_DUR ? 'var(--red-hot)' : 'var(--text)';
+
+  // Time ticks
+  const cv = document.getElementById('sfx-waveform');
+  if (!cv) return;
+  const tl = document.getElementById('sfx-trim-labels');
+  if (!tl) return;
+  const steps = Math.min(10, Math.floor(_sfxDuration));
+  tl.innerHTML = '';
+  for (let i = 0; i <= steps; i++) {
+    const t = (_sfxDuration / steps) * i;
+    const sp = document.createElement('span');
+    sp.textContent = t.toFixed(1) + 's';
+    tl.appendChild(sp);
+  }
+}
+
+function _sfxCanvasX(cv, evt) {
+  const rect = cv.getBoundingClientRect();
+  const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+  return (clientX - rect.left) * (cv.width / rect.width);
+}
+
+function _sfxMouseDown(e) {
+  const cv = document.getElementById('sfx-waveform');
+  const x = _sfxCanvasX(cv, e);
+  const sx = _sfxGetHandleX(cv, _sfxTrimStart);
+  const ex = _sfxGetHandleX(cv, _sfxTrimEnd);
+  const THRESH = 12;
+  if (Math.abs(x - sx) < THRESH) {
+    _sfxDragging = 'start';
+  } else if (Math.abs(x - ex) < THRESH) {
+    _sfxDragging = 'end';
+  } else if (x > sx && x < ex) {
+    _sfxDragging = 'region';
+    _sfxDragOffsetX = x - sx;
+  } else {
+    // Click outside — set new start
+    _sfxDragging = 'start';
+    _sfxTrimStart = _sfxTimeFromX(cv, x);
+    _sfxTrimEnd = Math.min(_sfxDuration, _sfxTrimStart + SFX_MAX_DUR);
+  }
+  e.preventDefault();
+}
+function _sfxTouchStart(e) { _sfxMouseDown(e); }
+
+function _sfxMouseMove(e) {
+  if (!_sfxDragging) return;
+  const cv = document.getElementById('sfx-waveform');
+  const x  = _sfxCanvasX(cv, e);
+  const t  = _sfxTimeFromX(cv, x);
+  if (_sfxDragging === 'start') {
+    _sfxTrimStart = Math.min(t, _sfxTrimEnd - 0.1);
+    // If extending would exceed max, clamp end
+    if (_sfxTrimEnd - _sfxTrimStart > SFX_MAX_DUR) _sfxTrimStart = _sfxTrimEnd - SFX_MAX_DUR;
+  } else if (_sfxDragging === 'end') {
+    _sfxTrimEnd = Math.max(t, _sfxTrimStart + 0.1);
+    if (_sfxTrimEnd - _sfxTrimStart > SFX_MAX_DUR) _sfxTrimEnd = _sfxTrimStart + SFX_MAX_DUR;
+  } else if (_sfxDragging === 'region') {
+    const regionLen = _sfxTrimEnd - _sfxTrimStart;
+    const newStart  = _sfxTimeFromX(cv, x - _sfxDragOffsetX);
+    _sfxTrimStart = Math.max(0, Math.min(_sfxDuration - regionLen, newStart));
+    _sfxTrimEnd   = _sfxTrimStart + regionLen;
+  }
+  _sfxClampTrim();
+  _sfxDrawWaveform();
+  _sfxUpdateTrimLabels();
+  e.preventDefault();
+}
+function _sfxTouchMove(e) { _sfxMouseMove(e); }
+
+function _sfxMouseUp() { _sfxDragging = null; }
+
+window.sfxTrimPreview = () => {
+  if (!_sfxAudioBuffer) return;
+  const sliced = _sfxSliceBuffer(_sfxAudioBuffer, _sfxTrimStart, _sfxTrimEnd);
+  const wav    = _sfxEncodeWav(sliced);
+  const audio  = new Audio(wav);
+  audio.volume = 0.8;
+  audio.play().catch(()=>{});
+};
+
+window.sfxApplyTrim = () => {
+  if (!_sfxAudioBuffer) return;
+  const dur = _sfxTrimEnd - _sfxTrimStart;
+  if (dur < 0.1) { document.getElementById('sfx-err').textContent = 'Selection too short.'; return; }
+  if (dur > SFX_MAX_DUR) { document.getElementById('sfx-err').textContent = 'Max 5 seconds.'; return; }
+  const sliced = _sfxSliceBuffer(_sfxAudioBuffer, _sfxTrimStart, _sfxTrimEnd);
+  window._customSfxData = _sfxEncodeWav(sliced);
+  document.getElementById('sfx-trimmer-panel').style.display = 'none';
+  _sfxShowReady(dur);
+};
+
+function _sfxShowReady(dur) {
+  document.getElementById('sfx-upload-panel').style.display = 'none';
+  document.getElementById('sfx-trimmer-panel').style.display = 'none';
+  document.getElementById('sfx-ready-dur').textContent = dur.toFixed(2) + 's clip';
+  const rp = document.getElementById('sfx-ready-panel');
+  rp.style.display = 'flex';
+}
+
+// Slice an AudioBuffer between startSec and endSec, returns new AudioBuffer
+function _sfxSliceBuffer(buf, startSec, endSec) {
+  const sr        = buf.sampleRate;
+  const startSamp = Math.floor(startSec * sr);
+  const endSamp   = Math.min(Math.ceil(endSec * sr), buf.length);
+  const len       = endSamp - startSamp;
+  const actx      = new (window.AudioContext || window.webkitAudioContext)();
+  const out       = actx.createBuffer(buf.numberOfChannels, len, sr);
+  for (let ch = 0; ch < buf.numberOfChannels; ch++) {
+    out.getChannelData(ch).set(buf.getChannelData(ch).subarray(startSamp, endSamp));
+  }
+  return out;
+}
+
+// Encode AudioBuffer → base64 WAV data URL
+function _sfxEncodeWav(buf) {
+  const numCh = buf.numberOfChannels;
+  const sr    = buf.sampleRate;
+  const len   = buf.length;
+  const bytes = 44 + len * numCh * 2;
+  const ab    = new ArrayBuffer(bytes);
+  const dv    = new DataView(ab);
+  const writeStr = (o, s) => { for (let i=0;i<s.length;i++) dv.setUint8(o+i, s.charCodeAt(i)); };
+  writeStr(0, 'RIFF');
+  dv.setUint32(4,  bytes - 8, true);
+  writeStr(8, 'WAVE');
+  writeStr(12,'fmt ');
+  dv.setUint32(16, 16, true);
+  dv.setUint16(20, 1,  true);  // PCM
+  dv.setUint16(22, numCh, true);
+  dv.setUint32(24, sr, true);
+  dv.setUint32(28, sr * numCh * 2, true);
+  dv.setUint16(32, numCh * 2, true);
+  dv.setUint16(34, 16, true);
+  writeStr(36,'data');
+  dv.setUint32(40, len * numCh * 2, true);
+  let off = 44;
+  // Interleave channels
+  for (let i = 0; i < len; i++) {
+    for (let ch = 0; ch < numCh; ch++) {
+      const s = Math.max(-1, Math.min(1, buf.getChannelData(ch)[i]));
+      dv.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+      off += 2;
+    }
+  }
+  // To base64
+  let bin = '';
+  const bytes8 = new Uint8Array(ab);
+  for (let i = 0; i < bytes8.length; i++) bin += String.fromCharCode(bytes8[i]);
+  return 'data:audio/wav;base64,' + btoa(bin);
+}
 
 window.playCustomSfxPreview = () => {
   if (!window._customSfxData) return;
@@ -3641,7 +3949,6 @@ window.sendCustomSfx = async () => {
   myProfile.coins = newCoins;
   await updateDoc(doc(db,'users',me.uid),{coins:newCoins}).catch(()=>{});
   updateCoinDisplays(newCoins);
-  // Store audio as base64 in RTDB event
   await set(push(ref(rtdb,'events/sfx')), {
     uid: me.uid, username: myProfile.username,
     sound: 'custom', audioData: window._customSfxData, ts: Date.now()
