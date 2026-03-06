@@ -66,6 +66,7 @@
   .vote-btn.voted-left { background: var(--red); border-color: var(--red); color: white; cursor: default; }
   .vote-btn.voted-right { background: #3a86ff; border-color: #3a86ff; color: white; cursor: default; }
   .vote-btn:disabled { opacity: 0.5; cursor: default; }
+  .fighter-name-tag { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 2px; color: var(--muted); text-align: center; padding: 3px 0 5px; background: var(--dark2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .vote-pct { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 1px; line-height: 1; flex-shrink: 0; }
   .cam-panel:first-child .vote-pct { color: var(--red-hot); }
   .cam-panel.right-cam .vote-pct { color: #60a5fa; }
@@ -305,6 +306,7 @@
       <div class="vote-pct" id="pct-left">0%</div>
       <button class="vote-btn" id="vbtn-left" onclick="castVote('left')">VOTE</button>
     </div>
+    <div class="fighter-name-tag" id="fname-left">—</div>
     <div class="round-bar-wrap"><div class="round-bar-fill" id="rbar-left"></div></div>
   </div>
 
@@ -336,6 +338,7 @@
       <button class="vote-btn" id="vbtn-right" onclick="castVote('right')">VOTE</button>
       <div class="vote-pct" id="pct-right">0%</div>
     </div>
+    <div class="fighter-name-tag" id="fname-right">—</div>
     <div class="round-bar-wrap"><div class="round-bar-fill" id="rbar-right"></div></div>
   </div>
 
@@ -897,6 +900,8 @@ function showSlot(slot, data) {
   document.getElementById('np-'+slot).style.display   = 'flex';
   document.getElementById('live-'+slot).style.display = 'flex';
   document.getElementById('ph-'+slot).style.display   = 'none';
+  const ftag = document.getElementById('fname-'+slot);
+  if (ftag) ftag.textContent = data.username || '—';
   if (wasEmpty) { animateSlotEnter(slot); SFX.join(); }
 }
 
@@ -907,6 +912,8 @@ function clearSlotUI(slot) {
   document.getElementById('np-'+slot).style.display   = 'none';
   document.getElementById('live-'+slot).style.display = 'none';
   document.getElementById('ph-'+slot).style.display   = 'flex';
+  const ftag = document.getElementById('fname-'+slot);
+  if (ftag) ftag.textContent = '—';
   if (slot !== mySlot) {
     const v=document.getElementById('vid-'+slot);
     v.style.display='none'; v.srcObject=null;
