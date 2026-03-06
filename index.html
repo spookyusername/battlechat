@@ -298,6 +298,12 @@
   @keyframes roundLose { 0%{background:var(--dark2)} 30%{background:rgba(217,43,43,0.15)} 100%{background:var(--dark2)} }
   @keyframes scanline { 0%{transform:translateY(-100%)} 100%{transform:translateY(400%)} }
 
+  /* OPPONENT ENTRANCE */
+  @keyframes oppBanner { 0%{opacity:0;transform:translateY(-100%) scaleX(0.8)} 15%{opacity:1;transform:translateY(0) scaleX(1)} 75%{opacity:1;transform:translateY(0)} 100%{opacity:0;transform:translateY(-20px)} }
+  @keyframes arenaFlash { 0%{opacity:0.35} 100%{opacity:0} }
+  .opp-banner { position:absolute; top:0; left:0; right:0; z-index:10; background:linear-gradient(135deg,rgba(217,43,43,0.95),rgba(139,0,0,0.9)); color:white; font-family:'Bebas Neue',sans-serif; font-size:1.3rem; letter-spacing:5px; text-align:center; padding:10px 0; animation: oppBanner 2.2s ease forwards; pointer-events:none; border-bottom:2px solid var(--red-hot); text-shadow:0 0 20px rgba(255,100,100,0.8); }
+  .arena-flash { position:fixed; inset:0; background:rgba(217,43,43,0.15); z-index:9999; pointer-events:none; animation:arenaFlash 0.4s ease forwards; }
+
   .slot-enter { animation: slotIn 0.45s cubic-bezier(0.22,1,0.36,1) forwards; }
   .slot-exit  { animation: slotOut 0.4s ease-in forwards; }
   .nameplate-enter { animation: nameIn 0.3s ease forwards; }
@@ -1148,7 +1154,53 @@ function showSlot(slot, data) {
   if (tun) tun.textContent = data.username || '—';
   if (tw)  tw.textContent  = 'W: ' + (data.wins||0);
   if (tl)  tl.textContent  = 'L: ' + (data.losses||0);
-  if (wasEmpty) { animateSlotEnter(slot); SFX.join(); }
+  if (wasEmpty) {
+    animateSlotEnter(slot);
+    SFX.join();
+    // If this fills the second slot while we are already on stage — opponent arrived!
+    if (mySlot && slot !== mySlot && stageUids.left && stageUids.right) {
+      triggerOpponentEntrance(slot);
+    }
+  }
+}
+
+function triggerOpponentEntrance(slot) {
+  // Flash the VS badge
+  const vs = document.querySelector('.vs-hex');
+  if (vs) {
+    vs.style.transition = 'transform 0.15s, box-shadow 0.15s';
+    vs.style.transform  = 'scale(1.35) rotate(-8deg)';
+    vs.style.boxShadow  = '0 0 60px rgba(255,59,59,1), 0 0 100px rgba(217,43,43,0.6)';
+    setTimeout(() => {
+      vs.style.transform = 'scale(1)';
+      vs.style.boxShadow = '';
+    }, 300);
+  }
+
+  // Show a "OPPONENT JOINED" banner over the incoming cam
+  const feed = document.getElementById('feed-' + slot);
+  if (feed) {
+    const banner = document.createElement('div');
+    banner.className = 'opp-banner';
+    banner.textContent = '⚔ OPPONENT JOINED';
+    feed.appendChild(banner);
+    setTimeout(() => banner.remove(), 2200);
+  }
+
+  // Screen-wide flash
+  const flash = document.createElement('div');
+  flash.className = 'arena-flash';
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 400);
+
+  // Dramatic multi-tone SFX
+  sfxTone(220, 'sawtooth', 0.08, 0.25);
+  setTimeout(() => sfxTone(440, 'square', 0.08, 0.3), 80);
+  setTimeout(() => sfxTone(660, 'sine',   0.35, 0.35), 160);
+  setTimeout(() => sfxChord([523, 659, 784], 'sine', 0.5, 0.22), 300);
+
+  addSystemMsg('⚔ ' + document.getElementById('un-'+slot).textContent + ' has entered the arena — BATTLE BEGINS!');
+  showToast('⚔ OPPONENT JOINED — FIGHT!');
 }
 
 function clearSlotUI(slot) {
@@ -1307,21 +1359,24 @@ window.goToQueue = () => {
 // When a stage slot opens, the person with the lowest ts (first in line) gets it
 
 async function enterQueue() {
-  document.getElementById('q-av').textContent   = myProfile.avatar;
-  document.getElementById('q-name').textContent = myProfile.username;
-  document.getElementById('q-status').textContent = 'Checking for open slots...';
-  document.getElementById('q-pos').textContent  = '...';
-  document.getElementById('q-chips').innerHTML  = '';
+  document.getElementById('q-av').textContent     = myProfile.avatar;
+  document.getElementById('q-name').textContent   = myProfile.username;
+  document.getElementById('q-status').textContent = 'Finding a slot...';
+  document.getElementById('q-pos').textContent    = '...';
+  document.getElementById('q-pos').style.color    = 'var(--gold)';
+  document.getElementById('q-chips').innerHTML    = '';
 
-  // Add ourselves to the queue
-  await set(ref(rtdb,'queue/'+me.uid), { uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, ts:Date.now() });
+  // Write to queue with timestamp
+  await set(ref(rtdb,'queue/'+me.uid), {
+    uid: me.uid, username: myProfile.username,
+    avatar: myProfile.avatar, ts: Date.now()
+  });
 
   let launched = false;
 
   async function checkAndClaim() {
     if (launched) return;
 
-    // Get current stage and queue state simultaneously
     const [stageSnap, queueSnap] = await Promise.all([
       get(ref(rtdb,'stage')),
       get(ref(rtdb,'queue'))
@@ -1329,22 +1384,20 @@ async function enterQueue() {
 
     const stage     = stageSnap.val() || {};
     const queueData = queueSnap.val() || {};
-    const sorted    = Object.values(queueData).sort((a,b)=>a.ts - b.ts);
+    const sorted    = Object.values(queueData).sort((a,b) => a.ts - b.ts);
     const myPos     = sorted.findIndex(w => w.uid === me.uid);
 
-    // Update queue UI for everyone
     updateQueueUI(sorted, myPos);
 
-    // Check if there is a free slot
+    // Any free slot available? Go immediately — no waiting for opponent
     const freeSlot = !stage.left ? 'left' : !stage.right ? 'right' : null;
 
-    // Only the first person in queue gets to claim a slot
-    if (freeSlot && myPos === 0) {
+    if (freeSlot) {
       launched = true;
       stopQueueListeners();
       await remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
 
-      document.getElementById('q-status').textContent = 'Slot found — going live!';
+      document.getElementById('q-status').textContent = 'Going live!';
       document.getElementById('q-pos').textContent    = 'GO!';
       document.getElementById('q-pos').style.color    = '#4CAF50';
 
@@ -1352,22 +1405,26 @@ async function enterQueue() {
         closeModal('arena-overlay');
         const success = await goLive(freeSlot);
         if (!success) {
-          // Race condition — someone else grabbed it, re-enter queue
+          // Race — slot grabbed, retry
           launched = false;
-          await set(ref(rtdb,'queue/'+me.uid), { uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, ts:Date.now() });
+          await set(ref(rtdb,'queue/'+me.uid), {
+            uid: me.uid, username: myProfile.username,
+            avatar: myProfile.avatar, ts: Date.now()
+          });
           enterQueue();
         }
-      }, 800);
+      }, 600);
+    } else {
+      // Both slots full — wait
+      document.getElementById('q-status').textContent = 'Waiting for a slot...';
     }
   }
 
-  // Watch stage — fires immediately and on every change
   queueUnsubStage = onValue(ref(rtdb,'stage'), () => checkAndClaim());
-  // Watch queue list — fires immediately and on every change
   queueUnsubList  = onValue(ref(rtdb,'queue'), async snap => {
     if (launched) return;
     const queueData = snap.val() || {};
-    const sorted    = Object.values(queueData).sort((a,b)=>a.ts - b.ts);
+    const sorted    = Object.values(queueData).sort((a,b) => a.ts - b.ts);
     const myPos     = sorted.findIndex(w => w.uid === me.uid);
     updateQueueUI(sorted, myPos);
   });
