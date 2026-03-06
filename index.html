@@ -820,33 +820,28 @@
     <div class="menu-section-title" style="margin-top:18px;">Site Themes</div>
     <div class="shop-grid">
       <div class="shop-item" onclick="buyItem('theme_void',1000)">
-        <div class="shop-preview theme-preview void-prev">STARFISH</div>
-        <div class="shop-item-name">Chocolate Starfish</div>
+        <div class="shop-preview" style="color:#6b3a1f;">SKIDMARK</div>
+        <div class="shop-item-name">Skidmark</div>
         <div class="shop-price">🪙 1000</div>
       </div>
-      <div class="shop-item" onclick="buyItem('theme_ember',1200)">
-        <div class="shop-preview theme-preview ember-prev">STINKY</div>
-        <div class="shop-item-name">Stinky Rash</div>
-        <div class="shop-price">🪙 1200</div>
-      </div>
       <div class="shop-item" onclick="buyItem('theme_ice',1200)">
-        <div class="shop-preview theme-preview ice-prev">BLUEBALLS</div>
-        <div class="shop-item-name">Blue Balls</div>
+        <div class="shop-preview" style="color:#00bbff;">NIPPLES</div>
+        <div class="shop-item-name">Frostbitten Nips</div>
         <div class="shop-price">🪙 1200</div>
       </div>
       <div class="shop-item" onclick="buyItem('theme_toxic',1500)">
-        <div class="shop-preview theme-preview toxic-prev">BIOHAZARD</div>
-        <div class="shop-item-name">Biohazard</div>
+        <div class="shop-preview" style="color:#39ff14;">SEPTIC</div>
+        <div class="shop-item-name">Septic Leak</div>
         <div class="shop-price">🪙 1500</div>
       </div>
       <div class="shop-item" onclick="buyItem('theme_gold',1800)">
-        <div class="shop-preview theme-preview gold-prev">DIRTY$</div>
-        <div class="shop-item-name">Dirty Money</div>
+        <div class="shop-preview" style="color:#C9A84C;">EARWAX</div>
+        <div class="shop-item-name">Crusty Earwax</div>
         <div class="shop-price">🪙 1800</div>
       </div>
-      <div class="shop-item" onclick="buyItem('theme_blood',2000)">
-        <div class="shop-preview theme-preview blood-prev">PERIODBATH</div>
-        <div class="shop-item-name">Period Bloodbath</div>
+      <div class="shop-item" onclick="buyItem('theme_coal',2000)">
+        <div class="shop-preview" style="color:#222;text-shadow:0 0 8px rgba(255,255,255,0.15);">MOLD</div>
+        <div class="shop-item-name">Black Mold</div>
         <div class="shop-price">🪙 2000</div>
       </div>
     </div>
@@ -952,12 +947,11 @@
         </div>
         <select class="settings-select" id="theme-select" onchange="applyTheme(this.value)">
           <option value="default">Default</option>
-          <option value="void">Chocolate Starfish</option>
-          <option value="ember">Stinky Rash</option>
-          <option value="ice">Blue Balls</option>
-          <option value="toxic">Biohazard</option>
-          <option value="gold">Dirty Money</option>
-          <option value="blood">Period Bloodbath</option>
+          <option value="void">Skidmark</option>
+          <option value="ice">Frostbitten Nips</option>
+          <option value="toxic">Septic Leak</option>
+          <option value="gold">Crusty Earwax</option>
+          <option value="coal">Black Mold</option>
         </select>
       </div>
       <div class="settings-row" id="settings-namecolor-row">
@@ -2092,12 +2086,11 @@ const NAME_COLORS = {
 
 const THEMES = {
   default: { red:'#D92B2B', redHot:'#FF3B3B', gold:'#C9A84C', black:'#080808', dark:'#0e0e0e', dark2:'#141414', dark3:'#1c1c1c' },
-  void:    { red:'#3a3a3a', redHot:'#666', gold:'#999', black:'#000', dark:'#060606', dark2:'#0a0a0a', dark3:'#111' },
-  ember:   { red:'#e63900', redHot:'#ff6b35', gold:'#ffaa00', black:'#0a0200', dark:'#130400', dark2:'#1c0600', dark3:'#260900' },
+  void:    { red:'#5c3010', redHot:'#8b4513', gold:'#6b3a1f', black:'#050200', dark:'#0a0500', dark2:'#110700', dark3:'#180a00' },
   ice:     { red:'#0077bb', redHot:'#00bbff', gold:'#60d4f5', black:'#00080f', dark:'#001018', dark2:'#001822', dark3:'#00202e' },
   toxic:   { red:'#00b300', redHot:'#39ff14', gold:'#aaff00', black:'#000800', dark:'#000f00', dark2:'#001500', dark3:'#001c00' },
   gold:    { red:'#b8860b', redHot:'#C9A84C', gold:'#ffd700', black:'#0a0800', dark:'#141000', dark2:'#1e1800', dark3:'#282200' },
-  blood:   { red:'#6b0000', redHot:'#990000', gold:'#8b0000', black:'#050000', dark:'#0d0000', dark2:'#140000', dark3:'#1c0000' },
+  coal:    { red:'#1a1a1a', redHot:'#2a2a2a', gold:'#333', black:'#000', dark:'#020202', dark2:'#050505', dark3:'#080808' },
 };
 
 let sfxEnabled = true;
