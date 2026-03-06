@@ -970,7 +970,8 @@
           <div style="font-family:'Bebas Neue',sans-serif;font-size:0.9rem;letter-spacing:2px;color:#4CAF50;">EARNED: <span id="fa-earned">+0</span>🪙</div>
         </div>
         <canvas id="fa-canvas" width="348" height="480" style="display:block;width:100%;height:480px;background:#0a0a0a;border:1px solid var(--border);cursor:pointer;"></canvas>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);text-align:center;margin-top:6px;">TAP / CLICK or SPACE to flap</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);text-align:center;margin-top:6px;">TAP / CLICK / SPACE to flap &nbsp;·&nbsp; <span style="color:var(--gold);">C</span> to cash out</div>
+        <button id="fa-cashout-btn" onclick="faCashout()" style="width:100%;margin-top:8px;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:4px;background:rgba(201,168,76,0.1);border:2px solid var(--gold);color:var(--gold);padding:14px 0;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(201,168,76,0.22)'" onmouseout="this.style.background='rgba(201,168,76,0.1)'">💰 CASH OUT [C]</button>
       </div>
 
       <!-- RESULT SCREEN -->
@@ -3027,6 +3028,7 @@ function faInitGame() {
 
 function faKeyHandler(e) {
   if (e.code === 'Space' && faGameRunning) { e.preventDefault(); faFlap(); }
+  if ((e.code === 'KeyC' || e.key === 'c' || e.key === 'C') && faGameRunning && FA.started && !FA.dead) { e.preventDefault(); faCashout(); }
 }
 
 function faFlap() {
@@ -3274,37 +3276,39 @@ function faShowResult(cashedOut) {
   document.getElementById('fa-game-screen').style.display   = 'none';
   document.getElementById('fa-result-screen').style.display = 'block';
 
-  const totalReturn = Math.round(faEarned * 10) / 10;
-  const net = totalReturn - faBet + faBet; // they already paid bet, this is what they GET back
+  // Die = lose everything. Cashout = keep earned coins.
+  const payout = cashedOut ? Math.round(faEarned * 10) / 10 : 0;
 
   const icon  = cashedOut ? '💰' : (faPipes > 0 ? '💸' : '💀');
-  const title = cashedOut ? 'CASHED OUT' : (faPipes > 0 ? 'CRASHED' : 'DEAD');
-  const titleClass = cashedOut ? 'win' : (faPipes > 0 ? 'push' : 'lose');
+  const title = cashedOut ? 'CASHED OUT' : (faPipes > 0 ? 'YOU DIED' : 'YOU DIED');
+  const titleClass = cashedOut ? 'win' : 'lose';
 
-  document.getElementById('fa-result-icon').textContent    = icon;
+  document.getElementById('fa-result-icon').textContent = icon;
   const titleEl = document.getElementById('fa-result-title');
   titleEl.textContent = title;
   titleEl.className   = 'bj-result-title ' + titleClass;
 
   const amtEl = document.getElementById('fa-result-amount');
-  if (totalReturn > 0) {
+  if (cashedOut && payout > 0) {
     amtEl.style.color = 'var(--gold)';
-    amtEl.textContent = '+' + totalReturn + ' 🪙 earned';
+    amtEl.textContent = '+' + payout + ' 🪙 cashed out';
+  } else if (cashedOut && payout === 0) {
+    amtEl.style.color = 'var(--muted)';
+    amtEl.textContent = 'Cashed out with nothing earned';
   } else {
     amtEl.style.color = 'var(--red-hot)';
-    amtEl.textContent = 'No pipes cleared — bet lost';
+    amtEl.textContent = '− ' + faBet + ' 🪙  bet lost';
   }
 
   document.getElementById('fa-result-detail').textContent =
     'Pipes cleared: ' + faPipes + '  ·  Bet: 🪙 ' + faBet;
 
-  window._faEarned = totalReturn;
+  window._faEarned = payout;
 
   const claimBtn = document.getElementById('fa-claim-btn');
-  if (totalReturn > 0) {
-    claimBtn.textContent = '💰 COLLECT ' + totalReturn + ' COINS';
+  if (cashedOut && payout > 0) {
+    claimBtn.textContent = '💰 COLLECT ' + payout + ' COINS';
     claimBtn.className   = 'bj-claim-btn';
-    // Coin burst
     sfxChord([523, 659, 784], 'sine', 0.6, 0.2);
   } else {
     claimBtn.textContent = '▶ PLAY AGAIN';
