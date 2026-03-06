@@ -969,7 +969,7 @@
           <div style="font-family:'Bebas Neue',sans-serif;font-size:0.9rem;letter-spacing:2px;color:var(--gold);">PIPES: <span id="fa-pipes">0</span></div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:0.9rem;letter-spacing:2px;color:#4CAF50;">EARNED: <span id="fa-earned">+0</span>🪙</div>
         </div>
-        <canvas id="fa-canvas" width="348" height="460" style="display:block;width:100%;height:calc(100vh - 280px);min-height:320px;background:#0a0a0a;border:1px solid var(--border);cursor:pointer;"></canvas>
+        <canvas id="fa-canvas" width="348" height="480" style="display:block;width:100%;height:480px;background:#0a0a0a;border:1px solid var(--border);cursor:pointer;"></canvas>
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);text-align:center;margin-top:6px;">TAP / CLICK or SPACE to flap</div>
       </div>
 
@@ -2976,7 +2976,7 @@ window.faStart = async () => {
 
 // ── FLAPPY GAME CORE ──
 const FA = {
-  W: 348, H: 460,
+  W: 348, H: 480,
   bird: { x: 70, y: 140, vy: 0, r: 13 },
   pipes: [],
   pipeW: 34,
@@ -3012,10 +3012,9 @@ function faInitGame() {
   if (!canvas) return;
   canvas.width  = FA.W;
   // Match canvas internal height to its rendered CSS height
-  const cssH = canvas.clientHeight || FA.H;
-  canvas.height = cssH;
-  FA.H = cssH;
-  FA.bird.y = Math.round(cssH / 2);
+  canvas.height = 480;
+  FA.H = 480;
+  FA.bird.y = 240;
 
   // Input
   canvas.onclick = faFlap;
