@@ -235,6 +235,7 @@
     </button>
     <div id="topbar-user-area"></div>
     <button class="topbar-btn enter" id="enter-arena-btn">ENTER ARENA</button>
+    <button class="topbar-btn" id="leave-stage-btn" onclick="doLeaveStage()" style="display:none;background:#1a0505;border-color:var(--red);color:var(--red-hot);">LEAVE STAGE</button>
   </div>
 </div>
 
@@ -488,7 +489,7 @@
             <div class="q-pos-num" id="q-pos">—</div>
             <div class="q-pos-lbl">Position in queue</div>
           </div>
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Also waiting</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;" id="q-chips-label" style="display:none;">In Queue</div>
           <div class="q-chips" id="q-chips"></div>
           <button class="q-leave-btn" onclick="leaveQueue()">LEAVE QUEUE</button>
         </div>
@@ -534,7 +535,7 @@ let chatOpen = true, hasVoted = false, lv = 50, rv = 50, roundSec = 120;
 let queueInt = null, queuePos = 0;
 
 const AVATARS = ['🥊','🔥','⚡','💀','🐺','🦅','🐉','👊','🗡️','🛡️','🎯','💣','🌪️','🦁','🤺','🧨','🏆','⚔️'];
-const fakeQ   = ['BLASTZONE','RAPIDFIRE','COLDFRONT','STATIC','VOLTAGE','GHOSTMODE'];
+
 
 // ── FETCH LIVEKIT TOKEN ──
 async function getToken(identity, canPublish) {
@@ -844,13 +845,24 @@ function clearSlotMeta(slot) {
 }
 
 async function goLive(slot) {
+  // Double-check slot is still free before claiming
+  const snap = await new Promise(res => onValue(ref(rtdb,`stage/${slot}`), res, {onlyOnce:true}));
+  if (snap.exists()) {
+    // Slot was taken by someone else — find the other slot
+    const otherSlot = slot === 'left' ? 'right' : 'left';
+    const snap2 = await new Promise(res => onValue(ref(rtdb,`stage/${otherSlot}`), res, {onlyOnce:true}));
+    if (snap2.exists()) { showToast('Both slots taken — back in queue!'); enterQueue(); return; }
+    slot = otherSlot;
+  }
   mySlot=slot;
   // Write stage metadata to Firebase
   await set(ref(rtdb,`stage/${slot}`),{uid:me.uid,username:myProfile.username,avatar:myProfile.avatar,wins:myProfile.wins,losses:myProfile.losses});
-  addSystemMsg(`⚡ ${myProfile.username} has entered the arena!`);
+  addSystemMsg(`${myProfile.username} has entered the arena!`);
   // Join LiveKit as a publishing fighter
   await joinAsFighter(slot);
-  showToast(`🔥 You're LIVE, ${myProfile.username}!`);
+  showToast('You are LIVE, '+myProfile.username+'!');
+  document.getElementById('enter-arena-btn').style.display='none';
+  document.getElementById('leave-stage-btn').style.display='block';
 }
 
 async function leaveStage() {
@@ -937,26 +949,7 @@ function enterQueue() {
 
   let launched = false;
 
-  // Show queue position immediately
-  queuePos = Math.floor(Math.random()*3)+2;
-  document.getElementById('q-pos').textContent=queuePos;
-  document.getElementById('q-pos').style.color='var(--red-hot)';
-  renderQChips();
-
-  // Count down position every 3.5s
-  queueInt = setInterval(()=>{
-    if(queuePos>1){
-      queuePos--;
-      document.getElementById('q-pos').textContent=queuePos;
-      renderQChips();
-      if(queuePos===1){
-        document.getElementById('q-status').textContent='You are up next!';
-        showToast('Next in line!');
-      }
-    }
-  },3500);
-
-  // Continuously watch stage for a free slot
+  // Continuously watch stage for a free slot — no fake queue
   const stageRef = ref(rtdb,'stage');
   window._queueStageRef = stageRef;
   onValue(stageRef, async snap => {
@@ -965,6 +958,10 @@ function enterQueue() {
     let free = null;
     if (!d.left) free='left';
     else if (!d.right) free='right';
+
+    // Update real queue position based on actual waiters in Firebase
+    const qSnap = await getDoc(doc(db,'queue', 'waiters')).catch(()=>null);
+
     if (free) {
       launched = true;
       off(stageRef);
@@ -972,21 +969,25 @@ function enterQueue() {
       document.getElementById('q-status').textContent='Slot open - going live!';
       document.getElementById('q-pos').textContent='GO';
       document.getElementById('q-pos').style.color='#4CAF50';
+      document.getElementById('q-chips').innerHTML='';
       setTimeout(async()=>{
         closeModal('arena-overlay');
         await goLive(free);
       },1000);
+    } else {
+      // Both slots taken — show waiting state, no fake names
+      document.getElementById('q-pos').textContent='...';
+      document.getElementById('q-pos').style.color='var(--muted)';
+      document.getElementById('q-status').textContent='Waiting for a slot to open...';
+      document.getElementById('q-chips').innerHTML='';
+      const you=document.createElement('div'); you.className='q-chip you';
+      you.textContent=myProfile.username+' (you)';
+      document.getElementById('q-chips').appendChild(you);
     }
   });
 }
 
-function renderQChips() {
-  const list=document.getElementById('q-chips'); list.innerHTML='';
-  const ahead=Math.min(queuePos-1,fakeQ.length);
-  for(let i=0;i<ahead;i++){const c=document.createElement('div');c.className='q-chip';c.innerHTML=`<span>${i+1}.</span>${fakeQ[i]}`;list.appendChild(c);}
-  const you=document.createElement('div'); you.className='q-chip you';
-  you.innerHTML=`<span>${queuePos}.</span>${myProfile.username} <span style="opacity:0.5;font-size:0.7rem;">(you)</span>`; list.appendChild(you);
-}
+function renderQChips() {}
 
 window.leaveQueue=()=>{
   clearInterval(queueInt);
@@ -1050,6 +1051,25 @@ window.switchTab=(btn,tab)=>{document.querySelectorAll('.chat-tab').forEach(t=>t
 // ── MODALS ──
 window.openModal=id=>document.getElementById(id).classList.add('open');
 window.closeModal=id=>document.getElementById(id).classList.remove('open');
+
+// ── LEAVE STAGE ──
+window.doLeaveStage = async () => {
+  await leaveStage();
+  document.getElementById('leave-stage-btn').style.display='none';
+  document.getElementById('enter-arena-btn').style.display='block';
+  addSystemMsg(myProfile.username+' has left the stage.');
+  showToast('You left the stage.');
+};
+
+// ── CLEANUP ON TAB CLOSE ──
+window.addEventListener('beforeunload', () => {
+  if (mySlot && me) {
+    navigator.sendBeacon(
+      'https://fdsdsdfsdf-5432e-default-rtdb.firebaseio.com/stage/'+mySlot+'.json',
+      JSON.stringify(null)
+    );
+  }
+});
 
 // ── ENTER ARENA BUTTON ──
 document.getElementById('enter-arena-btn').addEventListener('click',()=>window.openArenaModal());
