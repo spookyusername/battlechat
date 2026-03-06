@@ -47,7 +47,7 @@
   .cam-placeholder { display: flex; flex-direction: column; align-items: center; gap: 12px; opacity: 0.15; z-index: 2; position: relative; }
   .cam-placeholder-icon { width: 72px; height: 72px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 2rem; }
   .cam-placeholder-text { font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; letter-spacing: 3px; text-transform: uppercase; }
-  .cam-nameplate { position: absolute; top: 12px; left: 12px; z-index: 5; display: flex; align-items: center; gap: 8px; background: rgba(8,8,8,0.8); border: 1px solid var(--border); padding: 5px 12px 5px 8px; backdrop-filter: blur(4px); cursor: pointer; }
+  .cam-nameplate { display: none !important; }
   .cam-nameplate:hover { border-color: rgba(255,255,255,0.2); }
   .cam-avatar-sm { width: 26px; height: 26px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-family:'Bebas Neue',sans-serif; font-weight:700; flex-shrink:0; overflow:hidden; }
   .cam-avatar-sm img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
@@ -81,7 +81,8 @@
   /* TIMER BAR */
   .timer-bar-bottom { grid-column: 1 / 4; grid-row: 2; background: var(--dark2); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; position: relative; overflow: hidden; gap: 12px; }
   .timer-bar-num { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 4px; color: var(--gold); text-shadow: 0 0 12px rgba(201,168,76,0.3); line-height: 1; transition: color 0.3s; flex-shrink: 0; }
-  .timer-fighter-slot { display: flex; align-items: center; gap: 8px; flex: 1; overflow: hidden; }
+  .timer-fighter-slot { display: flex; align-items: center; gap: 8px; flex: 1; overflow: hidden; border-radius: 4px; transition: background 0.15s; }
+  .timer-fighter-slot:hover { background: rgba(255,255,255,0.05); }
   .timer-fighter-slot.right { justify-content: flex-end; }
   .tbar-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--dark3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-family:'Bebas Neue',sans-serif; font-weight:700; flex-shrink:0; overflow:hidden; }
   .tbar-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
@@ -543,7 +544,7 @@
 
   <!-- TIMER BAR -->
   <div class="timer-bar-bottom">
-    <div class="timer-fighter-slot" id="tbar-left">
+    <div class="timer-fighter-slot" id="tbar-left" style="cursor:pointer;" onclick="openProfileBySlot('left')">
       <div class="tbar-avatar" id="tbar-av-left">—</div>
       <div class="tbar-info">
         <div class="tbar-name" id="tbar-un-left">WAITING</div>
@@ -551,7 +552,7 @@
       </div>
     </div>
     <div class="timer-bar-num" id="timer-display">2:00</div>
-    <div class="timer-fighter-slot right" id="tbar-right">
+    <div class="timer-fighter-slot right" id="tbar-right" style="cursor:pointer;" onclick="openProfileBySlot('right')">
       <div class="tbar-info" style="text-align:right;">
         <div class="tbar-name" id="tbar-un-right">WAITING</div>
         <div class="tbar-stats"><span class="tbar-w" id="tbar-w-right">W: 0</span><span class="tbar-l" id="tbar-l-right">L: 0</span></div>
@@ -572,9 +573,12 @@
     <div class="chat-messages" id="chat-view">
       <div class="chat-msg system"><span class="msg-text">⚡ Welcome to BattleChat — log in to chat and vote!</span></div>
     </div>
-    <div class="chat-messages" id="lb-view" style="display:none;">
-      <div style="padding:10px 14px 4px;font-family:'Barlow Condensed',sans-serif;font-size:0.7rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;">All Time</div>
-      <div id="lb-list"></div>
+    <div class="chat-messages" id="lb-view" style="display:none;flex-direction:column;">
+      <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0;">
+        <button class="lb-tab active" id="lbt-wins" onclick="switchLbTab('wins')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.85rem;letter-spacing:2px;background:none;border:none;border-bottom:2px solid var(--red-hot);color:var(--text);cursor:pointer;">⚔️ W/L</button>
+        <button class="lb-tab" id="lbt-coins" onclick="switchLbTab('coins')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.85rem;letter-spacing:2px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;">🪙 COINS</button>
+      </div>
+      <div id="lb-list" style="overflow-y:auto;flex:1;"></div>
     </div>
     <div class="chat-footer">
       <div class="chat-actions">
@@ -600,16 +604,7 @@
     <div class="auth-form" style="gap:10px;">
       <textarea id="tts-input" maxlength="120" placeholder="Type your message..." style="background:var(--dark3);border:1px solid var(--border);color:var(--text);padding:10px;font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;resize:none;height:80px;width:100%;box-sizing:border-box;"></textarea>
       <div style="font-size:0.72rem;color:var(--muted);text-align:right;"><span id="tts-char">0</span>/120</div>
-      <div style="display:flex;flex-direction:column;gap:4px;">
-        <label style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;letter-spacing:1px;color:var(--muted);">VOICE</label>
-        <select id="tts-voice" style="background:var(--dark3);border:1px solid var(--border);color:var(--text);padding:8px;font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;width:100%;">
-          <option value="default">Default</option>
-          <option value="slow">Slow & Deep</option>
-          <option value="fast">Fast & High</option>
-          <option value="robot">Robot</option>
-          <option value="whisper">Whisper</option>
-        </select>
-      </div>
+
       <div id="tts-err" style="color:var(--red-hot);font-size:0.75rem;"></div>
       <button class="auth-btn" onclick="sendTts()">SEND TTS — 2500🪙</button>
     </div>
@@ -635,16 +630,7 @@
         </div>
       </div>
 
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;letter-spacing:2px;color:var(--muted);text-align:center;">— OR PICK A PRESET —</div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <button class="bj-preset" style="padding:12px 0;font-size:0.9rem;" onclick="sendSfx('airhorn')">📯 Air Horn</button>
-        <button class="bj-preset" style="padding:12px 0;font-size:0.9rem;" onclick="sendSfx('bruh')">😐 Bruh</button>
-        <button class="bj-preset" style="padding:12px 0;font-size:0.9rem;" onclick="sendSfx('drumroll')">🥁 Drum Roll</button>
-        <button class="bj-preset" style="padding:12px 0;font-size:0.9rem;" onclick="sendSfx('claps')">👏 Claps</button>
-        <button class="bj-preset" style="padding:12px 0;font-size:0.9rem;" onclick="sendSfx('win')">🏆 Win</button>
-        <button class="bj-preset" style="padding:12px 0;font-size:0.9rem;" onclick="sendSfx('lose')">💀 Lose</button>
-      </div>
     </div>
   </div>
 </div>
@@ -840,7 +826,7 @@
   <div class="menu-nav">
     <button class="menu-nav-btn active" onclick="switchMenuTab(this,'shop')" data-tab="shop">🏪 SHOP</button>
     <button class="menu-nav-btn" onclick="switchMenuTab(this,'gamble')" data-tab="gamble">🃏 GAMBLE</button>
-    <button class="menu-nav-btn" onclick="switchMenuTab(this,'community')" data-tab="community" style="white-space:nowrap;">🔷 BIGBLOCKS</button>
+    <button class="menu-nav-btn" onclick="switchMenuTab(this,'community')" data-tab="community" style="white-space:nowrap;">🔷 DISCORD</button>
     <button class="menu-nav-btn" onclick="switchMenuTab(this,'settings')" data-tab="settings">⚙️ SETTINGS</button>
   </div>
 
@@ -1286,9 +1272,10 @@ function attachRemoteTrack(track, identity) {
     // Create a dedicated audio element for this participant
     // so audio plays independently of the video element
     const existingAudio = document.getElementById('audio-' + slot);
-    if (existingAudio) existingAudio.remove();
+    if (existingAudio) { existingAudio.pause(); existingAudio.muted = true; existingAudio.remove(); }
     const audioEl = document.createElement('audio');
     audioEl.id = 'audio-' + slot;
+    audioEl.dataset.slot = slot;
     audioEl.autoplay = true;
     audioEl.muted = false;
     document.body.appendChild(audioEl);
@@ -1300,10 +1287,12 @@ function detachRemoteTrack(identity) {
   const slot = getSlotFromIdentity(identity);
   if (!slot || slot === mySlot) return;
   const vid = document.getElementById('vid-' + slot);
-  if (vid) { vid.style.display = 'none'; vid.srcObject = null; }
-  // Remove audio element too
+  if (vid) { vid.pause(); vid.muted = true; vid.srcObject = null; vid.style.display = 'none'; }
+  // Kill all audio elements for this slot immediately
   const audioEl = document.getElementById('audio-' + slot);
-  if (audioEl) audioEl.remove();
+  if (audioEl) { audioEl.pause(); audioEl.muted = true; audioEl.srcObject = null; audioEl.remove(); }
+  // Also kill any stray audio elements attached to this slot's track
+  document.querySelectorAll('audio[data-slot="' + slot + '"]').forEach(a => { a.pause(); a.muted = true; a.remove(); });
   // Show placeholder again
   const ph = document.getElementById('ph-' + slot);
   if (ph) ph.style.display = 'flex';
@@ -1505,6 +1494,7 @@ function listenStage() {
     stageUids.right = d.right?.uid || null;
     d.left  ? showSlot('left',d.left)   : clearSlotUI('left');
     d.right ? showSlot('right',d.right) : clearSlotUI('right');
+    checkStageFull();
   });
 }
 
@@ -1597,8 +1587,11 @@ function clearSlotUI(slot) {
   if (tl)  tl.textContent  = 'L: 0';
   if (slot !== mySlot) {
     const v=document.getElementById('vid-'+slot);
-    v.style.display='none'; v.srcObject=null;
+    if (v) { v.pause(); v.muted=true; v.srcObject=null; v.style.display='none'; }
   }
+  const a=document.getElementById('audio-'+slot);
+  if (a) { a.pause(); a.muted=true; a.srcObject=null; a.remove(); }
+  document.querySelectorAll('audio[data-slot="'+slot+'"]').forEach(x=>{ x.pause(); x.muted=true; x.remove(); });
 }
 
 // ── GO LIVE — atomically claim a slot using Firebase transaction ──
@@ -1967,14 +1960,41 @@ function updateTimerUI(remainingMs) {
 
 let lastRoundIndex = -1;
 
+// Track whether both stage slots are occupied
+let stageFull = false;
+let roundEpoch = null; // when the current round actually started (set when stage becomes full)
+
+function checkStageFull() {
+  const wasFullBefore = stageFull;
+  stageFull = !!(stageUids.left && stageUids.right);
+  if (stageFull && !wasFullBefore) {
+    // Both fighters just arrived — start a fresh round epoch
+    roundEpoch = Date.now();
+    lastRoundIndex = -1;
+    addSystemMsg('Both fighters ready — round starting!');
+    SFX.newRound();
+  }
+  if (!stageFull) {
+    // Reset timer display when stage empties
+    document.getElementById('timer-display').textContent = '2:00';
+    document.getElementById('timer-display').style.color = 'var(--gold)';
+    const rb = document.getElementById('rbar-left'), rr = document.getElementById('rbar-right');
+    if (rb) { rb.style.width = '100%'; rb.style.background = ''; }
+    if (rr) { rr.style.width = '100%'; rr.style.background = ''; }
+  }
+}
+
 function startSyncedTick(epoch) {
   if (timerInterval) clearInterval(timerInterval);
   timerInterval = setInterval(() => {
-    const now         = Date.now();
-    const elapsed     = now - epoch;
-    const roundIndex  = Math.floor(elapsed / ROUND_DURATION_MS);
-    const roundStart  = epoch + roundIndex * ROUND_DURATION_MS;
-    const remaining   = ROUND_DURATION_MS - (now - roundStart);
+    // Only tick when both slots are full
+    if (!stageFull || !roundEpoch) return;
+
+    const now        = Date.now();
+    const elapsed    = now - roundEpoch;
+    const roundIndex = Math.floor(elapsed / ROUND_DURATION_MS);
+    const roundStart = roundEpoch + roundIndex * ROUND_DURATION_MS;
+    const remaining  = ROUND_DURATION_MS - (now - roundStart);
 
     updateTimerUI(remaining);
     const remSec = Math.ceil(remaining / 1000);
@@ -1983,7 +2003,6 @@ function startSyncedTick(epoch) {
     // Detect round boundary
     if (roundIndex !== lastRoundIndex) {
       if (lastRoundIndex !== -1) {
-        // Resolve who won the PREVIOUS round, then reset
         resolveRound(lastRoundIndex).then(() => {
           resetRound();
           listenVotes(roundIndex);
@@ -1991,7 +2010,6 @@ function startSyncedTick(epoch) {
           addSystemMsg('New round started!');
         });
       } else {
-        // First round on load — just start listening for votes
         listenVotes(roundIndex);
       }
       lastRoundIndex = roundIndex;
@@ -3569,7 +3587,6 @@ document.addEventListener('DOMContentLoaded', () => {
 window.sendTts = async () => {
   if (!me) return;
   const text  = document.getElementById('tts-input').value.trim();
-  const voice = document.getElementById('tts-voice').value;
   const err   = document.getElementById('tts-err');
   if (!text) { err.textContent = 'Enter a message'; return; }
   if ((myProfile.coins||0) < 2500) { err.textContent = 'Not enough coins (need 2500🪙)'; return; }
@@ -3579,7 +3596,7 @@ window.sendTts = async () => {
   updateCoinDisplays(newCoins);
   await set(push(ref(rtdb,'events/tts')), {
     uid: me.uid, username: myProfile.username,
-    text, voice, ts: Date.now()
+    text, voice: 'default', ts: Date.now()
   }).catch(()=>{});
   closeModal('tts-overlay');
   showToast('TTS sent!');
