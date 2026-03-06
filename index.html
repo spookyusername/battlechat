@@ -2344,6 +2344,7 @@ window.bjDeal = async () => {
   bjPlayerHand = [bjDeck.pop(), bjDeck.pop()];
   bjDealerHand = [bjDeck.pop(), bjDeck.pop()];
   bjGameActive = true;
+  bjStanding = false;
 
   // Deduct bet immediately
   const newCoins = coins - bjBet;
@@ -2398,14 +2399,14 @@ window.bjDouble = async () => {
   setTimeout(bjStand, 500);
 };
 
+let bjStanding = false;
 window.bjStand = () => {
-  if (!bjGameActive && handTotal(bjPlayerHand) <= 21) return;
+  if (!bjGameActive || bjStanding) return;
+  bjStanding = true;
   bjGameActive = false;
-  // Disable action buttons
-  ['bj-actions'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.querySelectorAll('button').forEach(b => b.disabled = true);
-  });
+  // Disable action buttons immediately
+  const actionsEl = document.getElementById('bj-actions');
+  if (actionsEl) actionsEl.querySelectorAll('button').forEach(b => b.disabled = true);
   // Flip hole card first, then dealer draws
   flipHoleCard().then(() => {
     sfxTone(330,'sine',0.1,0.2);
@@ -2517,6 +2518,8 @@ async function bjResolve() {
 }
 
 window.bjReset = () => {
+  bjGameActive = false;
+  bjStanding = false;
   syncBjBalance();
   document.getElementById('bj-bet-input').value = '';
   document.getElementById('bj-err').textContent = '';
