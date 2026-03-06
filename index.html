@@ -933,33 +933,51 @@ window.goToQueue = () => {
 function enterQueue() {
   document.getElementById('q-av').textContent=myProfile.avatar;
   document.getElementById('q-name').textContent=myProfile.username;
-  document.getElementById('q-status').textContent='⏳ Finding opponent...';
+  document.getElementById('q-status').textContent='Finding opponent...';
 
-  onValue(ref(rtdb,'stage'), async snap => {
-    const d=snap.val()||{};
-    let free=null;
+  let launched = false;
+
+  // Show queue position immediately
+  queuePos = Math.floor(Math.random()*3)+2;
+  document.getElementById('q-pos').textContent=queuePos;
+  document.getElementById('q-pos').style.color='var(--red-hot)';
+  renderQChips();
+
+  // Count down position every 3.5s
+  queueInt = setInterval(()=>{
+    if(queuePos>1){
+      queuePos--;
+      document.getElementById('q-pos').textContent=queuePos;
+      renderQChips();
+      if(queuePos===1){
+        document.getElementById('q-status').textContent='You are up next!';
+        showToast('Next in line!');
+      }
+    }
+  },3500);
+
+  // Continuously watch stage for a free slot
+  const stageRef = ref(rtdb,'stage');
+  window._queueStageRef = stageRef;
+  onValue(stageRef, async snap => {
+    if (launched) return;
+    const d = snap.val()||{};
+    let free = null;
     if (!d.left) free='left';
     else if (!d.right) free='right';
     if (free) {
-      off(ref(rtdb,'stage'));
+      launched = true;
+      off(stageRef);
       clearInterval(queueInt);
-      document.getElementById('q-status').textContent='⚡ Slot open — going live!';
-      document.getElementById('q-pos').textContent='▶';
+      document.getElementById('q-status').textContent='Slot open - going live!';
+      document.getElementById('q-pos').textContent='GO';
       document.getElementById('q-pos').style.color='#4CAF50';
       setTimeout(async()=>{
         closeModal('arena-overlay');
         await goLive(free);
       },1000);
-    } else {
-      queuePos=Math.floor(Math.random()*4)+2;
-      document.getElementById('q-pos').textContent=queuePos;
-      document.getElementById('q-pos').style.color='var(--red-hot)';
-      renderQChips();
-      queueInt=setInterval(()=>{
-        if(queuePos>1){queuePos--;document.getElementById('q-pos').textContent=queuePos;renderQChips();if(queuePos===1){document.getElementById('q-status').textContent='🔥 You\'re up next!';showToast('🔥 Next in line!');}}
-      },4000);
     }
-  },{onlyOnce:true});
+  });
 }
 
 function renderQChips() {
@@ -970,7 +988,11 @@ function renderQChips() {
   you.innerHTML=`<span>${queuePos}.</span>${myProfile.username} <span style="opacity:0.5;font-size:0.7rem;">(you)</span>`; list.appendChild(you);
 }
 
-window.leaveQueue=()=>{ clearInterval(queueInt); off(ref(rtdb,'stage')); closeArenaModal(); };
+window.leaveQueue=()=>{
+  clearInterval(queueInt);
+  if(window._queueStageRef) off(window._queueStageRef);
+  closeArenaModal();
+};
 
 // ── VOTE ──
 window.castVote=side=>{
