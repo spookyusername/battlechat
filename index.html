@@ -2983,10 +2983,10 @@ const FA = {
   bird: { x: 70, y: 140, vy: 0, r: 13 },
   pipes: [],
   pipeW: 34,
-  gap: 120,
+  gap: 145,
   speed: 1.1,
-  gravity: 0.10,
-  jumpV: -3.2,
+  gravity: 0.07,
+  jumpV: -3.0,
   frame: 0,
   scored: new Set(),
   started: false,
@@ -3084,8 +3084,13 @@ function faLoop() {
       }
     });
 
-    // Collision — ceiling / floor
-    if (FA.bird.y - FA.bird.r < 0 || FA.bird.y + FA.bird.r > FA.H) {
+    // Ceiling — bounce back, no death
+    if (FA.bird.y - FA.bird.r < 0) {
+      FA.bird.y = FA.bird.r;
+      FA.bird.vy = Math.abs(FA.bird.vy) * 0.4; // bounce down gently
+    }
+    // Floor — still kills
+    if (FA.bird.y + FA.bird.r > FA.H) {
       faDie();
     }
 
