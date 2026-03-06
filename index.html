@@ -109,7 +109,7 @@
   .chat-msg.system { display: block; }
   .msg-avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue',sans-serif; font-size: 0.72rem; font-weight:700; flex-shrink: 0; overflow: hidden; margin-top: 1px; cursor: pointer; }
   .msg-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
-  .msg-body { flex: 1; min-width: 0; line-height: 1.5; font-size: 0.85rem; }
+  .msg-body { flex: 1; min-width: 0; line-height: 1.5; font-size: 0.85rem; overflow-wrap: break-word; word-break: break-word; white-space: pre-wrap; }
   .msg-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.82rem; margin-right: 5px; cursor: pointer; }
   .msg-name:hover { text-decoration: underline; }
   .msg-name.me { color: #4CAF50; } .msg-name.other { color: #60a5fa; }
@@ -578,9 +578,8 @@
     </div>
     <div class="chat-footer">
       <div class="chat-actions">
-        <button class="chat-action-btn" onclick="showToast('💰 Bounty — Coming Soon!')">💰 Bounty</button>
-        <button class="chat-action-btn" onclick="showToast('🪙 Coins — Coming Soon!')">🪙 Coins</button>
-        <button class="chat-action-btn" onclick="showToast('⚔️ Sub — Coming Soon!')">⚔️ Sub</button>
+        <button class="chat-action-btn" id="tts-btn" onclick="openTtsModal()" title="Spend coins to send a TTS message to everyone">🔊 TTS <span style="font-size:0.65rem;color:var(--gold);">2500🪙</span></button>
+        <button class="chat-action-btn" id="sfx-btn" onclick="openSfxModal()" title="Spend coins to play a sound for everyone">🎵 SFX <span style="font-size:0.65rem;color:var(--gold);">1250🪙</span></button>
       </div>
       <div class="chat-input-row">
         <input class="chat-input" id="chat-input" placeholder="Say something..." maxlength="200" onkeydown="if(event.key==='Enter')sendMessage()">
@@ -592,6 +591,39 @@
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
+
+<!-- TTS MODAL -->
+<div class="modal-overlay" id="tts-overlay" onclick="if(event.target===this)closeModal('tts-overlay')">
+  <div class="modal" style="max-width:340px;">
+    <button class="modal-close" onclick="closeModal('tts-overlay')">✕</button>
+    <div class="auth-header"><div class="auth-title">🔊 TTS MESSAGE</div><div class="auth-sub">Costs 2500🪙 · Plays for everyone</div></div>
+    <div class="auth-form" style="gap:10px;">
+      <textarea id="tts-input" maxlength="120" placeholder="Type your message..." style="background:var(--dark3);border:1px solid var(--border);color:var(--text);padding:10px;font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;resize:none;height:80px;width:100%;box-sizing:border-box;"></textarea>
+      <div style="font-size:0.72rem;color:var(--muted);text-align:right;"><span id="tts-char">0</span>/120</div>
+      <div id="tts-err" style="color:var(--red-hot);font-size:0.75rem;"></div>
+      <button class="auth-btn" onclick="sendTts()">SEND TTS — 2500🪙</button>
+    </div>
+  </div>
+</div>
+
+<!-- SFX MODAL -->
+<div class="modal-overlay" id="sfx-overlay" onclick="if(event.target===this)closeModal('sfx-overlay')">
+  <div class="modal" style="max-width:340px;">
+    <button class="modal-close" onclick="closeModal('sfx-overlay')">✕</button>
+    <div class="auth-header"><div class="auth-title">🎵 PLAY SFX</div><div class="auth-sub">Costs 1250🪙 · Plays for everyone</div></div>
+    <div class="auth-form" style="gap:8px;">
+      <div id="sfx-err" style="color:var(--red-hot);font-size:0.75rem;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button class="bj-preset" style="padding:14px 0;font-size:1rem;" onclick="sendSfx('airhorn')">📯 Air Horn</button>
+        <button class="bj-preset" style="padding:14px 0;font-size:1rem;" onclick="sendSfx('bruh')">😐 Bruh</button>
+        <button class="bj-preset" style="padding:14px 0;font-size:1rem;" onclick="sendSfx('drumroll')">🥁 Drum Roll</button>
+        <button class="bj-preset" style="padding:14px 0;font-size:1rem;" onclick="sendSfx('claps')">👏 Claps</button>
+        <button class="bj-preset" style="padding:14px 0;font-size:1rem;" onclick="sendSfx('win')">🏆 Win</button>
+        <button class="bj-preset" style="padding:14px 0;font-size:1rem;" onclick="sendSfx('lose')">💀 Lose</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- AUTH MODAL -->
 <div class="modal-overlay" id="auth-overlay">
@@ -1244,11 +1276,14 @@ function detachRemoteTrack(identity) {
   const slot = getSlotFromIdentity(identity);
   if (!slot || slot === mySlot) return;
   const vid = document.getElementById('vid-' + slot);
-  vid.style.display = 'none';
-  vid.srcObject = null;
+  if (vid) { vid.style.display = 'none'; vid.srcObject = null; }
   // Remove audio element too
   const audioEl = document.getElementById('audio-' + slot);
   if (audioEl) audioEl.remove();
+  // Show placeholder again
+  const ph = document.getElementById('ph-' + slot);
+  if (ph) ph.style.display = 'flex';
+  document.getElementById('feed-' + slot).classList.remove('is-live');
 }
 
 function updateOnlineCount() {
@@ -1267,6 +1302,7 @@ onAuthStateChanged(auth, async user => {
   }
   renderTopbar();
   listenStage(); // everyone sees stage updates
+  listenGlobalEvents();
   if (me) { listenChat(); applyUserPrefs(myProfile); }
   joinAsViewer();
 });
@@ -1423,7 +1459,10 @@ function addChatBubble(msg) {
   const lvlBadge = msg.level ? `<span class="msg-lvl">LVL ${msg.level}</span>` : '';
   const nc = msg.nameColor ? NAME_COLORS[msg.nameColor] : null;
   const nameStyle = nc ? `style="color:${nc};"` : '';
-  div.innerHTML=`${lvlBadge}<span class="msg-name ${color}" ${nameStyle} onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.username)}</span><span class="msg-text">${escHtml(msg.text)}</span>`;
+  const avHtml = msg.avatar
+    ? `<img src="${msg.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+    : `<span>${(msg.username||'?')[0].toUpperCase()}</span>`;
+  div.innerHTML=`<div class="msg-avatar" onclick="openProfileByUid('${msg.uid}')">${avHtml}</div><div class="msg-body">${lvlBadge}<span class="msg-name ${color}" ${nameStyle} onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.username)}</span><span class="msg-text">${escHtml(msg.text)}</span></div>`;
   view.appendChild(div); view.scrollTop=view.scrollHeight;
   while(view.children.length>100) view.removeChild(view.firstChild);
 }
@@ -3158,6 +3197,9 @@ function faLoop() {
     const t = FA.frame * 0.10;
     const flapY = FA.dead ? br * 0.6 : Math.sin(t) * br * 0.85;
     const flapCurl = FA.dead ? 0.4 : Math.sin(t) * 0.35; // feather curl
+    const wingColor = FA.dead ? '#3a3a3a' : '#8B5E3C';
+    const wingHi    = FA.dead ? '#555'    : '#C4845A';
+    const wingShad  = FA.dead ? '#1a1a1a' : '#5C3D20';
 
     ctx.save();
     ctx.translate(bx, by);
@@ -3181,7 +3223,7 @@ function faLoop() {
       ctx.bezierCurveTo(br * 0.3, -br * 0.2, br * 1.1, -br * 0.1 + flapY, br * 1.0, br * 0.25 + flapY);
       ctx.bezierCurveTo(br * 0.8, br * 0.55 + flapY, br * 0.3, br * 0.45, 0, br * 0.15);
       ctx.closePath();
-      ctx.fillStyle = FA.dead ? '#2a2a2a' : '#8B0000';
+      ctx.fillStyle = wingShad;
       ctx.fill();
       ctx.restore();
 
@@ -3194,7 +3236,7 @@ function faLoop() {
       ctx.bezierCurveTo(br * 0.25, -br * 0.25, br * 1.0, -br * 0.05 + flapY, br * 0.92, br * 0.22 + flapY);
       ctx.bezierCurveTo(br * 0.72, br * 0.5 + flapY, br * 0.25, br * 0.38, 0, br * 0.12);
       ctx.closePath();
-      ctx.fillStyle = FA.dead ? '#444' : '#D92B2B';
+      ctx.fillStyle = wingColor;
       ctx.fill();
 
       // Wing highlight streak
@@ -3202,7 +3244,7 @@ function faLoop() {
       ctx.moveTo(br * 0.05, -br * 0.02);
       ctx.bezierCurveTo(br * 0.3, -br * 0.18, br * 0.75, br * 0.05 + flapY * 0.8, br * 0.65, br * 0.18 + flapY * 0.8);
       ctx.lineWidth = 2.5;
-      ctx.strokeStyle = FA.dead ? 'rgba(150,150,150,0.3)' : 'rgba(255,120,80,0.55)';
+      ctx.strokeStyle = FA.dead ? 'rgba(150,150,150,0.3)' : 'rgba(220,160,100,0.6)';
       ctx.stroke();
       ctx.restore();
 
@@ -3218,9 +3260,9 @@ function faLoop() {
       featherPositions.forEach((fp, i) => {
         ctx.beginPath();
         ctx.arc(fp.x, fp.y, br * 0.12 - i * 0.01, 0, Math.PI * 2);
-        ctx.fillStyle = FA.dead ? '#555' : '#FF4422';
+        ctx.fillStyle = wingHi;
         ctx.fill();
-        ctx.strokeStyle = FA.dead ? '#222' : '#8B0000';
+        ctx.strokeStyle = FA.dead ? '#111' : '#3a2010';
         ctx.lineWidth = 1.2;
         ctx.stroke();
       });
@@ -3480,6 +3522,101 @@ function spawnFaCoins(count) {
   }
   frame=requestAnimationFrame(tick);
   setTimeout(()=>{cancelAnimationFrame(frame);ctx.clearRect(0,0,W,H);},3000);
+}
+
+// ── TTS / SFX ──
+window.openTtsModal = () => {
+  if (!me) { showToast('Log in first!'); return; }
+  document.getElementById('tts-input').value = '';
+  document.getElementById('tts-err').textContent = '';
+  document.getElementById('tts-char').textContent = '0';
+  openModal('tts-overlay');
+};
+document.addEventListener('DOMContentLoaded', () => {
+  const ta = document.getElementById('tts-input');
+  if (ta) ta.addEventListener('input', () => {
+    document.getElementById('tts-char').textContent = ta.value.length;
+  });
+});
+
+window.sendTts = async () => {
+  if (!me) return;
+  const text = document.getElementById('tts-input').value.trim();
+  const err  = document.getElementById('tts-err');
+  if (!text) { err.textContent = 'Enter a message'; return; }
+  if ((myProfile.coins||0) < 2500) { err.textContent = 'Not enough coins (need 2500🪙)'; return; }
+  // Deduct coins
+  const newCoins = (myProfile.coins||0) - 2500;
+  myProfile.coins = newCoins;
+  await updateDoc(doc(db,'users',me.uid),{coins:newCoins}).catch(()=>{});
+  updateCoinDisplays(newCoins);
+  // Push TTS event to RTDB so all clients see it
+  await set(push(ref(rtdb,'events/tts')), {
+    uid: me.uid, username: myProfile.username,
+    text, ts: Date.now()
+  }).catch(()=>{});
+  closeModal('tts-overlay');
+  showToast('TTS sent!');
+};
+
+window.openSfxModal = () => {
+  if (!me) { showToast('Log in first!'); return; }
+  document.getElementById('sfx-err').textContent = '';
+  openModal('sfx-overlay');
+};
+
+window.sendSfx = async (sound) => {
+  if (!me) return;
+  const err = document.getElementById('sfx-err');
+  if ((myProfile.coins||0) < 1250) { err.textContent = 'Not enough coins (need 1250🪙)'; return; }
+  const newCoins = (myProfile.coins||0) - 1250;
+  myProfile.coins = newCoins;
+  await updateDoc(doc(db,'users',me.uid),{coins:newCoins}).catch(()=>{});
+  updateCoinDisplays(newCoins);
+  await set(push(ref(rtdb,'events/sfx')), {
+    uid: me.uid, username: myProfile.username,
+    sound, ts: Date.now()
+  }).catch(()=>{});
+  closeModal('sfx-overlay');
+  showToast('SFX played!');
+  playSfxSound(sound); // play locally too
+};
+
+function playSfxSound(sound) {
+  const ac = new (window.AudioContext||window.webkitAudioContext)();
+  const sounds = {
+    airhorn:  () => { sfxTone(180,'sawtooth',0.6,0.8); setTimeout(()=>sfxTone(160,'sawtooth',0.5,0.8),200); },
+    bruh:     () => { sfxChord([150,120,90],'sawtooth',0.5,0.4); },
+    drumroll: () => { for(let i=0;i<12;i++) setTimeout(()=>sfxTone(200,'square',0.05,0.3), i*60); },
+    claps:    () => { for(let i=0;i<5;i++) setTimeout(()=>sfxChord([800,1200,1600],'square',0.04,0.15), i*180); },
+    win:      () => { sfxChord([523,659,784,1046],'sine',0.6,0.3); },
+    lose:     () => { sfxChord([300,240,180],'sawtooth',0.5,0.25); },
+  };
+  if (sounds[sound]) sounds[sound]();
+}
+
+// Listen for TTS/SFX events from other users
+function listenGlobalEvents() {
+  const ttsRef = ref(rtdb,'events/tts');
+  const sfxRef = ref(rtdb,'events/sfx');
+  const now = Date.now();
+  onChildAdded(ttsRef, snap => {
+    const d = snap.val();
+    if (!d || d.ts < now - 2000) return; // ignore old events
+    // Play TTS via browser speech synthesis
+    if ('speechSynthesis' in window) {
+      const utt = new SpeechSynthesisUtterance(d.username + ' says: ' + d.text);
+      utt.rate = 1.0; utt.pitch = 1.0; utt.volume = 0.9;
+      window.speechSynthesis.speak(utt);
+    }
+    addSystemMsg('🔊 TTS from ' + d.username + ': ' + d.text);
+  });
+  onChildAdded(sfxRef, snap => {
+    const d = snap.val();
+    if (!d || d.ts < now - 2000) return;
+    playSfxSound(d.sound);
+    addSystemMsg('🎵 ' + d.username + ' played: ' + d.sound);
+  });
 }
 
 // ── UTIL ──
