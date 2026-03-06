@@ -534,6 +534,7 @@ let localStream = null, lkRoom = null, mySlot = null;
 let stageUids = { left: null, right: null };
 let signupAv = '🥊', editAv = '🥊';
 let chatOpen = true, hasVoted = false, lv = 50, rv = 50, roundSec = 120;
+let timerInterval = null;
 let queueUnsubStage = null, queueUnsubList = null;
 
 // ── LIVEKIT TOKEN ──
@@ -1078,16 +1079,64 @@ function resetRound() {
   updateVote();
 }
 
-// ── TIMER ──
-setInterval(()=>{
-  if (roundSec>0) roundSec--; else { roundSec=120; resetRound(); addSystemMsg('New round!'); }
-  const m=Math.floor(roundSec/60), s=roundSec%60, pct=((roundSec/120)*100)+'%';
-  document.getElementById('timer-display').textContent = m+':'+s.toString().padStart(2,'0');
+// ── SYNCED TIMER ──
+// Firebase stores a single epoch timestamp (ms) marking when round 1 started.
+// Every client derives the current round and remaining time from that one value.
+// No client needs to "own" the timer — it's purely math from the shared start time.
+
+const ROUND_DURATION_MS = 120_000; // 2 minutes in ms
+const timerRef = ref(rtdb, 'timer/epoch');
+
+function updateTimerUI(remainingMs) {
+  const s  = Math.max(0, Math.ceil(remainingMs / 1000));
+  const m  = Math.floor(s / 60), ss = s % 60;
+  const pct = ((s / 120) * 100) + '%';
+  document.getElementById('timer-display').textContent = m + ':' + ss.toString().padStart(2,'0');
   document.getElementById('tfill-l').style.width = pct;
   document.getElementById('tfill-r').style.width = pct;
-  document.getElementById('tlbl-r').textContent  = m+':'+s.toString().padStart(2,'0')+' LEFT';
-  document.getElementById('timer-display').style.color = roundSec<=10 ? 'var(--red-hot)' : 'var(--gold)';
-}, 1000);
+  document.getElementById('tlbl-r').textContent  = m + ':' + ss.toString().padStart(2,'0') + ' LEFT';
+  document.getElementById('timer-display').style.color = s <= 10 ? 'var(--red-hot)' : 'var(--gold)';
+}
+
+let lastRoundIndex = -1;
+
+function startSyncedTick(epoch) {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const now         = Date.now();
+    const elapsed     = now - epoch;
+    const roundIndex  = Math.floor(elapsed / ROUND_DURATION_MS);
+    const roundStart  = epoch + roundIndex * ROUND_DURATION_MS;
+    const remaining   = ROUND_DURATION_MS - (now - roundStart);
+
+    updateTimerUI(remaining);
+
+    // Detect round boundary — reset votes once per round flip
+    if (roundIndex !== lastRoundIndex) {
+      if (lastRoundIndex !== -1) {
+        resetRound();
+        addSystemMsg('New round!');
+      }
+      lastRoundIndex = roundIndex;
+    }
+  }, 500);
+}
+
+// Bootstrap: read epoch from Firebase. If missing, write it (first visitor only).
+onValue(timerRef, async snap => {
+  if (snap.exists()) {
+    startSyncedTick(snap.val());
+  } else {
+    // Use a transaction so only one client writes the epoch even if many load at once
+    try {
+      await runTransaction(timerRef, current => {
+        if (current !== null && current !== undefined) return; // already written
+        return Date.now();
+      });
+      // onValue will fire again with the new value
+    } catch(e) { console.warn('Timer bootstrap error:', e); }
+  }
+});
 
 // ── AVATAR GRID ──
 function buildAvatarGrid(id, sel, cb) {
