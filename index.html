@@ -718,20 +718,8 @@
   <!-- CHAT -->
   <div class="chat-panel">
 
-    <div class="chat-tabs">
-      <button class="chat-tab active" onclick="switchTab(this,'chat')">Chat</button>
-      <button class="chat-tab" onclick="switchTab(this,'leaderboard')">Leaderboard</button>
-    </div>
     <div class="chat-messages" id="chat-view">
       <div class="chat-msg system"><span class="msg-text">⚡ Welcome to BattleChat — log in to chat and vote!</span></div>
-    </div>
-    <div class="chat-messages" id="lb-view" style="display:none;flex-direction:column;">
-      <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0;">
-        <button class="lb-tab active" id="lbt-wins" onclick="switchLbTab('wins')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.78rem;letter-spacing:1.5px;background:none;border:none;border-bottom:2px solid var(--red-hot);color:var(--text);cursor:pointer;">⚔️ WINS</button>
-        <button class="lb-tab" id="lbt-losses" onclick="switchLbTab('losses')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.78rem;letter-spacing:1.5px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;">💀 LOSSES</button>
-        <button class="lb-tab" id="lbt-coins" onclick="switchLbTab('coins')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.78rem;letter-spacing:1.5px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;">🪙 COINS</button>
-      </div>
-      <div id="lb-list" style="overflow-y:auto;flex:1;"></div>
     </div>
     <div class="chat-footer">
       <a class="discord-chat-btn" href="https://discord.gg/wqNEHs2AqF" target="_blank" rel="noopener">
@@ -2933,7 +2921,6 @@ async function loadMenuLb(tab) {
   if (!list) return;
   list.innerHTML = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">Loading...</div>';
   try {
-    const { collection, query, orderBy, limit, getDocs } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
     let field, label;
     if (tab === 'wins')   { field = 'wins';       label = w => w + ' W'; }
     if (tab === 'coins')  { field = 'coins';      label = w => '🪙 ' + w; }
@@ -2942,22 +2929,24 @@ async function loadMenuLb(tab) {
     const snap = await getDocs(q);
     if (snap.empty) { list.innerHTML = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">No data yet.</div>'; return; }
     list.innerHTML = '';
-    snap.docs.forEach((doc, i) => {
-      const d = doc.data();
-      const val = d[field] || 0;
-      if (!val && tab === 'flappy') return;
-      const rank = i + 1;
+    let count = 0;
+    snap.docs.forEach((d, i) => {
+      const data = d.data();
+      const val = data[field] || 0;
+      if (!val) return;
+      count++;
+      const rank = count;
       const rankColor = rank === 1 ? 'var(--gold)' : rank === 2 ? '#C0C0C0' : rank === 3 ? '#CD7F32' : 'var(--muted)';
-      const isSelf = me && doc.id === me.uid;
+      const isSelf = me && d.id === me.uid;
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border);' + (isSelf ? 'background:rgba(217,43,43,0.05);' : '');
       row.innerHTML = `<span style="font-family:'Bebas Neue',sans-serif;font-size:1rem;color:${rankColor};width:22px;flex-shrink:0;">${rank}</span>`
-        + `<span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.88rem;flex:1;${isSelf?'color:var(--red-hot);':''}">` + escHtml(d.username || '?') + '</span>'
+        + `<span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.88rem;flex:1;${isSelf?'color:var(--red-hot);':''}">` + escHtml(data.username || '?') + '</span>'
         + `<span style="font-family:'Bebas Neue',sans-serif;font-size:0.95rem;color:var(--text);">${label(val)}</span>`;
       list.appendChild(row);
     });
-    if (!list.children.length) list.innerHTML = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">No scores yet — be the first!</div>';
-  } catch(e) { list.innerHTML = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">Could not load leaderboard.</div>'; }
+    if (!count) list.innerHTML = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">No scores yet — be the first!</div>';
+  } catch(e) { console.error('LB error:', e); list.innerHTML = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">Could not load leaderboard.</div>'; }
 }
 
 window.applyTheme = val => {
