@@ -17,9 +17,9 @@
 
   /* TOPBAR */
   .topbar { height: 48px; background: var(--dark); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; position: relative; z-index: 10; }
-  .topbar-left, .topbar-right { display: flex; align-items: center; gap: 10px; flex: 1; }
+  .topbar-left, .topbar-right { display: flex; align-items: center; gap: 10px; flex: 1; position: relative; z-index: 1; }
   .topbar-right { justify-content: flex-end; }
-  .logo { position: absolute; font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 4px; color: var(--text); pointer-events: none; transform: translateX(-50%); transition: left 0.35s ease; }
+  .logo { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 4px; color: var(--text); pointer-events: none; white-space: nowrap; z-index: 0; }
   .logo span { color: var(--red-hot); }
   .topbar-coins { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 2px; color: var(--gold); margin-left: 8px; }
   .topbar-btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.78rem; letter-spacing: 2px; text-transform: uppercase; border: 1px solid var(--border); background: transparent; color: var(--muted); padding: 5px 14px; cursor: pointer; transition: border-color 0.2s, color 0.2s; }
@@ -1268,6 +1268,8 @@ let editAvData = null; // base64 data URL for pending edit avatar
 let chatOpen = true, hasVoted = false, roundSec = 120;
 let timerInterval = null;
 let queueUnsubStage = null, queueUnsubList = null;
+let _qMyTs      = 0;      // queue timestamp — set once, preserved across retries
+let _qLaunching = false;  // true while mid-launch
 
 // ── LIVEKIT TOKEN ──
 async function getToken(identity, canPublish) {
@@ -1429,7 +1431,18 @@ onAuthStateChanged(auth, async user => {
   renderTopbar();
   listenStage(); // everyone sees stage updates
   listenGlobalEvents();
-  if (me) { listenChat(); applyUserPrefs(myProfile); }
+  if (me) {
+    listenChat();
+    applyUserPrefs(myProfile);
+    // Wipe our own stale queue/stage entries from a previous crashed session
+    remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
+    _qMyTs = 0; // reset queue timestamp
+    for (const s of ['left','right']) {
+      get(ref(rtdb,'stage/'+s)).then(snap => {
+        if (snap.val()?.uid === me.uid) remove(ref(rtdb,'stage/'+s)).catch(()=>{});
+      }).catch(()=>{});
+    }
+  }
   joinAsViewer();
 });
 
@@ -1765,8 +1778,8 @@ async function goLive(slot) {
   for (const s of slots) {
     try {
       const result = await runTransaction(ref(rtdb,'stage/'+s), current => {
-        // Abort if already occupied
-        if (current !== null && current !== undefined) return undefined;
+        // Abort if already occupied (has a uid)
+        if (current && current.uid) return undefined;
         return slotData;
       });
       if (result && result.committed) { claimedSlot = s; break; }
@@ -1881,96 +1894,134 @@ window.goToQueue = () => {
   enterQueue();
 };
 
-// ── QUEUE SYSTEM ──
-// Each user in queue: rtdb/queue/{uid} = { uid, username, avatar, ts }
-// When a stage slot opens, the person with the lowest ts (first in line) gets it
+// ══════════════════════════════════════════════════════
+// QUEUE SYSTEM
+// rtdb/queue/{uid} = { uid, username, avatar, ts }
+//
+// KEY DESIGN:
+//  - ts is written ONCE and never updated on retry (preserves position)
+//  - slot "free" = stage.left/right has no .uid field
+//  - claim is a Firebase transaction on queue/{myUid}: delete it atomically
+//    so only one client can launch per slot opening
+//  - _qMyTs is stored module-level so retries reuse same timestamp
+// ══════════════════════════════════════════════════════
 
 async function enterQueue() {
+  // Stop any previous listeners
+  _qLaunching = false;
+  stopQueueListeners();
+
+  // Preserve original timestamp so retries don't move us to the back
+  if (!_qMyTs) _qMyTs = Date.now();
+
+  // Update modal UI
   setAvatar('q-av', myProfile.avatar, myProfile.username);
   document.getElementById('q-name').textContent   = myProfile.username;
-  document.getElementById('q-status').textContent = 'Finding a slot...';
+  document.getElementById('q-status').textContent = 'In queue...';
   document.getElementById('q-pos').textContent    = '...';
   document.getElementById('q-pos').style.color    = 'var(--gold)';
   document.getElementById('q-chips').innerHTML    = '';
 
-  // Write to queue with timestamp
+  // Write queue entry — only update ts if this is a fresh entry
+  const existSnap = await get(ref(rtdb,'queue/'+me.uid)).catch(()=>null);
+  const savedTs   = existSnap?.val()?.ts;
+  _qMyTs          = savedTs || _qMyTs;
   await set(ref(rtdb,'queue/'+me.uid), {
     uid: me.uid, username: myProfile.username,
-    avatar: myProfile.avatar, ts: Date.now()
+    avatar: myProfile.avatar, ts: _qMyTs
   });
+  // Auto-remove if we disconnect
+  onDisconnect(ref(rtdb,'queue/'+me.uid)).remove().catch(()=>{});
 
-  let launched = false;
+  async function tryAdvance() {
+    if (_qLaunching) return;
 
-  async function checkAndClaim() {
-    if (launched) return;
-
-    const [stageSnap, queueSnap] = await Promise.all([
+    const [stageSnap, qSnap] = await Promise.all([
       get(ref(rtdb,'stage')),
       get(ref(rtdb,'queue'))
     ]);
 
-    const stage     = stageSnap.val() || {};
-    const queueData = queueSnap.val() || {};
-    const sorted    = Object.values(queueData).sort((a,b) => a.ts - b.ts);
-    const myPos     = sorted.findIndex(w => w.uid === me.uid);
+    const stage = stageSnap.val() || {};
+    const qData = qSnap.val()     || {};
+
+    // Slot is free only when it has no uid
+    const leftFree  = !stage.left?.uid;
+    const rightFree = !stage.right?.uid;
+    const freeSlots = (leftFree ? 1 : 0) + (rightFree ? 1 : 0);
+
+    // Filter to real entries only (must have uid + ts)
+    const sorted = Object.values(qData)
+      .filter(w => w?.uid && w?.ts)
+      .sort((a,b) => a.ts - b.ts);
+
+    const myPos = sorted.findIndex(w => w.uid === me.uid);
 
     updateQueueUI(sorted, myPos);
 
-    // Count free slots and people ahead of me
-    const freeSlots = (!stage.left ? 1 : 0) + (!stage.right ? 1 : 0);
     if (freeSlots === 0) {
       document.getElementById('q-status').textContent = 'Waiting for a slot...';
       return;
     }
 
-    // Only attempt if I'm within range of available slots
-    // e.g. 1 free slot → only position 1 should try; 2 free → positions 1 and 2
-    if (myPos === -1 || myPos >= freeSlots) {
-      document.getElementById('q-status').textContent = 'Waiting in line...';
+    // My write may not have propagated yet — just wait for next event
+    if (myPos === -1) return;
+
+    // Only the first N people try for N free slots
+    if (myPos >= freeSlots) return;
+
+    // ── Claim atomically ──
+    // Transaction deletes our queue entry; if it's already gone someone else grabbed it
+    _qLaunching = true;
+    stopQueueListeners();
+
+    let claimed = false;
+    try {
+      const res = await runTransaction(ref(rtdb,'queue/'+me.uid), cur => {
+        if (!cur) return undefined; // already removed — abort
+        return null;                // delete it → we win
+      });
+      claimed = !!(res && res.committed);
+    } catch(e) { console.warn('Queue claim tx error', e); }
+
+    if (!claimed) {
+      // Lost the race — re-queue with same ts, re-attach listeners
+      _qLaunching = false;
+      await set(ref(rtdb,'queue/'+me.uid), {
+        uid: me.uid, username: myProfile.username,
+        avatar: myProfile.avatar, ts: _qMyTs
+      }).catch(()=>{});
+      _attachQueueListeners(tryAdvance);
       return;
     }
 
-    // I'm in range — try to claim
-    launched = true;
-    stopQueueListeners();
-
+    // We won — go live
     document.getElementById('q-status').textContent = 'Going live!';
     document.getElementById('q-pos').textContent    = 'GO!';
     document.getElementById('q-pos').style.color    = '#4CAF50';
 
-    const freeSlot = !stage.left ? 'left' : 'right';
-
-    // Small stagger based on position to reduce collisions
-    await new Promise(r => setTimeout(r, myPos * 300 + 200));
-
+    const targetSlot = leftFree ? 'left' : 'right';
     closeModal('arena-overlay');
-    const success = await goLive(freeSlot);
+    const success = await goLive(targetSlot);
+
     if (!success) {
-      // Lost the race — re-enter queue cleanly
-      launched = false;
+      // goLive transaction also lost — re-queue keeping ts
+      _qLaunching = false;
       await set(ref(rtdb,'queue/'+me.uid), {
         uid: me.uid, username: myProfile.username,
-        avatar: myProfile.avatar, ts: Date.now()
+        avatar: myProfile.avatar, ts: _qMyTs
       }).catch(()=>{});
-      // Re-attach listeners without re-opening modal
-      queueUnsubStage = onValue(ref(rtdb,'stage'), () => checkAndClaim());
-      queueUnsubList  = onValue(ref(rtdb,'queue'), async snap => {
-        if (launched) return;
-        const qd = snap.val() || {};
-        const s2 = Object.values(qd).sort((a,b) => a.ts - b.ts);
-        updateQueueUI(s2, s2.findIndex(w => w.uid === me.uid));
-      });
+      _attachQueueListeners(tryAdvance);
     }
+    // On success _qLaunching stays true — we're live, done with queue
   }
 
-  queueUnsubStage = onValue(ref(rtdb,'stage'), () => checkAndClaim());
-  queueUnsubList  = onValue(ref(rtdb,'queue'), async snap => {
-    if (launched) return;
-    const queueData = snap.val() || {};
-    const sorted    = Object.values(queueData).sort((a,b) => a.ts - b.ts);
-    const myPos     = sorted.findIndex(w => w.uid === me.uid);
-    updateQueueUI(sorted, myPos);
-  });
+  _attachQueueListeners(tryAdvance);
+}
+
+function _attachQueueListeners(fn) {
+  stopQueueListeners();
+  queueUnsubStage = onValue(ref(rtdb,'stage'), fn);
+  queueUnsubList  = onValue(ref(rtdb,'queue'), fn);
 }
 
 function updateQueueUI(sorted, myPos) {
@@ -1980,25 +2031,29 @@ function updateQueueUI(sorted, myPos) {
   sorted.forEach((w,i) => {
     const chip = document.createElement('div');
     chip.className = 'q-chip' + (w.uid === me.uid ? ' you' : '');
-    chip.innerHTML = '<span>'+(i+1)+'.</span> ' + escHtml(w.username||'?') + (w.uid===me.uid ? ' <span style="opacity:0.5;font-size:0.7rem;">(you)</span>' : '');
+    chip.innerHTML = '<span>'+(i+1)+'.</span> '
+      + escHtml(w.username||'?')
+      + (w.uid === me.uid ? ' <span style="opacity:0.5;font-size:0.7rem;">(you)</span>' : '');
     chips.appendChild(chip);
   });
-  if (myPos === -1) return; // not in queue, skip pos display
+  if (myPos === -1) return;
   const pos = myPos + 1;
-  document.getElementById('q-pos').textContent   = pos;
-  document.getElementById('q-pos').style.color   = pos === 1 ? 'var(--gold)' : 'var(--red-hot)';
-  document.getElementById('q-status').textContent = pos === 1 ? 'You are up next!' : 'Waiting in line...';
+  document.getElementById('q-pos').textContent    = pos;
+  document.getElementById('q-pos').style.color    = pos === 1 ? 'var(--gold)' : 'var(--red-hot)';
+  document.getElementById('q-status').textContent = pos === 1 ? "You're up next!" : 'Waiting in line...';
 }
 
 function stopQueueListeners() {
-  if (queueUnsubStage) { queueUnsubStage(); queueUnsubStage=null; }
-  if (queueUnsubList)  { queueUnsubList();  queueUnsubList=null; }
+  if (queueUnsubStage) { queueUnsubStage(); queueUnsubStage = null; }
+  if (queueUnsubList)  { queueUnsubList();  queueUnsubList  = null; }
 }
 
 window.leaveQueue = async () => {
+  _qLaunching = false;
+  _qMyTs = 0;
+  stopQueueListeners();
   try { await onDisconnect(ref(rtdb,'queue/'+me.uid)).cancel(); } catch(e){}
   await remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
-  stopQueueListeners();
   const chips = document.getElementById('q-chips');
   if (chips) chips.innerHTML = '';
   closeArenaModal();
@@ -2317,18 +2372,7 @@ onValue(timerRef, async snap => {
 // no signup avatar grid — initials used by default
 
 // ── LOGO ALIGN ──
-function alignLogo() {
-  const logo = document.getElementById('logo');
-  if (!logo) return;
-  const chatPanel = document.querySelector('.chat-panel');
-  const totalWidth = window.innerWidth;
-  // Camera area = total width minus chat panel width (or full width if chat hidden)
-  const chatWidth = (chatPanel && chatOpen) ? chatPanel.offsetWidth : 0;
-  const arenaWidth = totalWidth - chatWidth;
-  // Center of the arena
-  logo.style.left = Math.round(arenaWidth / 2) + 'px';
-}
-alignLogo(); window.addEventListener('resize', alignLogo);
+// Logo centered via CSS — no JS needed
 
 // ── COLLAPSE CHAT ──
 window.toggleChat = () => {
@@ -2336,7 +2380,7 @@ window.toggleChat = () => {
   document.getElementById('main-grid').classList.toggle('chat-collapsed',!chatOpen);
   document.getElementById('collapse-icon').textContent  = chatOpen?'▶▶':'◀◀';
   document.getElementById('collapse-label').textContent = chatOpen?'HIDE CHAT':'SHOW CHAT';
-  setTimeout(alignLogo,360);
+  
 };
 
 // ── TABS ──
