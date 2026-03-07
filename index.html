@@ -351,8 +351,8 @@
   .menu-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
 
   /* MENU PANEL */
-  .menu-panel { position: fixed; top: 48px; left: 0; bottom: 0; width: 360px; background: rgba(10,10,12,0.92); border-right: 1px solid rgba(255,255,255,0.08); z-index: 401; transform: translateX(-100%); transition: transform 0.35s cubic-bezier(0.22,1,0.36,1); display: flex; flex-direction: column; overflow: hidden; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-  .menu-panel.open { transform: translateX(0); }
+  .menu-panel { position: fixed; top: 48px; left: 0; bottom: 0; width: 360px; background: rgba(10,10,12,0.96); border-right: 1px solid rgba(255,255,255,0.08); z-index: 401; transform: translateX(-100%); transition: transform 0.35s cubic-bezier(0.22,1,0.36,1); display: flex; flex-direction: column; overflow: hidden; pointer-events: none; }
+  .menu-panel.open { transform: translateX(0); pointer-events: all; }
   .menu-header { height: 48px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 18px; flex-shrink: 0; }
   .menu-logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 4px; }
   .menu-logo span { color: var(--red-hot); }
