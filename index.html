@@ -1632,13 +1632,13 @@ function listenStage() {
     const newLeft  = d.left?.uid  || null;
     const newRight = d.right?.uid || null;
 
-    // Only update a slot if its UID actually changed
-    if (newLeft !== _lastStageUids.left) {
+    // Always clear when slot goes empty — only skip showSlot if same UID (no flicker)
+    if (newLeft !== _lastStageUids.left || !newLeft) {
       _lastStageUids.left = newLeft;
       stageUids.left = newLeft;
       if (d.left) showSlot('left', d.left); else clearSlotUI('left');
     }
-    if (newRight !== _lastStageUids.right) {
+    if (newRight !== _lastStageUids.right || !newRight) {
       _lastStageUids.right = newRight;
       stageUids.right = newRight;
       if (d.right) showSlot('right', d.right); else clearSlotUI('right');
@@ -1789,11 +1789,11 @@ async function goLive(slot) {
 async function leaveStage() {
   if (!mySlot) return;
   const slot = mySlot; mySlot = null;
-  _lastStageUids[slot] = null; // force next occupant of this slot to trigger showSlot
+  // Remove from Firebase first — listenStage will call clearSlotUI for ALL clients
+  // Don't reset _lastStageUids here; let the Firebase null update do it via listenStage
   await remove(ref(rtdb,'stage/'+slot)).catch(()=>{});
   await remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
-  clearSlotUI(slot);
-  // Clean up ALL audio elements
+  // Clean up media locally
   document.querySelectorAll('audio').forEach(a => { try { a.pause(); a.muted = true; a.srcObject = null; a.remove(); } catch(e){} });
   if (lkRoom) { await lkRoom.disconnect(); lkRoom=null; }
   if (localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
@@ -1952,13 +1952,8 @@ async function enterQueue() {
 }
 
 function updateQueueUI(sorted, myPos) {
-  if (myPos === -1) return;
-  const pos = myPos + 1;
-  document.getElementById('q-pos').textContent   = pos;
-  document.getElementById('q-pos').style.color   = pos === 1 ? 'var(--gold)' : 'var(--red-hot)';
-  document.getElementById('q-status').textContent = pos === 1 ? 'You are up next!' : 'Waiting in line...';
-
   const chips = document.getElementById('q-chips');
+  if (!chips) return;
   chips.innerHTML = '';
   sorted.forEach((w,i) => {
     const chip = document.createElement('div');
@@ -1966,6 +1961,11 @@ function updateQueueUI(sorted, myPos) {
     chip.innerHTML = '<span>'+(i+1)+'.</span> ' + escHtml(w.username||'?') + (w.uid===me.uid ? ' <span style="opacity:0.5;font-size:0.7rem;">(you)</span>' : '');
     chips.appendChild(chip);
   });
+  if (myPos === -1) return; // not in queue, skip pos display
+  const pos = myPos + 1;
+  document.getElementById('q-pos').textContent   = pos;
+  document.getElementById('q-pos').style.color   = pos === 1 ? 'var(--gold)' : 'var(--red-hot)';
+  document.getElementById('q-status').textContent = pos === 1 ? 'You are up next!' : 'Waiting in line...';
 }
 
 function stopQueueListeners() {
@@ -1974,8 +1974,11 @@ function stopQueueListeners() {
 }
 
 window.leaveQueue = async () => {
-  stopQueueListeners();
   await remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
+  stopQueueListeners();
+  // Clear queue UI
+  const chips = document.getElementById('q-chips');
+  if (chips) chips.innerHTML = '';
   closeArenaModal();
 };
 
