@@ -1668,7 +1668,7 @@ let stageUids = { left: null, right: null };
 let editAvData = null; // base64 data URL for pending edit avatar
 let chatOpen = true, hasVoted = false, roundSec = 120;
 let timerInterval = null;
-let queueUnsubStage = null, queueUnsubList = null;
+let queueUnsubStage = null, queueUnsubList = null, queueUnsubInterval = null;
 let _qMyTs      = 0;      // queue timestamp — set once, preserved across retries
 let _qLaunching = false;  // true while mid-launch
 
@@ -2192,24 +2192,18 @@ let _lastStageUids = { left: null, right: null };
 let _stageRecordIds = { left: null, right: null };
 
 function listenStage() {
-  // Load initial stage state
-  pb.listRecords('stage').then(items => {
-    const d = { left: null, right: null };
-    items.forEach(r => { if (r.slot) d[r.slot] = r; _stageRecordIds[r.slot] = r.id; });
-    _handleStageUpdate(d);
-  }).catch(()=>{});
-
-  // Subscribe to realtime updates
-  pb.subscribe('stage', '', evt => {
-    const rec = evt.record;
-    if (!rec || !rec.slot) return;
-    _stageRecordIds[rec.slot] = rec.id;
-    if (evt.action === 'delete' || !rec.uid) {
-      _handleStageSlot(rec.slot, null);
-    } else {
-      _handleStageSlot(rec.slot, rec);
-    }
-  });
+  // Poll stage every 2s for full refresh
+  async function refreshStage() {
+    try {
+      const items = await pb.listRecords('stage');
+      const d = { left: null, right: null };
+      items.forEach(r => { if (r.slot) { d[r.slot] = r; _stageRecordIds[r.slot] = r.id; } });
+      _handleStageUpdate(d);
+    } catch(e) {}
+  }
+  refreshStage();
+  if (window._stagePollInterval) clearInterval(window._stagePollInterval);
+  window._stagePollInterval = setInterval(refreshStage, 2000);
 }
 
 function _handleStageUpdate(d) {
@@ -2220,11 +2214,9 @@ function _handleStageUpdate(d) {
 
 function _handleStageSlot(slot, data) {
   const newUid = data?.uid || null;
-  if (newUid !== _lastStageUids[slot] || !newUid) {
-    _lastStageUids[slot] = newUid;
-    stageUids[slot] = newUid;
-    if (data && data.uid) showSlot(slot, data); else clearSlotUI(slot);
-  }
+  _lastStageUids[slot] = newUid;
+  stageUids[slot] = newUid;
+  if (data && data.uid) showSlot(slot, data); else clearSlotUI(slot);
   checkStageFull();
 }
 
@@ -2559,6 +2551,7 @@ async function enterQueue() {
   }
 
   _attachQueueListeners(tryAdvance);
+  tryAdvance(); // run immediately on join
 }
 
 function _attachQueueListeners(fn) {
@@ -2566,6 +2559,8 @@ function _attachQueueListeners(fn) {
   // Subscribe to stage and queue changes
   queueUnsubStage = pb.subscribe('stage', '', fn);
   queueUnsubList  = pb.subscribe('queue', '', fn);
+  // Also poll every 2s to keep position fresh regardless of SSE/polling events
+  queueUnsubInterval = setInterval(fn, 2000);
 }
 
 function updateQueueUI(sorted, myPos) {
@@ -2598,8 +2593,9 @@ function updateQueueUI(sorted, myPos) {
 }
 
 function stopQueueListeners() {
-  if (queueUnsubStage) { queueUnsubStage(); queueUnsubStage = null; }
-  if (queueUnsubList)  { queueUnsubList();  queueUnsubList  = null; }
+  if (queueUnsubStage)    { queueUnsubStage(); queueUnsubStage = null; }
+  if (queueUnsubList)     { queueUnsubList();  queueUnsubList  = null; }
+  if (queueUnsubInterval) { clearInterval(queueUnsubInterval); queueUnsubInterval = null; }
 }
 
 window.leaveQueue = async () => {
