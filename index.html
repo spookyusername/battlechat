@@ -193,8 +193,10 @@
   .chat-msg { padding: 5px 12px; display: flex; gap: 9px; align-items: flex-start; }
   .chat-msg:hover { background: rgba(255,255,255,0.02); }
   .chat-msg.system { display: block; }
-  .msg-avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue',sans-serif; font-size: 0.72rem; font-weight:700; flex-shrink: 0; overflow: hidden; margin-top: 1px; cursor: pointer; }
+  .msg-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue',sans-serif; font-size: 0.8rem; font-weight:700; flex-shrink: 0; overflow: visible; margin-top: 1px; cursor: pointer; position: relative; }
   .msg-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+  .msg-avatar-inner { width:100%; height:100%; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+  .msg-lvl-badge { position:absolute; bottom:-3px; right:-4px; background:var(--dark); border:1px solid rgba(201,168,76,0.5); color:var(--gold); font-family:'Bebas Neue',sans-serif; font-size:0.58rem; font-weight:700; line-height:1; padding:1px 3px; border-radius:3px; pointer-events:none; }
   .msg-body { flex: 1; min-width: 0; line-height: 1.5; font-size: 0.85rem; overflow-wrap: break-word; word-break: break-word; }
   .msg-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.82rem; margin-right: 5px; cursor: pointer; }
   .msg-name:hover { text-decoration: underline; }
@@ -202,7 +204,7 @@
   .msg-lvl { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.75rem; letter-spacing: 0px; color: var(--gold); margin-right: 4px; vertical-align: middle; flex-shrink: 0; white-space: nowrap; display: inline; }
   .p-level-bar-wrap { background: rgba(255,255,255,0.05); height: 6px; border-radius: 3px; overflow: hidden; margin: 8px 0 4px; }
   .p-level-bar-fill { height: 100%; background: linear-gradient(to right, var(--gold), #ffe082); border-radius: 3px; transition: width 0.6s ease; }
-  .p-level-label { font-family: 'Barlow Condensed', sans-serif; font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); text-align: center; margin-bottom: 16px; }
+  .p-level-label { font-family: 'Barlow Condensed', sans-serif; font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); text-align: center; margin-bottom: 16px; display: none; }
   .msg-text { color: rgba(232,232,232,0.7); }
   .msg-ts { font-size: 0.62rem; color: rgba(232,232,232,0.2); margin-left: 5px; flex-shrink: 0; align-self: flex-end; opacity: 0; transition: opacity 0.15s; white-space: nowrap; }
   .chat-msg:hover .msg-ts { opacity: 1; }
@@ -273,9 +275,10 @@
   .profile-banner::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg,rgba(217,43,43,0.15),transparent); }
   .profile-banner-accent { position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: linear-gradient(to right,var(--red),transparent); }
   .profile-avatar-wrap { display: flex; justify-content: center; padding-top: 20px; }
-  .profile-avatar-lg { width: 88px; height: 88px; border-radius: 50%; background: var(--dark3); border: 3px solid var(--red); display: flex; align-items: center; justify-content: center; font-size: 2rem; font-family:'Bebas Neue',sans-serif; font-weight:700; box-shadow: 0 0 24px rgba(217,43,43,0.3); overflow:hidden; cursor:pointer; position:relative; }
+  .profile-avatar-lg { width: 108px; height: 108px; border-radius: 50%; background: var(--dark3); border: 3px solid var(--red); display: flex; align-items: center; justify-content: center; font-size: 2.4rem; font-family:'Bebas Neue',sans-serif; font-weight:700; box-shadow: 0 0 24px rgba(217,43,43,0.3); overflow:hidden; cursor:pointer; position:relative; }
   .profile-avatar-lg img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
   .profile-avatar-lg:hover .av-change-hint { opacity:1; }
+  .p-avatar-level-badge { position:absolute; bottom:4px; right:4px; background:var(--gold); color:#000; font-family:'Bebas Neue',sans-serif; font-size:0.72rem; font-weight:700; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; border:2px solid var(--dark); z-index:5; pointer-events:none; line-height:1; }
   .av-change-hint { position:absolute; inset:0; background:rgba(0,0,0,0.6); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.55rem; letter-spacing:2px; color:#fff; opacity:0; transition:opacity 0.2s; font-family:'Barlow Condensed',sans-serif; }
   .profile-body { padding: 14px 28px 28px; }
   .profile-name-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 6px; text-align: center; flex-wrap: wrap; }
@@ -893,6 +896,7 @@
       <div class="profile-avatar-lg" id="p-avatar" onclick="triggerAvatarUpload()">
         <span id="p-avatar-initials">?</span>
         <div class="av-change-hint">CHANGE PHOTO</div>
+        <div class="p-avatar-level-badge" id="p-avatar-level">1</div>
       </div>
       <input type="file" id="avatar-file-input" accept="image/*" style="display:none;" onchange="handleAvatarUpload(event)">
     </div>
@@ -1022,7 +1026,7 @@
   <div class="menu-nav">
     <button class="menu-nav-btn active" onclick="switchMenuTab(this,'shop')" data-tab="shop">🏪 SHOP</button>
     <button class="menu-nav-btn" onclick="switchMenuTab(this,'gamble')" data-tab="gamble">🃏 GAMBLE</button>
-    <button class="menu-nav-btn" onclick="switchMenuTab(this,'lb')" data-tab="lb">🏆 LB</button>
+    <button class="menu-nav-btn" onclick="switchMenuTab(this,'lb')" data-tab="lb">🏆 LEADERBOARDS</button>
     <button class="menu-nav-btn" onclick="switchMenuTab(this,'settings')" data-tab="settings">⚙️ SETTINGS</button>
   </div>
 
@@ -1230,6 +1234,7 @@
   <div class="menu-tab" id="mtab-lb" style="display:none;">
     <div style="display:flex;border-bottom:1px solid var(--border);margin-bottom:12px;flex-shrink:0;">
       <button class="lb-tab-btn active" id="lbmenu-wins" onclick="switchMenuLb(this,'wins')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.8rem;letter-spacing:1.5px;background:none;border:none;border-bottom:2px solid var(--red-hot);color:var(--text);cursor:pointer;">⚔️ WINS</button>
+      <button class="lb-tab-btn" id="lbmenu-losses" onclick="switchMenuLb(this,'losses')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.8rem;letter-spacing:1.5px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;">💀 LOSSES</button>
       <button class="lb-tab-btn" id="lbmenu-coins" onclick="switchMenuLb(this,'coins')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.8rem;letter-spacing:1.5px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;">🪙 COINS</button>
       <button class="lb-tab-btn" id="lbmenu-flappy" onclick="switchMenuLb(this,'flappy')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.8rem;letter-spacing:1.5px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;">🐦 FLAPPY</button>
     </div>
@@ -1631,9 +1636,9 @@ window.openProfileByUid = async uid => {
   const profInitEl = document.getElementById('p-avatar-initials');
   if (profAvEl) {
     if (p.avatar && p.avatar.startsWith('data:')) {
-      profAvEl.innerHTML = `<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"><div class="av-change-hint">CHANGE PHOTO</div>`;
+      profAvEl.innerHTML = `<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"><div class="av-change-hint">CHANGE PHOTO</div><div class="p-avatar-level-badge" id="p-avatar-level">1</div>`;
     } else {
-      profAvEl.innerHTML = `<span id="p-avatar-initials">${getInitial(p.username)}</span><div class="av-change-hint">CHANGE PHOTO</div>`;
+      profAvEl.innerHTML = `<span id="p-avatar-initials">${getInitial(p.username)}</span><div class="av-change-hint">CHANGE PHOTO</div><div class="p-avatar-level-badge" id="p-avatar-level">1</div>`;
     }
   }
   document.getElementById('p-username').textContent=p.username;
@@ -1646,6 +1651,8 @@ window.openProfileByUid = async uid => {
   const lvlData = calcLevel(p.xp || 0);
   document.getElementById('p-xp-bar').style.width = lvlData.pct + '%';
   document.getElementById('p-level-label').textContent = 'LVL ' + lvlData.level + '  —  ' + lvlData.current + ' / ' + lvlData.needed + ' XP';
+  const lvlBadge = document.getElementById('p-avatar-level');
+  if (lvlBadge) lvlBadge.textContent = lvlData.level;
   document.getElementById('p-joined').textContent='Joined '+p.joined;
   document.getElementById('p-edit-btn').style.display=(me&&me.uid===uid)?'block':'none';
   document.getElementById('p-logout-wrap').style.display=(me&&me.uid===uid)?'block':'none';
@@ -1774,14 +1781,14 @@ function addChatBubble(msg) {
   const view=document.getElementById('chat-view');
   const div=document.createElement('div'); div.className='chat-msg';
   const color=me&&msg.uid===me.uid?'me':'other';
-  const lvlBadge = msg.level ? `<span class="msg-lvl">[${msg.level}]</span>` : '';
+  const lvlBadge = msg.level ? `<span class="msg-lvl-badge">${msg.level}</span>` : '';
   const nc = msg.nameColor ? NAME_COLORS[msg.nameColor] : null;
   const nameStyle = nc ? `style="color:${nc};"` : '';
   const avHtml = msg.avatar
     ? `<img src="${msg.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
     : `<span>${(msg.username||'?')[0].toUpperCase()}</span>`;
   const tsStr = msg.ts ? (() => { const d=new Date(msg.ts); const h=d.getHours()%12||12; const m=String(d.getMinutes()).padStart(2,'0'); const ap=d.getHours()>=12?'pm':'am'; return h+':'+m+ap; })() : '';
-  div.innerHTML=`<div class="msg-avatar" onclick="openProfileByUid('${msg.uid}')">${avHtml}</div><div class="msg-body">${lvlBadge}<span class="msg-name ${color}" ${nameStyle} onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.username)}</span><span class="msg-text">${escHtml(msg.text)}</span><span class="msg-ts">${tsStr}</span></div>`;
+  div.innerHTML=`<div class="msg-avatar" onclick="openProfileByUid('${msg.uid}')"><div class="msg-avatar-inner">${avHtml}</div>${lvlBadge}</div><div class="msg-body"><span class="msg-name ${color}" ${nameStyle} onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.username)}</span><span class="msg-text">${escHtml(msg.text)}</span><span class="msg-ts">${tsStr}</span></div>`;
   view.appendChild(div); view.scrollTop=view.scrollHeight;
   while(view.children.length>100) view.removeChild(view.firstChild);
 }
@@ -2730,7 +2737,7 @@ function calcLevel(totalXp) {
 
 function levelTag(totalXp) {
   const { level } = calcLevel(totalXp || 0);
-  return `<span class="msg-lvl">[${level}]</span>`;
+  return `<span class="msg-lvl-badge">${level}</span>`;
 }
 
 // ── REWARD RATES ──
@@ -2921,6 +2928,7 @@ async function loadMenuLb(tab) {
   try {
     let field, label;
     if (tab === 'wins')   { field = 'wins';       label = w => w + ' W'; }
+    if (tab === 'losses') { field = 'losses';     label = w => w + ' L'; }
     if (tab === 'coins')  { field = 'coins';      label = w => '🪙 ' + w; }
     if (tab === 'flappy') { field = 'flappyBest'; label = w => w + ' pipes'; }
     const q = query(collection(db, 'users'), orderBy(field, 'desc'), limit(20));
