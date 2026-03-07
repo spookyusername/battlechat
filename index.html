@@ -671,30 +671,52 @@
         <input type="file" id="sfx-upload" accept="audio/mp3,audio/wav,audio/*" style="font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;color:var(--text);width:100%;" onchange="sfxHandleFile(this)">
       </div>
 
-      <!-- Trimmer panel (hidden until needed) -->
-      <div id="sfx-trimmer-panel" style="display:none;flex-direction:column;gap:10px;background:var(--dark3);border:1px solid var(--border);padding:12px;">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:0.85rem;letter-spacing:2px;color:var(--gold);">✂ SELECT 5-SECOND CLIP</div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);">Drag the slider to choose where your 5-second clip starts.</div>
-        <!-- Waveform canvas -->
-        <div style="position:relative;user-select:none;">
-          <canvas id="sfx-waveform" width="360" height="72" style="width:100%;height:72px;background:#111;border:1px solid var(--border);display:block;border-radius:2px;"></canvas>
-          <div id="sfx-trim-labels" style="display:flex;justify-content:space-between;font-family:'Barlow Condensed',sans-serif;font-size:0.65rem;color:var(--muted);margin-top:3px;padding:0 2px;"></div>
-        </div>
-        <!-- Slider -->
+      <!-- Trimmer panel -->
+      <div id="sfx-trimmer-panel" style="display:none;flex-direction:column;gap:12px;background:var(--dark3);border:1px solid var(--border);padding:14px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:0.85rem;letter-spacing:2px;color:var(--gold);">✂ TRIM CLIP</div>
+
+        <!-- Waveform -->
+        <canvas id="sfx-waveform" height="64" style="width:100%;height:64px;background:#0d0d0d;border:1px solid var(--border);display:block;border-radius:3px;"></canvas>
+
+        <!-- Start slider -->
         <div>
-          <input type="range" id="sfx-trim-slider" min="0" max="100" step="0.1" value="0"
-            style="width:100%;accent-color:#ffa500;cursor:pointer;height:20px;"
-            oninput="sfxSliderMove(this.value)">
+          <div style="display:flex;justify-content:space-between;font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;margin-bottom:4px;">
+            <span style="color:#ffa500;font-weight:700;">▶ START</span>
+            <span id="sfx-lbl-start" style="color:#ffa500;font-weight:700;">0.00s</span>
+          </div>
+          <input type="range" id="sfx-sl-start" min="0" max="1000" step="1" value="0"
+            style="width:100%;accent-color:#ffa500;cursor:pointer;" oninput="sfxTrimChange()">
         </div>
-        <!-- Trim time display -->
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(255,170,0,0.06);border:1px solid rgba(255,170,0,0.2);padding:6px 10px;">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;color:var(--muted);">Start: <span id="sfx-trim-start-lbl" style="color:var(--gold);font-weight:700;">0.00s</span></div>
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;color:var(--muted);">End: <span id="sfx-trim-end-lbl" style="color:var(--gold);font-weight:700;">5.00s</span></div>
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;color:var(--muted);">Dur: <span id="sfx-trim-dur-lbl" style="color:var(--text);font-weight:700;">5.00s</span></div>
+
+        <!-- End slider -->
+        <div>
+          <div style="display:flex;justify-content:space-between;font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;margin-bottom:4px;">
+            <span style="color:#ff4455;font-weight:700;">■ END</span>
+            <span id="sfx-lbl-end" style="color:#ff4455;font-weight:700;">5.00s</span>
+          </div>
+          <input type="range" id="sfx-sl-end" min="0" max="1000" step="1" value="1000"
+            style="width:100%;accent-color:#ff4455;cursor:pointer;" oninput="sfxTrimChange()">
         </div>
+
+        <!-- Volume slider -->
+        <div>
+          <div style="display:flex;justify-content:space-between;font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;margin-bottom:4px;">
+            <span style="color:#60c8ff;font-weight:700;">🔊 VOLUME</span>
+            <span id="sfx-lbl-vol" style="color:#60c8ff;font-weight:700;">100%</span>
+          </div>
+          <input type="range" id="sfx-sl-vol" min="10" max="200" step="5" value="100"
+            style="width:100%;accent-color:#60c8ff;cursor:pointer;" oninput="sfxVolChange()">
+        </div>
+
+        <!-- Info row -->
+        <div style="display:flex;justify-content:space-between;font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;color:var(--muted);background:rgba(255,170,0,0.05);border:1px solid rgba(255,170,0,0.15);padding:5px 10px;border-radius:2px;">
+          <span>Duration: <strong id="sfx-lbl-dur" style="color:var(--text);">0.00s</strong></span>
+          <span id="sfx-lbl-warn" style="color:var(--red-hot);display:none;font-weight:700;">⚠ Max 5s — clip will be cut</span>
+        </div>
+
         <div style="display:flex;gap:8px;">
-          <button class="bj-preset" style="flex:1;padding:8px 0;font-size:0.8rem;" onclick="sfxTrimPreview()">▶ PREVIEW</button>
-          <button class="auth-btn" style="flex:1;margin:0;padding:8px 0;font-size:0.8rem;" onclick="sfxApplyTrim()">✂ USE CLIP</button>
+          <button class="bj-preset" style="flex:1;padding:9px 0;font-size:0.8rem;" onclick="sfxTrimPreview()">▶ PREVIEW</button>
+          <button id="sfx-use-btn" class="auth-btn" style="flex:1;margin:0;padding:9px 0;font-size:0.8rem;" onclick="sfxApplyTrim()">✂ USE CLIP</button>
         </div>
       </div>
 
@@ -3836,12 +3858,25 @@ window.sendTts = async () => {
 };
 
 // ── SFX TRIMMER STATE ──
-let _sfxAudioBuffer = null;
-let _sfxTrimStart   = 0;
-let _sfxTrimEnd     = 5;
-let _sfxDuration    = 0;
-const SFX_MAX_DUR   = 5;
+// ══════════════════════════════════════════════════
+//  SFX TRIMMER  —  clean rewrite
+// ══════════════════════════════════════════════════
+let _sfxBuf      = null;   // decoded AudioBuffer of uploaded file
+let _sfxDur      = 0;      // total duration in seconds
+let _sfxVolume   = 1.0;    // 0.1 – 2.0
+const SFX_MAX_DUR = 5;
 
+// Single AudioContext reused throughout
+let _sfxActx = null;
+function _getSfxActx() {
+  if (!_sfxActx || _sfxActx.state === 'closed') {
+    _sfxActx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (_sfxActx.state === 'suspended') _sfxActx.resume().catch(()=>{});
+  return _sfxActx;
+}
+
+// ── open / reset ──────────────────────────────────
 window.openSfxModal = () => {
   if (!me) { showToast('Log in first!'); return; }
   sfxReset();
@@ -3850,231 +3885,185 @@ window.openSfxModal = () => {
 
 window.sfxReset = () => {
   document.getElementById('sfx-err').textContent = '';
-  document.getElementById('sfx-upload').value = '';
+  try { document.getElementById('sfx-upload').value = ''; } catch(e){}
   document.getElementById('sfx-trimmer-panel').style.display = 'none';
-  document.getElementById('sfx-ready-panel').style.display = 'none';
-  document.getElementById('sfx-upload-panel').style.display = 'flex';
+  document.getElementById('sfx-ready-panel').style.display   = 'none';
+  document.getElementById('sfx-upload-panel').style.display  = 'flex';
   window._customSfxData = null;
-  _sfxAudioBuffer = null;
+  _sfxBuf = null;
 };
 
+// ── file loaded ───────────────────────────────────
 window.sfxHandleFile = async (input) => {
   const file = input.files[0];
   if (!file) return;
   const err = document.getElementById('sfx-err');
-  err.textContent = '';
-  const arrayBuf = await file.arrayBuffer();
-  const actx = _getSfxActx();
-  let decoded;
-  try { decoded = await actx.decodeAudioData(arrayBuf); }
-  catch(e) { err.textContent = 'Cannot decode audio file.'; return; }
-
-  _sfxAudioBuffer = decoded;
-  _sfxDuration    = decoded.duration;
-  _sfxTrimStart   = 0;
-  _sfxTrimEnd     = Math.min(_sfxDuration, SFX_MAX_DUR);
-
-  if (_sfxDuration <= SFX_MAX_DUR) {
-    const wav = _sfxEncodeWav(_sfxSliceBuffer(decoded, 0, _sfxDuration));
-    window._customSfxData = wav;
-    _sfxShowReady(_sfxDuration);
-  } else {
+  err.textContent = 'Decoding…';
+  try {
+    const ab   = await file.arrayBuffer();
+    const actx = _getSfxActx();
+    // decodeAudioData needs a fresh copy if the context was reused
+    _sfxBuf = await actx.decodeAudioData(ab);
+    _sfxDur = _sfxBuf.duration;
+    err.textContent = '';
     _sfxOpenTrimmer();
+  } catch(e) {
+    err.textContent = 'Cannot decode audio file.';
   }
 };
 
+// ── open trimmer panel ────────────────────────────
 function _sfxOpenTrimmer() {
-  document.getElementById('sfx-upload-panel').style.display = 'none';
-  document.getElementById('sfx-ready-panel').style.display = 'none';
-  const panel = document.getElementById('sfx-trimmer-panel');
-  panel.style.display = 'flex';
+  document.getElementById('sfx-upload-panel').style.display  = 'none';
+  document.getElementById('sfx-ready-panel').style.display   = 'none';
+  document.getElementById('sfx-trimmer-panel').style.display = 'flex';
 
-  // Set canvas internal resolution to match its actual rendered size
-  const cv = document.getElementById('sfx-waveform');
-  cv.width  = cv.offsetWidth  || 360;
-  cv.height = cv.offsetHeight || 72;
+  // Reset sliders
+  document.getElementById('sfx-sl-start').value = 0;
+  document.getElementById('sfx-sl-end').value   = 1000;
+  document.getElementById('sfx-sl-vol').value   = 100;
+  _sfxVolume = 1.0;
 
-  const slider = document.getElementById('sfx-trim-slider');
-  const maxStart = Math.max(0, _sfxDuration - SFX_MAX_DUR);
-  slider.min   = 0;
-  slider.max   = maxStart;
-  slider.step  = 0.01;
-  slider.value = 0;
-
-  _sfxTrimStart = 0;
-  _sfxTrimEnd   = Math.min(_sfxDuration, SFX_MAX_DUR);
-
-  _sfxDrawWaveform();
-  _sfxUpdateTrimLabels();
+  // Draw after paint so canvas has real dimensions
+  requestAnimationFrame(() => { _sfxDraw(); _sfxUpdateLabels(); });
 }
 
-// Called when slider moves
-window.sfxSliderMove = (val) => {
-  _sfxTrimStart = parseFloat(val);
-  _sfxTrimEnd   = Math.min(_sfxDuration, _sfxTrimStart + SFX_MAX_DUR);
-  // Keep canvas internal size matched to rendered size
-  const cv = document.getElementById('sfx-waveform');
-  if (cv) { cv.width = cv.offsetWidth || cv.width; cv.height = cv.offsetHeight || cv.height; }
-  _sfxDrawWaveform();
-  _sfxUpdateTrimLabels();
+// ── slider callbacks ──────────────────────────────
+window.sfxTrimChange = () => {
+  const ss = document.getElementById('sfx-sl-start');
+  const se = document.getElementById('sfx-sl-end');
+  let sv = parseInt(ss.value), ev = parseInt(se.value);
+
+  // Keep start < end with at least 1 step gap
+  if (sv >= ev) {
+    // whichever moved last caused the collision — push the other
+    if (document.activeElement === ss) { sv = Math.max(0, ev - 1); ss.value = sv; }
+    else                               { ev = Math.min(1000, sv + 1); se.value = ev; }
+  }
+
+  _sfxDraw();
+  _sfxUpdateLabels();
 };
 
-function _sfxGetHandleX(cv, time) {
-  return (time / _sfxDuration) * cv.width;
+window.sfxVolChange = () => {
+  _sfxVolume = parseInt(document.getElementById('sfx-sl-vol').value) / 100;
+  document.getElementById('sfx-lbl-vol').textContent =
+    document.getElementById('sfx-sl-vol').value + '%';
+};
+
+// ── helpers: get current trim seconds ────────────
+function _sfxGetTrim() {
+  const sv = parseInt(document.getElementById('sfx-sl-start').value);
+  const ev = parseInt(document.getElementById('sfx-sl-end').value);
+  const start = (sv / 1000) * _sfxDur;
+  const end   = (ev / 1000) * _sfxDur;
+  return [start, Math.min(end, start + SFX_MAX_DUR)];
 }
 
-function _sfxDrawWaveform() {
-  const cv = document.getElementById('sfx-waveform');
-  if (!cv || !_sfxAudioBuffer) return;
-  const ctx = cv.getContext('2d');
-  const W = cv.width, H = cv.height;
-  const data = _sfxAudioBuffer.getChannelData(0);
-  const step = Math.ceil(data.length / W);
+// ── update text labels ────────────────────────────
+function _sfxUpdateLabels() {
+  const [start, end] = _sfxGetTrim();
+  const rawEnd = (parseInt(document.getElementById('sfx-sl-end').value) / 1000) * _sfxDur;
+  const dur    = end - start;
 
-  ctx.fillStyle = '#111';
+  document.getElementById('sfx-lbl-start').textContent = start.toFixed(2) + 's';
+  document.getElementById('sfx-lbl-end').textContent   = end.toFixed(2) + 's';
+  document.getElementById('sfx-lbl-dur').textContent   = dur.toFixed(2) + 's';
+
+  const warn = document.getElementById('sfx-lbl-warn');
+  if (warn) warn.style.display = (rawEnd - start > SFX_MAX_DUR) ? 'inline' : 'none';
+}
+
+// ── draw waveform ─────────────────────────────────
+function _sfxDraw() {
+  const cv = document.getElementById('sfx-waveform');
+  if (!cv || !_sfxBuf) return;
+
+  // Sync canvas buffer size to its CSS rendered size
+  const rect = cv.getBoundingClientRect();
+  const W = Math.round(rect.width)  || cv.offsetWidth  || 360;
+  const H = Math.round(rect.height) || cv.offsetHeight || 64;
+  if (cv.width !== W) cv.width = W;
+  if (cv.height !== H) cv.height = H;
+
+  const ctx  = cv.getContext('2d');
+  const data = _sfxBuf.getChannelData(0);
+  const step = Math.max(1, Math.floor(data.length / W));
+
+  ctx.fillStyle = '#0d0d0d';
   ctx.fillRect(0, 0, W, H);
 
-  const sx = _sfxGetHandleX(cv, _sfxTrimStart);
-  const ex = _sfxGetHandleX(cv, _sfxTrimEnd);
+  const [startSec, endSec] = _sfxGetTrim();
+  const sx = (startSec / _sfxDur) * W;
+  const ex = (endSec   / _sfxDur) * W;
 
-  // Dim regions outside selection
   for (let i = 0; i < W; i++) {
-    const inRegion = i >= sx && i <= ex;
-    let min = 1, max = -1;
+    let peak = 0;
     for (let j = 0; j < step; j++) {
-      const d = data[i * step + j] || 0;
-      if (d < min) min = d;
-      if (d > max) max = d;
+      const v = Math.abs(data[i * step + j] || 0);
+      if (v > peak) peak = v;
     }
-    const y1 = ((1 - max) / 2) * H;
-    const y2 = ((1 - min) / 2) * H;
-    ctx.strokeStyle = inRegion ? '#ffa500' : '#2a2a2a';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(i, y1);
-    ctx.lineTo(i, Math.max(y2, y1 + 1));
-    ctx.stroke();
+    const barH = Math.max(1, peak * H);
+    ctx.fillStyle = (i >= sx && i <= ex) ? '#ffa500' : '#2a2a2a';
+    ctx.fillRect(i, (H - barH) / 2, 1, barH);
   }
 
-  // Selected region glow overlay
-  ctx.fillStyle = 'rgba(255,170,0,0.08)';
+  // Highlight overlay
+  ctx.fillStyle = 'rgba(255,165,0,0.07)';
   ctx.fillRect(sx, 0, ex - sx, H);
 
-  // Start marker
-  ctx.strokeStyle = '#ffa500';
-  ctx.lineWidth = 2;
+  // Start line
+  ctx.strokeStyle = '#ffa500'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, H); ctx.stroke();
-  ctx.fillStyle = '#ffa500';
-  ctx.beginPath(); ctx.moveTo(sx-7,0); ctx.lineTo(sx+7,0); ctx.lineTo(sx,12); ctx.closePath(); ctx.fill();
 
-  // End marker
-  ctx.strokeStyle = '#ff4444';
-  ctx.lineWidth = 2;
+  // End line
+  ctx.strokeStyle = '#ff4455'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(ex, 0); ctx.lineTo(ex, H); ctx.stroke();
-  ctx.fillStyle = '#ff4444';
-  ctx.beginPath(); ctx.moveTo(ex-7,0); ctx.lineTo(ex+7,0); ctx.lineTo(ex,12); ctx.closePath(); ctx.fill();
-
-  // Label inside region
-  const clipDur = _sfxTrimEnd - _sfxTrimStart;
-  ctx.fillStyle = 'rgba(255,170,0,0.85)';
-  ctx.font = 'bold 11px Barlow Condensed, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(clipDur.toFixed(2) + 's', (sx + ex) / 2, H - 5);
 }
 
-function _sfxUpdateTrimLabels() {
-  document.getElementById('sfx-trim-start-lbl').textContent = _sfxTrimStart.toFixed(2) + 's';
-  document.getElementById('sfx-trim-end-lbl').textContent   = _sfxTrimEnd.toFixed(2) + 's';
-  const dur = _sfxTrimEnd - _sfxTrimStart;
-  const dl = document.getElementById('sfx-trim-dur-lbl');
-  dl.textContent = dur.toFixed(2) + 's';
-  dl.style.color = 'var(--text)';
+// ── render clip to Blob URL (OfflineAudioContext) ─
+async function _sfxRenderClip() {
+  const [startSec, endSec] = _sfxGetTrim();
+  const sr       = _sfxBuf.sampleRate;
+  const startSmp = Math.floor(startSec * sr);
+  const endSmp   = Math.min(Math.ceil(endSec * sr), _sfxBuf.length);
+  const len      = Math.max(1, endSmp - startSmp);
+  const numCh    = _sfxBuf.numberOfChannels;
 
-  // Time tick labels
-  const tl = document.getElementById('sfx-trim-labels');
-  if (!tl) return;
-  const steps = Math.min(10, Math.floor(_sfxDuration));
-  tl.innerHTML = '';
-  for (let i = 0; i <= steps; i++) {
-    const t = (_sfxDuration / steps) * i;
-    const sp = document.createElement('span');
-    sp.textContent = t.toFixed(1) + 's';
-    tl.appendChild(sp);
+  // OfflineAudioContext renders synchronously into a buffer — no AudioContext reuse issues
+  const oac = new OfflineAudioContext(numCh, len, sr);
+  const src  = oac.createBufferSource();
+  const tmp  = oac.createBuffer(numCh, len, sr);
+  for (let ch = 0; ch < numCh; ch++) {
+    tmp.getChannelData(ch).set(_sfxBuf.getChannelData(ch).subarray(startSmp, endSmp));
   }
+  src.buffer = tmp;
+
+  const gain = oac.createGain();
+  gain.gain.value = Math.max(0.1, Math.min(4, _sfxVolume));
+  src.connect(gain);
+  gain.connect(oac.destination);
+  src.start(0);
+
+  const rendered = await oac.startRendering();
+  return _sfxBufToBlob(rendered);
 }
 
-window.sfxTrimPreview = () => {
-  if (!_sfxAudioBuffer) return;
-  const sliced = _sfxSliceBuffer(_sfxAudioBuffer, _sfxTrimStart, _sfxTrimEnd);
-  const wav    = _sfxEncodeWav(sliced);
-  const audio  = new Audio(wav);
-  
-  audio.play().catch(()=>{});
-};
-
-window.sfxApplyTrim = () => {
-  if (!_sfxAudioBuffer) return;
-  const dur = _sfxTrimEnd - _sfxTrimStart;
-  if (dur < 0.1) { document.getElementById('sfx-err').textContent = 'Selection too short.'; return; }
-  const sliced = _sfxSliceBuffer(_sfxAudioBuffer, _sfxTrimStart, _sfxTrimEnd);
-  window._customSfxData = _sfxEncodeWav(sliced);
-  document.getElementById('sfx-trimmer-panel').style.display = 'none';
-  _sfxShowReady(dur);
-};
-
-function _sfxShowReady(dur) {
-  document.getElementById('sfx-upload-panel').style.display = 'none';
-  document.getElementById('sfx-trimmer-panel').style.display = 'none';
-  document.getElementById('sfx-ready-dur').textContent = dur.toFixed(2) + 's clip';
-  const rp = document.getElementById('sfx-ready-panel');
-  rp.style.display = 'flex';
-}
-
-// Single shared AudioContext for all SFX trimmer operations
-let _sfxActx = null;
-function _getSfxActx() {
-  if (!_sfxActx || _sfxActx.state === 'closed') {
-    _sfxActx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  return _sfxActx;
-}
-
-// Slice an AudioBuffer between startSec and endSec, returns new AudioBuffer
-function _sfxSliceBuffer(buf, startSec, endSec) {
-  const sr        = buf.sampleRate;
-  const startSamp = Math.floor(startSec * sr);
-  const endSamp   = Math.min(Math.ceil(endSec * sr), buf.length);
-  const len       = Math.max(1, endSamp - startSamp);
-  const actx      = _getSfxActx();
-  const out       = actx.createBuffer(buf.numberOfChannels, len, sr);
-  for (let ch = 0; ch < buf.numberOfChannels; ch++) {
-    out.getChannelData(ch).set(buf.getChannelData(ch).subarray(startSamp, endSamp));
-  }
-  return out;
-}
-
-// Encode AudioBuffer → Blob URL (WAV) — avoids btoa crash on large files
-function _sfxEncodeWav(buf) {
+// AudioBuffer → WAV Blob URL (no btoa — no crash)
+function _sfxBufToBlob(buf) {
   const numCh = buf.numberOfChannels;
   const sr    = buf.sampleRate;
   const len   = buf.length;
-  const bytes = 44 + len * numCh * 2;
-  const ab    = new ArrayBuffer(bytes);
+  const ab    = new ArrayBuffer(44 + len * numCh * 2);
   const dv    = new DataView(ab);
-  const writeStr = (o, s) => { for (let i=0;i<s.length;i++) dv.setUint8(o+i, s.charCodeAt(i)); };
-  writeStr(0, 'RIFF');
-  dv.setUint32(4,  bytes - 8, true);
-  writeStr(8, 'WAVE');
-  writeStr(12,'fmt ');
-  dv.setUint32(16, 16, true);
-  dv.setUint16(20, 1,  true);  // PCM
-  dv.setUint16(22, numCh, true);
-  dv.setUint32(24, sr, true);
-  dv.setUint32(28, sr * numCh * 2, true);
-  dv.setUint16(32, numCh * 2, true);
-  dv.setUint16(34, 16, true);
-  writeStr(36,'data');
-  dv.setUint32(40, len * numCh * 2, true);
+  const ws    = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+  ws(0,'RIFF'); dv.setUint32(4, ab.byteLength - 8, true);
+  ws(8,'WAVE'); ws(12,'fmt ');
+  dv.setUint32(16,16,true); dv.setUint16(20,1,true);
+  dv.setUint16(22,numCh,true); dv.setUint32(24,sr,true);
+  dv.setUint32(28,sr*numCh*2,true); dv.setUint16(32,numCh*2,true);
+  dv.setUint16(34,16,true); ws(36,'data');
+  dv.setUint32(40,len*numCh*2,true);
   let off = 44;
   for (let i = 0; i < len; i++) {
     for (let ch = 0; ch < numCh; ch++) {
@@ -4083,41 +4072,75 @@ function _sfxEncodeWav(buf) {
       off += 2;
     }
   }
-  // Use Blob URL instead of btoa — btoa on large buffers blocks/crashes the tab
-  const blob = new Blob([ab], { type: 'audio/wav' });
-  return URL.createObjectURL(blob);
+  return URL.createObjectURL(new Blob([ab], { type: 'audio/wav' }));
 }
 
-window.playCustomSfxPreview = () => {
-  if (!window._customSfxData) return;
-  const audio = new Audio(window._customSfxData);
-  
-  audio.play().catch(()=>{});
+// ── preview (in trimmer) ──────────────────────────
+let _sfxPreviewAudio = null;
+window.sfxTrimPreview = async () => {
+  if (!_sfxBuf) return;
+  const [s, e] = _sfxGetTrim();
+  if (e - s < 0.05) { document.getElementById('sfx-err').textContent = 'Selection too short.'; return; }
+  if (_sfxPreviewAudio) { _sfxPreviewAudio.pause(); _sfxPreviewAudio = null; }
+  const btn = document.querySelector('#sfx-trimmer-panel .bj-preset');
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    const url = await _sfxRenderClip();
+    _sfxPreviewAudio = new Audio(url);
+    _sfxPreviewAudio.play().catch(()=>{});
+  } catch(err) { document.getElementById('sfx-err').textContent = 'Preview failed.'; }
+  if (btn) { btn.disabled = false; btn.textContent = '▶ PREVIEW'; }
 };
 
+// ── confirm clip ──────────────────────────────────
+window.sfxApplyTrim = async () => {
+  if (!_sfxBuf) return;
+  const [s, e] = _sfxGetTrim();
+  if (e - s < 0.05) { document.getElementById('sfx-err').textContent = 'Selection too short.'; return; }
+  const btn = document.getElementById('sfx-use-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Processing…'; }
+  try {
+    window._customSfxData = await _sfxRenderClip();
+    document.getElementById('sfx-trimmer-panel').style.display = 'none';
+    document.getElementById('sfx-upload-panel').style.display  = 'none';
+    document.getElementById('sfx-ready-dur').textContent       = (e - s).toFixed(2) + 's clip';
+    document.getElementById('sfx-ready-panel').style.display   = 'flex';
+  } catch(err2) {
+    document.getElementById('sfx-err').textContent = 'Processing failed.';
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '✂ USE CLIP'; }
+};
+
+// ── ready panel preview ───────────────────────────
+window.playCustomSfxPreview = () => {
+  if (!window._customSfxData) return;
+  new Audio(window._customSfxData).play().catch(()=>{});
+};
+
+// ── send to Firebase ──────────────────────────────
 window.sendCustomSfx = async () => {
   if (!me || !window._customSfxData) return;
   const err = document.getElementById('sfx-err');
   if ((myProfile.coins||0) < 1250) { err.textContent = 'Not enough coins (need 1250🪙)'; return; }
 
-  // Convert blob URL to base64 for Firebase transport (other clients can't access blob URLs)
+  // Blob URLs are local-only; convert to base64 so other clients can play it
   let audioData = window._customSfxData;
   if (audioData.startsWith('blob:')) {
     try {
       const resp = await fetch(audioData);
       const blob = await resp.blob();
-      audioData = await new Promise((res, rej) => {
-        const reader = new FileReader();
-        reader.onload = () => res(reader.result);
-        reader.onerror = rej;
-        reader.readAsDataURL(blob);
+      audioData  = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload  = () => res(r.result);
+        r.onerror = rej;
+        r.readAsDataURL(blob);
       });
     } catch(e) { err.textContent = 'Failed to encode audio.'; return; }
   }
 
   const newCoins = (myProfile.coins||0) - 1250;
   myProfile.coins = newCoins;
-  await updateDoc(doc(db,'users',me.uid),{coins:newCoins}).catch(()=>{});
+  await updateDoc(doc(db,'users',me.uid), { coins: newCoins }).catch(()=>{});
   updateCoinDisplays(newCoins);
   await set(push(ref(rtdb,'events/sfx')), {
     uid: me.uid, username: myProfile.username,
@@ -4125,7 +4148,7 @@ window.sendCustomSfx = async () => {
   }).catch(()=>{});
   closeModal('sfx-overlay');
   showToast('SFX played!');
-  playCustomSfxPreview();
+  new Audio(window._customSfxData).play().catch(()=>{});
 };
 
 window.sendSfx = async (sound) => {
