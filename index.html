@@ -219,7 +219,6 @@
   .discord-chat-btn-text { flex: 1; }
   .discord-chat-btn-arrow { font-size: 0.6rem; opacity: 0.4; transition: opacity 0.25s, transform 0.25s; }
   .discord-chat-btn:hover .discord-chat-btn-arrow { opacity: 0.8; transform: translateX(2px); }
-  .discord-live-dot { width: 5px; height: 5px; border-radius: 50%; background: #57F287; box-shadow: 0 0 6px #57F287; flex-shrink: 0; animation: discordPulse 2.5s ease-in-out infinite; }
   @keyframes discordPulse { 0%,100%{opacity:1;box-shadow:0 0 5px #57F287} 50%{opacity:0.5;box-shadow:0 0 10px #57F287} }
   .chat-actions { display: flex; gap: 6px; margin-bottom: 8px; }
   .chat-action-btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.68rem; letter-spacing: 1.5px; text-transform: uppercase; border: 1px solid var(--border); background: transparent; color: var(--muted); padding: 4px 10px; cursor: pointer; flex: 1; transition: all 0.2s; }
@@ -325,15 +324,18 @@
   .arena-next-btn:disabled { opacity: 0.35; cursor: default; }
   .queue-screen { text-align: center; padding: 8px 0; }
   /* ── QUEUE FLOATER (persistent after modal closed) ── */
-  .queue-floater { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--dark2); border: 1px solid rgba(201,168,76,0.4); padding: 8px 16px 8px 12px; display: flex; align-items: center; gap: 10px; z-index: 300; opacity: 0; transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease; pointer-events: none; box-shadow: 0 4px 24px rgba(0,0,0,0.5); white-space: nowrap; }
+  .queue-floater { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--dark2); border: 1px solid rgba(201,168,76,0.35); padding: 10px 10px 10px 14px; display: flex; align-items: center; gap: 12px; z-index: 300; opacity: 0; transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease; pointer-events: none; box-shadow: 0 4px 28px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,168,76,0.08); white-space: nowrap; }
   .queue-floater.visible { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: all; }
-  .qf-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 6px var(--gold); animation: blink 1.2s infinite; flex-shrink: 0; }
-  .qf-text { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 2px; color: var(--text); }
-  .qf-pos { color: var(--gold); }
-  .qf-open { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'Bebas Neue', sans-serif; font-size: 0.72rem; letter-spacing: 1px; padding: 2px 8px; cursor: pointer; transition: border-color 0.15s, color 0.15s; margin-left: 4px; }
-  .qf-open:hover { border-color: var(--gold); color: var(--gold); }
-  .qf-leave { background: none; border: none; color: rgba(255,255,255,0.25); font-size: 0.9rem; cursor: pointer; padding: 0 0 0 4px; transition: color 0.15s; }
-  .qf-leave:hover { color: var(--red-hot); }
+  .qf-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 7px var(--gold); animation: blink 1.2s infinite; flex-shrink: 0; }
+  .qf-info { display: flex; flex-direction: column; gap: 1px; }
+  .qf-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); line-height: 1; }
+  .qf-pos-line { display: flex; align-items: baseline; gap: 5px; }
+  .qf-pos { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; color: var(--gold); line-height: 1; }
+  .qf-pos-sub { font-family: 'Barlow Condensed', sans-serif; font-size: 0.72rem; font-weight: 700; color: var(--muted); letter-spacing: 1px; }
+  .qf-open { background: none; border: 1px solid rgba(201,168,76,0.3); color: var(--gold); font-family: 'Bebas Neue', sans-serif; font-size: 0.72rem; letter-spacing: 1.5px; padding: 5px 10px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+  .qf-open:hover { border-color: var(--gold); background: rgba(201,168,76,0.1); }
+  .qf-leave { background: none; border: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.25); font-size: 0.8rem; cursor: pointer; padding: 5px 8px; transition: border-color 0.15s, color 0.15s; font-family: 'Barlow Condensed', sans-serif; }
+  .qf-leave:hover { border-color: rgba(217,43,43,0.5); color: var(--red-hot); }
   /* ── MENU OVERLAY MODE — arena still visible behind ── */
   .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 400; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
   .q-avatar { width: 80px; height: 80px; border-radius: 50%; background: var(--dark3); border: 3px solid var(--red); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-family:'Bebas Neue',sans-serif; font-weight:700; margin: 0 auto 14px; box-shadow: 0 0 30px rgba(217,43,43,0.3); animation: qp 2s ease-in-out infinite; overflow:hidden; }
@@ -717,7 +719,6 @@
     <div class="chat-footer">
       <a class="discord-chat-btn" href="https://discord.gg/wqNEHs2AqF" target="_blank" rel="noopener">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.031.054a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
-        <span class="discord-live-dot"></span>
         <span class="discord-chat-btn-text">JOIN DISCORD</span>
         <span class="discord-chat-btn-arrow">▶</span>
       </a>
@@ -954,7 +955,7 @@
 <!-- ARENA MODAL -->
 <div class="modal-overlay" id="arena-overlay">
   <div class="modal modal-arena">
-    <button class="modal-close" onclick="closeArenaModal()">✕</button>
+    <button class="modal-close" id="arena-modal-close" onclick="arenaModalClose()">✕</button>
     <div class="arena-modal-header">
       <div class="arena-modal-title"><span>BATTLE</span>CHAT ARENA</div>
       <div class="arena-step-lbl" id="arena-step-lbl">STEP 1 OF 2</div>
@@ -1017,8 +1018,11 @@
 <!-- QUEUE FLOATER -->
 <div class="queue-floater" id="queue-floater">
   <div class="qf-dot"></div>
-  <span class="qf-text">IN QUEUE — <span class="qf-pos" id="qf-pos">...</span></span>
-  <button class="qf-open" onclick="openArenaFromFloater()">VIEW</button>
+  <div class="qf-info">
+    <div class="qf-label">IN QUEUE</div>
+    <div class="qf-pos-line"><span class="qf-pos" id="qf-pos">...</span><span class="qf-pos-sub" id="qf-pos-sub"></span></div>
+  </div>
+  <button class="qf-open" onclick="openArenaFromFloater()">↗ VIEW</button>
   <button class="qf-leave" onclick="leaveQueue()" title="Leave queue">✕</button>
 </div>
 
@@ -2189,7 +2193,14 @@ function updateQueueUI(sorted, myPos) {
   document.getElementById('q-status').textContent = pos === 1 ? "You're up next!" : 'Waiting in line...';
   // Update floater
   const qfPos = document.getElementById('qf-pos');
-  if (qfPos) qfPos.textContent = pos === 1 ? 'YOU'RE NEXT!' : pos + ' OF ' + sorted.length;
+  const qfSub = document.getElementById('qf-pos-sub');
+  if (pos === 1) {
+    if (qfPos) qfPos.textContent = "YOU'RE NEXT!";
+    if (qfSub) qfSub.textContent = '';
+  } else {
+    if (qfPos) qfPos.textContent = 'POSITION ' + pos;
+    if (qfSub) qfSub.textContent = 'OF ' + sorted.length;
+  }
 }
 
 function stopQueueListeners() {
@@ -2218,8 +2229,17 @@ function hideQueueFloater() {
   if (f) f.classList.remove('visible');
 }
 window.minimizeQueue = () => {
-  closeArenaModal();
+  closeModal('arena-overlay');
   showQueueFloater();
+};
+window.arenaModalClose = () => {
+  // If in queue (floater logic), minimize instead of fully closing
+  const inQueue = document.getElementById('arena-s2') && document.getElementById('arena-s2').style.display !== 'none';
+  if (inQueue) {
+    window.minimizeQueue();
+  } else {
+    closeArenaModal();
+  }
 };
 window.openArenaFromFloater = () => {
   hideQueueFloater();
