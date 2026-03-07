@@ -1488,7 +1488,7 @@
 <script>
 // ── POCKETBASE CONFIG ──
 // Replace this with your DigitalOcean droplet URL (e.g. http://123.45.67.89:8090)
-const PB_URL = 'http://YOUR_DROPLET_IP:8090';
+const PB_URL = 'https://api.battlechat.lol';
 
 // ── POCKETBASE HELPER ──
 const pb = {
@@ -1543,7 +1543,7 @@ const pb = {
     return d.items || [];
   },
   async findUserByUsername(username) {
-    const r = await fetch(`${PB_URL}/api/collections/users/records?filter=(username='${encodeURIComponent(username)}')`);
+    const r = await fetch(`${PB_URL}/api/collections/users/records?filter=(displayName='${encodeURIComponent(username)}')`);
     if (!r.ok) return null;
     const d = await r.json();
     return d.items?.[0] || null;
@@ -1698,7 +1698,7 @@ function _mapUserRecord(rec) {
   return {
     uid:            rec.id,
     email:          rec.email || '',
-    username:       rec.username || '',
+    displayName:    rec.displayName || '',
     avatar:         rec.avatar || '',
     desc:           rec.desc || '',
     wins:           rec.wins || 0,
@@ -1945,7 +1945,7 @@ window.addEventListener('beforeunload', async () => {
 function renderTopbar() {
   const a = document.getElementById('topbar-user-area');
   a.innerHTML = me && myProfile
-    ? `<div class="topbar-user" onclick="openOwnProfile()"><div class="topbar-avatar">${avatarInner(myProfile.avatar, myProfile.username)}</div><span class="topbar-username">${myProfile.username}</span></div>`
+    ? `<div class="topbar-user" onclick="openOwnProfile()"><div class="topbar-avatar">${avatarInner(myProfile.avatar, myProfile.displayName)}</div><span class="topbar-username">${myProfile.displayName}</span></div>`
     : `<button class="topbar-btn" onclick="openModal('auth-overlay')">LOG IN</button>`;
 }
 window.openOwnProfile = () => me && openProfileByUid(me.uid);
@@ -2012,7 +2012,7 @@ window.doSignup = async () => {
   if(existing){document.getElementById('su-username-err').textContent='Username taken';uEl.classList.add('error');return;}
   const btn=document.getElementById('su-btn'); btn.disabled=true; btn.textContent='CREATING...';
   try {
-    const profile = { username: username.toUpperCase(), avatar: _suAvatarData||'', desc:'', wins:0, losses:0, bestStreak:0, currentStreak:0, xp:0, coins:0, joined:new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'}) };
+    const profile = { displayName: username.toUpperCase(), avatar: _suAvatarData||'', desc:'', wins:0, losses:0, bestStreak:0, currentStreak:0, xp:0, coins:0, joined:new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'}) };
     const rec = await pb.createUser(email, pw, profile);
     // Now log in to get token
     const d = await pb.authWithPassword(email, pw);
@@ -2021,7 +2021,7 @@ window.doSignup = async () => {
     localStorage.setItem('bc_session', JSON.stringify({ token: pb._token, userId: me.uid, email }));
     _suAvatarData='';
     renderTopbar(); if (myProfile) { refreshShopOwned(); applyUserPrefs(myProfile); }
-    closeModal('auth-overlay'); showToast('Welcome, '+profile.username+'!');
+    closeModal('auth-overlay'); showToast('Welcome, '+profile.displayName+'!');
   } catch(e){document.getElementById('su-email-err').textContent=e.message||'Signup failed';eEl.classList.add('error');}
   btn.disabled=false; btn.textContent='CREATE ACCOUNT';
 };
@@ -2037,10 +2037,10 @@ window.openProfileByUid = async uid => {
     if (p.avatar && p.avatar.startsWith('data:')) {
       profAvEl.innerHTML = `<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"><div class="av-change-hint">CHANGE PHOTO</div><div class="p-avatar-level-badge" id="p-avatar-level">1</div>`;
     } else {
-      profAvEl.innerHTML = `<span id="p-avatar-initials">${getInitial(p.username)}</span><div class="av-change-hint">CHANGE PHOTO</div><div class="p-avatar-level-badge" id="p-avatar-level">1</div>`;
+      profAvEl.innerHTML = `<span id="p-avatar-initials">${getInitial(p.displayName)}</span><div class="av-change-hint">CHANGE PHOTO</div><div class="p-avatar-level-badge" id="p-avatar-level">1</div>`;
     }
   }
-  document.getElementById('p-username').textContent=p.username;
+  document.getElementById('p-username').textContent=p.displayName;
   document.getElementById('p-desc').textContent=p.desc||'No description yet.';
   document.getElementById('p-wins').textContent=p.wins;
   document.getElementById('p-losses').textContent=p.losses;
@@ -2064,7 +2064,7 @@ window.openProfileBySlot = slot => { const uid=stageUids[slot]; if(uid) openProf
 window.startEditProfile = () => {
   if(!myProfile) return;
   // avatar handled by editAvData system
-  document.getElementById('ed-username').value=myProfile.username;
+  document.getElementById('ed-username').value=myProfile.displayName;
   document.getElementById('ed-desc').value=myProfile.desc||'';
   // avatar grid removed — uses upload instead
   editAvData = null; setEdAvatarPreview(myProfile);
@@ -2079,13 +2079,13 @@ window.saveProfile = async () => {
   document.getElementById('ed-username-err').textContent='';
   const newUser=uEl.value.trim().toUpperCase(), newDesc=document.getElementById('ed-desc').value.trim();
   if(!newUser||newUser.length<3){document.getElementById('ed-username-err').textContent='Min 3 characters';uEl.classList.add('error');return;}
-  if(newUser!==myProfile.username){
+  if(newUser!==myProfile.displayName){
     const existing = await pb.findUserByUsername(newUser);
     if(existing && existing.id !== me.uid){document.getElementById('ed-username-err').textContent='Username taken';uEl.classList.add('error');return;}
   }
   const newAvatar = editAvData !== null ? editAvData : myProfile.avatar;
-  await pb.updateUser(me.uid,{username:newUser,avatar:newAvatar,desc:newDesc});
-  myProfile.username=newUser; myProfile.avatar=newAvatar; myProfile.desc=newDesc;
+  await pb.updateUser(me.uid,{displayName:newUser,avatar:newAvatar,desc:newDesc});
+  myProfile.displayName=newUser; myProfile.avatar=newAvatar; myProfile.desc=newDesc;
   editAvData=null;
   refreshAllAvatars();
   renderTopbar(); cancelEdit(); openProfileByUid(me.uid); showToast('Profile saved!');
@@ -2113,7 +2113,7 @@ async function _loadLbTab(tab) {
     } else {
       statHtml = `<span class="lb-stat" style="color:var(--gold);">🪙${p.coins||0}</span>`;
     }
-    row.innerHTML = `<span class="lb-rank ${rc}">${i+1}</span><span class="lb-name">${p.username}</span><span class="msg-lvl" style="margin-right:6px;">LVL ${rowLvl}</span>${statHtml}`;
+    row.innerHTML = `<span class="lb-rank ${rc}">${i+1}</span><span class="lb-name">${p.displayName}</span><span class="msg-lvl" style="margin-right:6px;">LVL ${rowLvl}</span>${statHtml}`;
     row.onclick = () => openProfileByUid(p.id); list.appendChild(row);
   });
   });
@@ -2174,7 +2174,7 @@ window.sendMessage = async () => {
 
   const xp = myProfile.xp || 0;
   const lvl = calcLevel(xp).level;
-  await pb.createRecord('chat', {uid:me.uid,username:myProfile.username,avatar:myProfile.avatar,text,level:lvl,nameColor:activeNameColor,ts:Date.now()}).catch(()=>{});
+  await pb.createRecord('chat', {uid:me.uid,displayName:myProfile.displayName,avatar:myProfile.avatar,text,level:lvl,nameColor:activeNameColor,ts:Date.now()}).catch(()=>{});
   input.value='';
   await grantRewards(2, 1, null); // chat: +2 XP, +1 coin
 };
@@ -2187,9 +2187,9 @@ function addChatBubble(msg) {
   const nameStyle = nc ? `style="color:${nc};"` : '';
   const avHtml = msg.avatar
     ? `<img src="${msg.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
-    : `<span>${(msg.username||'?')[0].toUpperCase()}</span>`;
+    : `<span>${(msg.displayName||'?')[0].toUpperCase()}</span>`;
   const tsStr = msg.ts ? (() => { const d=new Date(msg.ts); const h=d.getHours()%12||12; const m=String(d.getMinutes()).padStart(2,'0'); const ap=d.getHours()>=12?'pm':'am'; return h+':'+m+ap; })() : '';
-  div.innerHTML=`<div class="msg-avatar" onclick="openProfileByUid('${msg.uid}')"><div class="msg-avatar-inner">${avHtml}</div>${lvlBadge}</div><div class="msg-body"><span class="msg-name ${color}" ${nameStyle} onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.username)}</span><span class="msg-text">${escHtml(msg.text)}</span><span class="msg-ts">${tsStr}</span></div>`;
+  div.innerHTML=`<div class="msg-avatar" onclick="openProfileByUid('${msg.uid}')"><div class="msg-avatar-inner">${avHtml}</div>${lvlBadge}</div><div class="msg-body"><span class="msg-name ${color}" ${nameStyle} onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.displayName)}</span><span class="msg-text">${escHtml(msg.text)}</span><span class="msg-ts">${tsStr}</span></div>`;
   view.appendChild(div); view.scrollTop=view.scrollHeight;
   while(view.children.length>100) view.removeChild(view.firstChild);
 }
@@ -2245,22 +2245,22 @@ function _handleStageSlot(slot, data) {
 
 function showSlot(slot, data) {
   const wasEmpty = document.getElementById('np-'+slot).style.display === 'none';
-  setAvatar('av-'+slot, data.avatar, data.username);
-  document.getElementById('un-'+slot).textContent = data.username||'—';
+  setAvatar('av-'+slot, data.avatar, data.displayName);
+  document.getElementById('un-'+slot).textContent = data.displayName||'—';
   document.getElementById('w-'+slot).textContent  = 'W: '+(data.wins||0);
   document.getElementById('l-'+slot).textContent  = 'L: '+(data.losses||0);
   document.getElementById('np-'+slot).style.display   = 'flex';
   document.getElementById('live-'+slot).style.display = 'flex';
   document.getElementById('ph-'+slot).style.display   = 'none';
   const ftag = document.getElementById('fname-'+slot);
-  if (ftag) ftag.textContent = data.username || '—';
+  if (ftag) ftag.textContent = data.displayName || '—';
   // Update timer bar nameplate
   const tav = document.getElementById('tbar-av-'+slot);
   const tun = document.getElementById('tbar-un-'+slot);
   const tw  = document.getElementById('tbar-w-'+slot);
   const tl  = document.getElementById('tbar-l-'+slot);
-  if (tav) tav.innerHTML = avatarInner(data.avatar, data.username);
-  if (tun) tun.textContent = data.username || '—';
+  if (tav) tav.innerHTML = avatarInner(data.avatar, data.displayName);
+  if (tun) tun.textContent = data.displayName || '—';
   if (tw)  tw.textContent  = 'W: ' + (data.wins||0);
   if (tl)  tl.textContent  = 'L: ' + (data.losses||0);
   if (wasEmpty) {
@@ -2341,7 +2341,7 @@ function clearSlotUI(slot) {
 
 // ── GO LIVE — try to claim a slot ──
 async function goLive(slot) {
-  const slotData = { uid:me.uid, slot, username:myProfile.username, avatar:myProfile.avatar, wins:myProfile.wins||0, losses:myProfile.losses||0 };
+  const slotData = { uid:me.uid, slot, displayName:myProfile.displayName, avatar:myProfile.avatar, wins:myProfile.wins||0, losses:myProfile.losses||0 };
 
   const slots = [slot, slot === 'left' ? 'right' : 'left'];
   let claimedSlot = null;
@@ -2367,7 +2367,7 @@ async function goLive(slot) {
   if (!claimedSlot) return false;
 
   mySlot = claimedSlot;
-  addSystemMsg(myProfile.username + ' entered the arena!');
+  addSystemMsg(myProfile.displayName + ' entered the arena!');
   await joinAsFighter(claimedSlot);
   showToast('You are LIVE!');
   document.getElementById('enter-arena-btn').style.display = 'none';
@@ -2395,7 +2395,7 @@ async function leaveStage() {
 
 window.doLeaveStage = async () => {
   await leaveStage();
-  addSystemMsg(myProfile.username + ' left the stage.');
+  addSystemMsg(myProfile.displayName + ' left the stage.');
   showToast('You left the stage.');
 };
 
@@ -2491,8 +2491,8 @@ async function enterQueue() {
 
   if (!_qMyTs) _qMyTs = Date.now();
 
-  setAvatar('q-av', myProfile.avatar, myProfile.username);
-  document.getElementById('q-name').textContent   = myProfile.username;
+  setAvatar('q-av', myProfile.avatar, myProfile.displayName);
+  document.getElementById('q-name').textContent   = myProfile.displayName;
   document.getElementById('q-status').textContent = 'In queue...';
   document.getElementById('q-pos').textContent    = '...';
   document.getElementById('q-pos').style.color    = 'var(--gold)';
@@ -2507,7 +2507,7 @@ async function enterQueue() {
       _qMyTs = existing.ts || _qMyTs;
       _queueRecordId = existing.id;
     } else {
-      const rec = await pb.createRecord('queue', { uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, ts:_qMyTs });
+      const rec = await pb.createRecord('queue', { uid:me.uid, displayName:myProfile.displayName, avatar:myProfile.avatar, ts:_qMyTs });
       _queueRecordId = rec.id;
     }
   } catch(e) { console.warn('Queue write error', e); }
@@ -2549,7 +2549,7 @@ async function enterQueue() {
     if (!claimed) {
       _qLaunching = false;
       try {
-        const rec = await pb.createRecord('queue', { uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, ts:_qMyTs });
+        const rec = await pb.createRecord('queue', { uid:me.uid, displayName:myProfile.displayName, avatar:myProfile.avatar, ts:_qMyTs });
         _queueRecordId = rec.id;
       } catch(e){}
       _attachQueueListeners(tryAdvance);
@@ -2566,7 +2566,7 @@ async function enterQueue() {
     if (!success) {
       _qLaunching = false;
       try {
-        const rec = await pb.createRecord('queue', { uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, ts:_qMyTs });
+        const rec = await pb.createRecord('queue', { uid:me.uid, displayName:myProfile.displayName, avatar:myProfile.avatar, ts:_qMyTs });
         _queueRecordId = rec.id;
       } catch(e){}
       _attachQueueListeners(tryAdvance);
@@ -2591,7 +2591,7 @@ function updateQueueUI(sorted, myPos) {
     const chip = document.createElement('div');
     chip.className = 'q-chip' + (w.uid === me.uid ? ' you' : ''); chip.style.animation = 'chipPop 0.2s ease ' + (i*0.04) + 's both';
     chip.innerHTML = '<span>'+(i+1)+'.</span> '
-      + escHtml(w.username||'?')
+      + escHtml(w.displayName||'?')
       + (w.uid === me.uid ? ' <span style="opacity:0.5;font-size:0.7rem;">(you)</span>' : '');
     chips.appendChild(chip);
   });
@@ -2786,7 +2786,7 @@ async function resolveRound(roundIndex) {
     setTimeout(async () => await leaveStage(), 1200);
   } else if (winnerSlot && stageUids[winnerSlot] === me.uid) {
     // I am the winner — stay on stage, just collect rewards
-    const winnerName = myProfile.username;
+    const winnerName = myProfile.displayName;
     SFX.win(); animateWin(winnerSlot); animateLose(loserSlot);
     addSystemMsg(winnerName + ' wins the round! Waiting for next challenger...');
     showToast('You won! Next challenger incoming...');
@@ -3215,7 +3215,7 @@ async function grantRewards(xpAmount, coinAmount, reason) {
   if (newLevel > oldLevel) {
     sfxChord([440, 554, 659, 880], 'sine', 0.7, 0.2);
     showLevelUpBanner(newLevel, bonusCoins);
-    addSystemMsg('🏆 ' + myProfile.username + ' reached Level ' + newLevel + '!');
+    addSystemMsg('🏆 ' + myProfile.displayName + ' reached Level ' + newLevel + '!');
   }
 }
 
@@ -3374,7 +3374,7 @@ async function loadMenuLb(tab) {
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border);' + (isSelf ? 'background:rgba(217,43,43,0.05);' : '');
       row.innerHTML = `<span style="font-family:'Bebas Neue',sans-serif;font-size:1rem;color:${rankColor};width:22px;flex-shrink:0;">${rank}</span>`
-        + `<span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.88rem;flex:1;${isSelf?'color:var(--red-hot);':''}">` + escHtml(data.username || '?') + '</span>'
+        + `<span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.88rem;flex:1;${isSelf?'color:var(--red-hot);':''}">` + escHtml(data.displayName || '?') + '</span>'
         + `<span style="font-family:'Bebas Neue',sans-serif;font-size:0.95rem;color:var(--text);">${label(val)}</span>`;
       list.appendChild(row);
     });
@@ -4016,7 +4016,7 @@ window.handleEditAvatarUpload = async (e) => {
   if (!file) return;
   try {
     editAvData = await resizeImage(file);
-    setEdAvatarPreview({ avatar: editAvData, username: myProfile?.username });
+    setEdAvatarPreview({ avatar: editAvData, username: myProfile?.displayName });
   } catch(err) { showToast('Upload failed: ' + err); }
   e.target.value = '';
 };
@@ -4028,15 +4028,15 @@ function setEdAvatarPreview(profile) {
   if (profile?.avatar && profile.avatar.startsWith('data:')) {
     el.innerHTML = `<img src="${profile.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
   } else {
-    if (initEl) initEl.textContent = getInitial(profile?.username);
-    else el.innerHTML = `<span>${getInitial(profile?.username)}</span>`;
+    if (initEl) initEl.textContent = getInitial(profile?.displayName);
+    else el.innerHTML = `<span>${getInitial(profile?.displayName)}</span>`;
   }
 }
 
 function refreshAllAvatars() {
   if (!myProfile) return;
   const av = myProfile.avatar;
-  const un = myProfile.username;
+  const un = myProfile.displayName;
   // Topbar
   const tbAv = document.querySelector('.topbar-avatar');
   if (tbAv) tbAv.innerHTML = avatarInner(av, un);
@@ -4673,7 +4673,7 @@ window.sendTts = async () => {
   await pb.updateUser(me.uid,{coins:newCoins}).catch(()=>{});
   updateCoinDisplays(newCoins);
   await pb.createRecord('events', {
-    type: 'tts', uid: me.uid, username: myProfile.username,
+    type: 'tts', uid: me.uid, displayName: myProfile.displayName,
     text, voice: 'default', ts: Date.now()
   }).catch(()=>{});
   closeModal('tts-overlay');
@@ -4941,7 +4941,7 @@ window.sendCustomSfx = async () => {
   await pb.updateUser(me.uid, { coins: newCoins }).catch(()=>{});
   updateCoinDisplays(newCoins);
   await pb.createRecord('events', {
-    type: 'sfx', uid: me.uid, username: myProfile.username,
+    type: 'sfx', uid: me.uid, displayName: myProfile.displayName,
     sound: 'custom', audioData,
     trimStart: start, trimEnd: end, volume: Math.min(1, volume),
     ts: Date.now()
@@ -4960,7 +4960,7 @@ window.sendSfx = async (sound) => {
   await pb.updateUser(me.uid,{coins:newCoins}).catch(()=>{});
   updateCoinDisplays(newCoins);
   await pb.createRecord('events', {
-    type: 'sfx', uid: me.uid, username: myProfile.username,
+    type: 'sfx', uid: me.uid, displayName: myProfile.displayName,
     sound, ts: Date.now()
   }).catch(()=>{});
   closeModal('sfx-overlay');
@@ -5018,14 +5018,14 @@ function listenGlobalEvents() {
     if (!d || d.ts < now - 2000) return;
     if (d.type === 'tts') {
       if ('speechSynthesis' in window) {
-        const utt = new SpeechSynthesisUtterance(d.username + ' says: ' + d.text);
+        const utt = new SpeechSynthesisUtterance(d.displayName + ' says: ' + d.text);
         applyTtsVoice(utt, d.voice || 'default');
         window.speechSynthesis.speak(utt);
       }
-      addSystemMsg('🔊 TTS from ' + d.username + ': ' + d.text);
+      addSystemMsg('🔊 TTS from ' + d.displayName + ': ' + d.text);
     } else if (d.type === 'sfx') {
       playSfxSound(d.sound, d.audioData, d.trimStart, d.trimEnd, d.volume);
-      addSystemMsg('🎵 ' + d.username + ' played a sound');
+      addSystemMsg('🎵 ' + d.displayName + ' played a sound');
     }
   });
 }
@@ -5099,10 +5099,10 @@ async function resolveBets(winnerSlot) {
     updateCoinDisplays(newCoins);
     showToast('🎰 BET WON! +' + payout + '🪙');
     sfxChord([523,659,784,1046],'sine',0.6,0.22);
-    addSystemMsg('🎰 ' + myProfile.username + ' won their bet — +' + payout + '🪙!');
+    addSystemMsg('🎰 ' + myProfile.displayName + ' won their bet — +' + payout + '🪙!');
   } else {
     showToast('🎰 Bet lost — ' + myBet.amount + '🪙 gone');
-    addSystemMsg('🎰 ' + myProfile.username + ' lost their bet of ' + myBet.amount + '🪙');
+    addSystemMsg('🎰 ' + myProfile.displayName + ' lost their bet of ' + myBet.amount + '🪙');
   }
 
   // Clean up old bet data
@@ -5182,7 +5182,7 @@ window.claimDailyReward = async () => {
   updateCoinDisplays(newCoins);
   sfxChord([440,554,659,880],'sine',0.7,0.2);
   showToast('🎁 Daily reward claimed! +100🪙');
-  addSystemMsg('🎁 ' + myProfile.username + ' claimed their daily reward!');
+  addSystemMsg('🎁 ' + myProfile.displayName + ' claimed their daily reward!');
   _updateDailyBtn();
 };
 
