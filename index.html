@@ -2141,7 +2141,11 @@ let _chatCooldownUntil = 0;
 
 function listenChat() {
   pb.subscribe('chat', '', evt => {
-    if (evt.action === 'create') addChatBubble(evt.record);
+    if (evt.action === 'create') {
+      // Skip our own messages — already added locally on send
+      if (me && evt.record.uid === me.uid) return;
+      addChatBubble(evt.record);
+    }
   });
 }
 window.sendMessage = async () => {
@@ -2166,8 +2170,10 @@ window.sendMessage = async () => {
 
   const xp = myProfile.xp || 0;
   const lvl = calcLevel(xp).level;
-  await pb.createRecord('chat', {uid:me.uid,displayName:myProfile.displayName,avatar:myProfile.avatar,text,level:lvl,nameColor:activeNameColor,ts:Date.now()}).catch(()=>{});
+  const chatRecord = {uid:me.uid,displayName:myProfile.displayName,avatar:myProfile.avatar,text,level:lvl,nameColor:activeNameColor,ts:Date.now()};
+  addChatBubble(chatRecord); // show immediately, don't wait for SSE
   input.value='';
+  await pb.createRecord('chat', chatRecord).catch(()=>{});
   await grantRewards(2, 1, null); // chat: +2 XP, +1 coin
 };
 function addChatBubble(msg) {
