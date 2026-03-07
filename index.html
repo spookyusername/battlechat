@@ -1613,55 +1613,42 @@ const pb = {
     return d.items || [];
   },
 
-  // SSE Realtime subscription
+  // Polling-based realtime (SSE replaced with reliable polling)
   subscribe(collection, filter, callback) {
     const key = collection + ':' + (filter || '*');
-    if (this._subs[key]) { try { this._subs[key].close(); } catch(e){} }
-    const url = `${PB_URL}/api/realtime`;
-    const es = new EventSource(url);
-    let clientId = null;
+    if (this._subs[key]) { clearInterval(this._subs[key]); }
 
-    const handleMsg = (evtData) => {
+    let lastTs = Date.now();
+    const seen = new Set();
+
+    const poll = async () => {
       try {
-        const msg = JSON.parse(evtData);
-        if (msg.clientId) {
-          clientId = msg.clientId;
-          fetch(`${PB_URL}/api/realtime`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...(this._token ? { 'Authorization': this._token } : {}) },
-            body: JSON.stringify({ clientId, subscriptions: [collection] })
-          }).catch(()=>{});
-          return;
+        let url = `${PB_URL}/api/collections/${collection}/records?sort=-created&perPage=20`;
+        if (filter) url += `&filter=(${encodeURIComponent(filter)})`;
+        const r = await fetch(url, { headers: this._token ? { 'Authorization': this._token } : {} });
+        if (!r.ok) return;
+        const d = await r.json();
+        const items = (d.items || []).reverse();
+        for (const record of items) {
+          if (seen.has(record.id)) continue;
+          // Only fire for records created after subscription started
+          const recTs = new Date(record.created).getTime();
+          if (recTs < lastTs - 1000) { seen.add(record.id); continue; }
+          seen.add(record.id);
+          callback({ action: 'create', record });
         }
-        const action = msg.action;
-        const record = msg.record;
-        if (!record) return;
-        if (filter) {
-          const parts = filter.split('=');
-          if (parts.length === 2) {
-            const k = parts[0].trim(), v = parts[1].trim().replace(/'/g, '');
-            if (String(record[k]) !== v) return;
-          }
-        }
-        callback({ action, record });
       } catch(e) {}
     };
 
-    es.onmessage = evt => handleMsg(evt.data);
-    es.addEventListener(collection, evt => handleMsg(evt.data));
-    es.onerror = () => {
-      // Reconnect after 2s
-      setTimeout(() => {
-        if (this._subs[key] === es) this.subscribe(collection, filter, callback);
-      }, 2000);
-    };
-    this._subs[key] = es;
-    return () => { try { es.close(); } catch(e){} delete this._subs[key]; };
+    // Poll every 1.5 seconds
+    const interval = setInterval(poll, 1500);
+    this._subs[key] = interval;
+    return () => { clearInterval(interval); delete this._subs[key]; };
   },
 
   unsubscribe(collection, filter) {
     const key = collection + ':' + (filter || '*');
-    if (this._subs[key]) { try { this._subs[key].close(); } catch(e){} delete this._subs[key]; }
+    if (this._subs[key]) { clearInterval(this._subs[key]); delete this._subs[key]; }
   },
 };
 
