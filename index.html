@@ -2001,7 +2001,8 @@ async function enterQueue() {
     }
 
     if (myPos >= freeSlots) {
-      document.getElementById('q-status').textContent = pos === 1 ? "You're up next!" : 'Waiting in line...';
+      // Not eligible yet — show correct position and wait
+      document.getElementById('q-status').textContent = 'Waiting in line...';
       return;
     }
 
@@ -2032,12 +2033,37 @@ async function enterQueue() {
     document.getElementById('q-pos').textContent    = 'GO!';
     document.getElementById('q-pos').style.color    = '#4CAF50';
 
-    const targetSlot = leftFree ? 'left' : 'right';
-    closeModal('arena-overlay');
+    // Re-read stage at the last moment to pick the freshest free slot
+    const freshStage = (await get(ref(rtdb,'stage')).catch(()=>null))?.val() || {};
+    const freshLeft  = !freshStage.left?.uid;
+    const freshRight = !freshStage.right?.uid;
+    const targetSlot = freshLeft ? 'left' : freshRight ? 'right' : null;
+
+    if (!targetSlot) {
+      // Both slots just got taken — re-queue, don't close modal
+      _qLaunching = false;
+      document.getElementById('q-status').textContent = 'Waiting for a slot...';
+      document.getElementById('q-pos').textContent    = '...';
+      document.getElementById('q-pos').style.color    = 'var(--gold)';
+      await set(ref(rtdb,'queue/'+me.uid), {
+        uid: me.uid, username: myProfile.username,
+        avatar: myProfile.avatar, ts: _qMyTs
+      }).catch(()=>{});
+      _attachQueueListeners(tryAdvance);
+      return;
+    }
+
     const success = await goLive(targetSlot);
 
-    if (!success) {
+    if (success) {
+      // Only close modal AFTER successfully going live
+      closeModal('arena-overlay');
+    } else {
+      // goLive transaction lost — re-queue, keep modal open
       _qLaunching = false;
+      document.getElementById('q-status').textContent = 'In queue...';
+      document.getElementById('q-pos').textContent    = '...';
+      document.getElementById('q-pos').style.color    = 'var(--gold)';
       await set(ref(rtdb,'queue/'+me.uid), {
         uid: me.uid, username: myProfile.username,
         avatar: myProfile.avatar, ts: _qMyTs
