@@ -19,7 +19,7 @@
   .topbar { height: 48px; background: var(--dark); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; position: relative; z-index: 10; }
   .topbar-left, .topbar-right { display: flex; align-items: center; gap: 10px; flex: 1; }
   .topbar-right { justify-content: flex-end; }
-  .logo { position: absolute; left: 50%; font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 4px; color: var(--text); pointer-events: none; transform: translateX(-50%); }
+  .logo { position: absolute; font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 4px; color: var(--text); pointer-events: none; transform: translateX(-50%); transition: left 0.35s ease; }
   .logo span { color: var(--red-hot); }
   .topbar-coins { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 2px; color: var(--gold); margin-left: 8px; }
   .topbar-btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.78rem; letter-spacing: 2px; text-transform: uppercase; border: 1px solid var(--border); background: transparent; color: var(--muted); padding: 5px 14px; cursor: pointer; transition: border-color 0.2s, color 0.2s; }
@@ -2200,9 +2200,15 @@ onValue(timerRef, async snap => {
 
 // ── LOGO ALIGN ──
 function alignLogo() {
-  const logo=document.getElementById('logo');
+  const logo = document.getElementById('logo');
   if (!logo) return;
-  logo.style.left = '50%';
+  const chatPanel = document.querySelector('.chat-panel');
+  const totalWidth = window.innerWidth;
+  // Camera area = total width minus chat panel width (or full width if chat hidden)
+  const chatWidth = (chatPanel && chatOpen) ? chatPanel.offsetWidth : 0;
+  const arenaWidth = totalWidth - chatWidth;
+  // Center of the arena
+  logo.style.left = Math.round(arenaWidth / 2) + 'px';
 }
 alignLogo(); window.addEventListener('resize', alignLogo);
 
