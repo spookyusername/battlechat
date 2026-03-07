@@ -4001,7 +4001,7 @@ window.sfxTrimPreview = () => {
   const sliced = _sfxSliceBuffer(_sfxAudioBuffer, _sfxTrimStart, _sfxTrimEnd);
   const wav    = _sfxEncodeWav(sliced);
   const audio  = new Audio(wav);
-  audio.volume = 0.8;
+  
   audio.play().catch(()=>{});
 };
 
@@ -4037,7 +4037,7 @@ function _sfxSliceBuffer(buf, startSec, endSec) {
   return out;
 }
 
-// Encode AudioBuffer → base64 WAV data URL
+// Encode AudioBuffer → Blob URL (WAV) — avoids btoa crash on large files
 function _sfxEncodeWav(buf) {
   const numCh = buf.numberOfChannels;
   const sr    = buf.sampleRate;
@@ -4060,7 +4060,6 @@ function _sfxEncodeWav(buf) {
   writeStr(36,'data');
   dv.setUint32(40, len * numCh * 2, true);
   let off = 44;
-  // Interleave channels
   for (let i = 0; i < len; i++) {
     for (let ch = 0; ch < numCh; ch++) {
       const s = Math.max(-1, Math.min(1, buf.getChannelData(ch)[i]));
@@ -4068,17 +4067,15 @@ function _sfxEncodeWav(buf) {
       off += 2;
     }
   }
-  // To base64
-  let bin = '';
-  const bytes8 = new Uint8Array(ab);
-  for (let i = 0; i < bytes8.length; i++) bin += String.fromCharCode(bytes8[i]);
-  return 'data:audio/wav;base64,' + btoa(bin);
+  // Use Blob URL instead of btoa — btoa on large buffers blocks/crashes the tab
+  const blob = new Blob([ab], { type: 'audio/wav' });
+  return URL.createObjectURL(blob);
 }
 
 window.playCustomSfxPreview = () => {
   if (!window._customSfxData) return;
   const audio = new Audio(window._customSfxData);
-  audio.volume = 0.8;
+  
   audio.play().catch(()=>{});
 };
 
@@ -4086,13 +4083,29 @@ window.sendCustomSfx = async () => {
   if (!me || !window._customSfxData) return;
   const err = document.getElementById('sfx-err');
   if ((myProfile.coins||0) < 1250) { err.textContent = 'Not enough coins (need 1250🪙)'; return; }
+
+  // Convert blob URL to base64 for Firebase transport (other clients can't access blob URLs)
+  let audioData = window._customSfxData;
+  if (audioData.startsWith('blob:')) {
+    try {
+      const resp = await fetch(audioData);
+      const blob = await resp.blob();
+      audioData = await new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = () => res(reader.result);
+        reader.onerror = rej;
+        reader.readAsDataURL(blob);
+      });
+    } catch(e) { err.textContent = 'Failed to encode audio.'; return; }
+  }
+
   const newCoins = (myProfile.coins||0) - 1250;
   myProfile.coins = newCoins;
   await updateDoc(doc(db,'users',me.uid),{coins:newCoins}).catch(()=>{});
   updateCoinDisplays(newCoins);
   await set(push(ref(rtdb,'events/sfx')), {
     uid: me.uid, username: myProfile.username,
-    sound: 'custom', audioData: window._customSfxData, ts: Date.now()
+    sound: 'custom', audioData, ts: Date.now()
   }).catch(()=>{});
   closeModal('sfx-overlay');
   showToast('SFX played!');
@@ -4119,7 +4132,7 @@ window.sendSfx = async (sound) => {
 function playSfxSound(sound, audioData) {
   if (sound === 'custom' && audioData) {
     const audio = new Audio(audioData);
-    audio.volume = 0.8;
+    
     audio.play().catch(()=>{});
     return;
   }
