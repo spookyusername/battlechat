@@ -1485,25 +1485,192 @@
 </div>
 
   <!-- SHOP TAB -->
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import { getDatabase, ref, push, onChildAdded, set, onValue, remove, off, get, runTransaction, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+<script>
+// ── POCKETBASE CONFIG ──
+// Replace this with your DigitalOcean droplet URL (e.g. http://123.45.67.89:8090)
+const PB_URL = 'http://YOUR_DROPLET_IP:8090';
 
-// ── FIREBASE INIT ──
-const app = initializeApp({
-  apiKey: "AIzaSyCgbh87jN-iaJ2RuATj4axWxO_ILp9OUK0",
-  authDomain: "fdsdsdfsdf-5432e.firebaseapp.com",
-  databaseURL: "https://fdsdsdfsdf-5432e-default-rtdb.firebaseio.com",
-  projectId: "fdsdsdfsdf-5432e",
-  storageBucket: "fdsdsdfsdf-5432e.firebasestorage.app",
-  messagingSenderId: "298545984144",
-  appId: "1:298545984144:web:e7e7676a00ae4451829e15"
-});
-const auth = getAuth(app);
-const db   = getFirestore(app);
-const rtdb = getDatabase(app);
+// ── POCKETBASE HELPER ──
+const pb = {
+  _token: null,
+  _userId: null,
+
+  // Auth
+  async authWithPassword(email, password) {
+    const r = await fetch(`${PB_URL}/api/collections/users/auth-with-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identity: email, password })
+    });
+    if (!r.ok) { const e = await r.json(); throw new Error(e.message || 'Login failed'); }
+    const d = await r.json();
+    this._token  = d.token;
+    this._userId = d.record.id;
+    return d;
+  },
+  async createUser(email, password, data) {
+    const r = await fetch(`${PB_URL}/api/collections/users/records`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, passwordConfirm: password, ...data })
+    });
+    if (!r.ok) { const e = await r.json(); throw new Error(e.message || 'Signup failed'); }
+    return r.json();
+  },
+  logout() { this._token = null; this._userId = null; },
+
+  // Users collection (Firestore-style)
+  async getUser(uid) {
+    const r = await fetch(`${PB_URL}/api/collections/users/records/${uid}`, {
+      headers: this._token ? { 'Authorization': this._token } : {}
+    });
+    if (!r.ok) return null;
+    return r.json();
+  },
+  async updateUser(uid, data) {
+    const r = await fetch(`${PB_URL}/api/collections/users/records/${uid}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': this._token || '' },
+      body: JSON.stringify(data)
+    });
+    if (!r.ok) throw new Error('Update failed');
+    return r.json();
+  },
+  async getUsers(field, dir = 'DESC', max = 20) {
+    const r = await fetch(`${PB_URL}/api/collections/users/records?sort=${dir==='DESC'?'-':''}${field}&perPage=${max}`);
+    if (!r.ok) return [];
+    const d = await r.json();
+    return d.items || [];
+  },
+  async findUserByUsername(username) {
+    const r = await fetch(`${PB_URL}/api/collections/users/records?filter=(username='${encodeURIComponent(username)}')`);
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d.items?.[0] || null;
+  },
+  async changePassword(newPassword) {
+    const r = await fetch(`${PB_URL}/api/collections/users/records/${this._userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': this._token || '' },
+      body: JSON.stringify({ password: newPassword, passwordConfirm: newPassword, oldPassword: '_force_' })
+    });
+    if (!r.ok) { const e = await r.json(); throw new Error(e.message || 'Password change failed'); }
+  },
+
+  // ── REALTIME COLLECTIONS (queue, stage, votes, chat, bets, events, battle) ──
+  _subs: {}, // key → EventSource
+
+  async createRecord(collection, data) {
+    const r = await fetch(`${PB_URL}/api/collections/${collection}/records`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': this._token || '' },
+      body: JSON.stringify(data)
+    });
+    if (!r.ok) throw new Error('Create failed');
+    return r.json();
+  },
+  async upsertRecord(collection, filter, data) {
+    // Get existing or create new
+    const existing = await this.getRecordByFilter(collection, filter);
+    if (existing) {
+      return this.patchRecord(collection, existing.id, data);
+    }
+    return this.createRecord(collection, data);
+  },
+  async patchRecord(collection, id, data) {
+    const r = await fetch(`${PB_URL}/api/collections/${collection}/records/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': this._token || '' },
+      body: JSON.stringify(data)
+    });
+    if (!r.ok) throw new Error('Patch failed');
+    return r.json();
+  },
+  async deleteRecord(collection, id) {
+    if (!id) return;
+    await fetch(`${PB_URL}/api/collections/${collection}/records/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': this._token || '' }
+    });
+  },
+  async deleteRecordsByFilter(collection, filter) {
+    const items = await this.listRecords(collection, filter);
+    await Promise.all(items.map(i => this.deleteRecord(collection, i.id)));
+  },
+  async getRecordByFilter(collection, filter) {
+    const r = await fetch(`${PB_URL}/api/collections/${collection}/records?filter=(${encodeURIComponent(filter)})&perPage=1`);
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d.items?.[0] || null;
+  },
+  async listRecords(collection, filter = '', sort = '', max = 200) {
+    let url = `${PB_URL}/api/collections/${collection}/records?perPage=${max}`;
+    if (filter) url += `&filter=(${encodeURIComponent(filter)})`;
+    if (sort)   url += `&sort=${sort}`;
+    const r = await fetch(url, { headers: this._token ? { 'Authorization': this._token } : {} });
+    if (!r.ok) return [];
+    const d = await r.json();
+    return d.items || [];
+  },
+
+  // SSE Realtime subscription
+  subscribe(collection, filter, callback) {
+    const key = collection + ':' + (filter || '*');
+    if (this._subs[key]) { try { this._subs[key].close(); } catch(e){} }
+    const url = `${PB_URL}/api/realtime`;
+    const es = new EventSource(url);
+    let clientId = null;
+
+    es.onmessage = evt => {
+      try {
+        const msg = JSON.parse(evt.data);
+        // PocketBase sends clientId first, then subscribe confirmations and events
+        if (msg.clientId) {
+          clientId = msg.clientId;
+          // Now subscribe
+          fetch(`${PB_URL}/api/realtime`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clientId, subscriptions: [collection] })
+          }).catch(()=>{});
+          return;
+        }
+        const topic = msg.action; // create, update, delete
+        const record = msg.record;
+        if (!record) return;
+        // Apply filter client-side if provided
+        if (filter) {
+          // Simple key=value filter
+          const parts = filter.split('=');
+          if (parts.length === 2) {
+            const k = parts[0].trim(), v = parts[1].trim().replace(/'/g, '');
+            if (String(record[k]) !== v) return;
+          }
+        }
+        callback({ action: topic, record });
+      } catch(e) {}
+    };
+    es.onerror = () => {
+      // Reconnect after 2s
+      setTimeout(() => {
+        if (this._subs[key] === es) this.subscribe(collection, filter, callback);
+      }, 2000);
+    };
+    this._subs[key] = es;
+    return () => { try { es.close(); } catch(e){} delete this._subs[key]; };
+  },
+
+  unsubscribe(collection, filter) {
+    const key = collection + ':' + (filter || '*');
+    if (this._subs[key]) { try { this._subs[key].close(); } catch(e){} delete this._subs[key]; }
+  },
+};
+
+// ── LIVEKIT ──
+const LK_URL    = 'wss://battlechat-ef3iejkp.livekit.cloud';
+const TOKEN_URL = 'https://battlechat-tokens.realeazybot.workers.dev';
+const ROOM_NAME = 'battlechat-stage';
+const { Room, RoomEvent, Track } = LivekitClient;
 
 // ── LIVEKIT ──
 const LK_URL    = 'wss://battlechat-ef3iejkp.livekit.cloud';
@@ -1524,6 +1691,31 @@ let timerInterval = null;
 let queueUnsubStage = null, queueUnsubList = null;
 let _qMyTs      = 0;      // queue timestamp — set once, preserved across retries
 let _qLaunching = false;  // true while mid-launch
+
+// ── PB RECORD → PROFILE MAPPER ──
+function _mapUserRecord(rec) {
+  if (!rec) return null;
+  return {
+    uid:            rec.id,
+    email:          rec.email || '',
+    username:       rec.username || '',
+    avatar:         rec.avatar || '',
+    desc:           rec.desc || '',
+    wins:           rec.wins || 0,
+    losses:         rec.losses || 0,
+    bestStreak:     rec.bestStreak || 0,
+    currentStreak:  rec.currentStreak || 0,
+    xp:             rec.xp || 0,
+    coins:          rec.coins || 0,
+    joined:         rec.joined || '',
+    items:          rec.items || [],
+    activeTheme:    rec.activeTheme || 'default',
+    nameColor:      rec.nameColor || 'default',
+    lastDaily:      rec.lastDaily || 0,
+    flappyBest:     rec.flappyBest || 0,
+    _pbId:          rec.id,
+  };
+}
 
 // ── LIVEKIT TOKEN ──
 async function getToken(identity, canPublish) {
@@ -1675,31 +1867,78 @@ function updateOnlineCount() {
 }
 
 // ── AUTH STATE ──
-onAuthStateChanged(auth, async user => {
-  me = user;
-  if (user) {
-    const snap = await getDoc(doc(db,'users',user.uid));
-    myProfile = snap.exists() ? snap.data() : null;
-  } else {
-    myProfile = null;
+// Restore session from localStorage on page load
+async function restoreSession() {
+  const saved = localStorage.getItem('bc_session');
+  if (saved) {
+    try {
+      const s = JSON.parse(saved);
+      pb._token  = s.token;
+      pb._userId = s.userId;
+      me = { uid: s.userId, email: s.email };
+      const rec = await pb.getUser(s.userId);
+      if (rec) {
+        myProfile = _mapUserRecord(rec);
+      } else {
+        // Token expired
+        pb.logout();
+        localStorage.removeItem('bc_session');
+        me = null; myProfile = null;
+      }
+    } catch(e) {
+      pb.logout();
+      localStorage.removeItem('bc_session');
+      me = null; myProfile = null;
+    }
   }
   renderTopbar();
   if (me && myProfile) refreshShopOwned();
-  listenStage(); // everyone sees stage updates
+  listenStage();
   listenGlobalEvents();
-  listenChat(); // chat visible to everyone, logged in or not
+  listenChat();
   if (me) {
     applyUserPrefs(myProfile);
     // Wipe our own stale queue/stage entries from a previous crashed session
-    remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
-    _qMyTs = 0; // reset queue timestamp
+    pb.deleteRecordsByFilter('queue', `uid='${me.uid}'`).catch(()=>{});
+    _qMyTs = 0;
     for (const s of ['left','right']) {
-      get(ref(rtdb,'stage/'+s)).then(snap => {
-        if (snap.val()?.uid === me.uid) remove(ref(rtdb,'stage/'+s)).catch(()=>{});
+      pb.getRecordByFilter('stage', `slot='${s}'`).then(rec => {
+        if (rec && rec.uid === me.uid) pb.deleteRecord('stage', rec.id).catch(()=>{});
       }).catch(()=>{});
     }
   }
   joinAsViewer();
+}
+
+restoreSession();
+
+// ── HEARTBEAT (replaces Firebase onDisconnect) ──
+// Every 15s, refresh our queue/stage presence. On page close, try to clean up.
+setInterval(async () => {
+  if (!me) return;
+  // Refresh queue record to keep it "alive" (no actual expiry but good hygiene)
+}, 15000);
+
+window.addEventListener('beforeunload', async () => {
+  if (!me) return;
+  // Try synchronous cleanup (best effort)
+  if (mySlot) {
+    const recId = _stageRecordIds[mySlot];
+    if (recId) {
+      fetch(`${PB_URL}/api/collections/stage/records/${recId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': pb._token || '' },
+        keepalive: true
+      }).catch(()=>{});
+    }
+  }
+  if (_queueRecordId) {
+    fetch(`${PB_URL}/api/collections/queue/records/${_queueRecordId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': pb._token || '' },
+      keepalive: true
+    }).catch(()=>{});
+  }
 });
 
 // ── TOPBAR ──
@@ -1712,7 +1951,10 @@ function renderTopbar() {
 window.openOwnProfile = () => me && openProfileByUid(me.uid);
 window.doLogout = async () => {
   if (mySlot) await leaveStage();
-  await signOut(auth);
+  pb.logout();
+  localStorage.removeItem('bc_session');
+  me = null; myProfile = null;
+  renderTopbar();
   showToast('Logged out.');
 };
 
@@ -1728,7 +1970,13 @@ window.doLogin = async () => {
   const eEl=document.getElementById('login-email'), errEl=document.getElementById('login-err'), btn=document.getElementById('login-btn');
   errEl.textContent=''; eEl.classList.remove('error'); btn.disabled=true; btn.textContent='LOGGING IN...';
   try {
-    await signInWithEmailAndPassword(auth, eEl.value.trim(), document.getElementById('login-pw').value);
+    const d = await pb.authWithPassword(eEl.value.trim(), document.getElementById('login-pw').value);
+    const rec = await pb.getUser(d.record.id);
+    me = { uid: d.record.id, email: d.record.email };
+    myProfile = _mapUserRecord(rec || d.record);
+    localStorage.setItem('bc_session', JSON.stringify({ token: pb._token, userId: me.uid, email: me.email }));
+    renderTopbar();
+    if (myProfile) { refreshShopOwned(); applyUserPrefs(myProfile); }
     closeModal('auth-overlay'); showToast('Welcome back!');
   } catch(e) { errEl.textContent='Invalid email or password'; eEl.classList.add('error'); }
   btn.disabled=false; btn.textContent='LOG IN';
@@ -1759,24 +2007,30 @@ window.doSignup = async () => {
   if(!email.includes('@')){document.getElementById('su-email-err').textContent='Valid email required';eEl.classList.add('error');ok=false;}
   if(pw.length<6){document.getElementById('su-pw-err').textContent='Min 6 characters';pEl.classList.add('error');ok=false;}
   if(!ok) return;
-  const allUsers=await getDocs(collection(db,'users'));
-  if(allUsers.docs.some(d=>d.data().username?.toLowerCase()===username.toLowerCase())){document.getElementById('su-username-err').textContent='Username taken';uEl.classList.add('error');return;}
+  // Check username taken
+  const existing = await pb.findUserByUsername(username.toUpperCase());
+  if(existing){document.getElementById('su-username-err').textContent='Username taken';uEl.classList.add('error');return;}
   const btn=document.getElementById('su-btn'); btn.disabled=true; btn.textContent='CREATING...';
   try {
-    const cred=await createUserWithEmailAndPassword(auth,email,pw);
-    const profile={uid:cred.user.uid,username:username.toUpperCase(),avatar:_suAvatarData||'',desc:'',wins:0,losses:0,bestStreak:0,currentStreak:0,xp:0,joined:new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'})};
-    await setDoc(doc(db,'users',cred.user.uid),profile);
+    const profile = { username: username.toUpperCase(), avatar: _suAvatarData||'', desc:'', wins:0, losses:0, bestStreak:0, currentStreak:0, xp:0, coins:0, joined:new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'}) };
+    const rec = await pb.createUser(email, pw, profile);
+    // Now log in to get token
+    const d = await pb.authWithPassword(email, pw);
+    me = { uid: rec.id, email };
+    myProfile = { uid: rec.id, ...profile };
+    localStorage.setItem('bc_session', JSON.stringify({ token: pb._token, userId: me.uid, email }));
     _suAvatarData='';
-    myProfile=profile; closeModal('auth-overlay'); showToast('Welcome, '+profile.username+'!');
-  } catch(e){document.getElementById('su-email-err').textContent=e.message;eEl.classList.add('error');}
+    renderTopbar(); if (myProfile) { refreshShopOwned(); applyUserPrefs(myProfile); }
+    closeModal('auth-overlay'); showToast('Welcome, '+profile.username+'!');
+  } catch(e){document.getElementById('su-email-err').textContent=e.message||'Signup failed';eEl.classList.add('error');}
   btn.disabled=false; btn.textContent='CREATE ACCOUNT';
 };
 
 // ── PROFILE ──
 window.openProfileByUid = async uid => {
-  const snap=await getDoc(doc(db,'users',uid));
-  if(!snap.exists()) return;
-  const p=snap.data();
+  const rec = await pb.getUser(uid);
+  if (!rec) return;
+  const p = _mapUserRecord(rec);
   const profAvEl = document.getElementById('p-avatar');
   const profInitEl = document.getElementById('p-avatar-initials');
   if (profAvEl) {
@@ -1826,11 +2080,11 @@ window.saveProfile = async () => {
   const newUser=uEl.value.trim().toUpperCase(), newDesc=document.getElementById('ed-desc').value.trim();
   if(!newUser||newUser.length<3){document.getElementById('ed-username-err').textContent='Min 3 characters';uEl.classList.add('error');return;}
   if(newUser!==myProfile.username){
-    const all=await getDocs(collection(db,'users'));
-    if(all.docs.some(d=>d.id!==me.uid&&d.data().username?.toLowerCase()===newUser.toLowerCase())){document.getElementById('ed-username-err').textContent='Username taken';uEl.classList.add('error');return;}
+    const existing = await pb.findUserByUsername(newUser);
+    if(existing && existing.id !== me.uid){document.getElementById('ed-username-err').textContent='Username taken';uEl.classList.add('error');return;}
   }
   const newAvatar = editAvData !== null ? editAvData : myProfile.avatar;
-  await updateDoc(doc(db,'users',me.uid),{username:newUser,avatar:newAvatar,desc:newDesc});
+  await pb.updateUser(me.uid,{username:newUser,avatar:newAvatar,desc:newDesc});
   myProfile.username=newUser; myProfile.avatar=newAvatar; myProfile.desc=newDesc;
   editAvData=null;
   refreshAllAvatars();
@@ -1845,11 +2099,10 @@ async function loadLeaderboard() {
 
 async function _loadLbTab(tab) {
   const orderField = tab === 'coins' ? 'coins' : tab === 'losses' ? 'losses' : 'wins';
-  const q = query(collection(db,'users'), orderBy(orderField,'desc'), limit(10));
-  const snap = await getDocs(q);
+  const items = await pb.getUsers(orderField, 'DESC', 10);
   const list = document.getElementById('lb-list'); list.innerHTML = '';
-  snap.docs.forEach((d,i) => {
-    const p = d.data(), rc = i===0?'g':i===1?'s':i===2?'b':'';
+  items.forEach((p,i) => {
+    const rc = i===0?'g':i===1?'s':i===2?'b':'';
     const row = document.createElement('div'); row.className = 'lb-row';
     const rowLvl = calcLevel(p.xp||0).level;
     let statHtml;
@@ -1861,7 +2114,8 @@ async function _loadLbTab(tab) {
       statHtml = `<span class="lb-stat" style="color:var(--gold);">🪙${p.coins||0}</span>`;
     }
     row.innerHTML = `<span class="lb-rank ${rc}">${i+1}</span><span class="lb-name">${p.username}</span><span class="msg-lvl" style="margin-right:6px;">LVL ${rowLvl}</span>${statHtml}`;
-    row.onclick = () => openProfileByUid(d.id); list.appendChild(row);
+    row.onclick = () => openProfileByUid(p.id); list.appendChild(row);
+  });
   });
 }
 
@@ -1894,7 +2148,9 @@ let _chatCooldownUntil = 0;
 })();
 
 function listenChat() {
-  onChildAdded(ref(rtdb,'chat'), snap=>addChatBubble(snap.val()));
+  pb.subscribe('chat', '', evt => {
+    if (evt.action === 'create') addChatBubble(evt.record);
+  });
 }
 window.sendMessage = async () => {
   const input=document.getElementById('chat-input'), text=input.value.trim();
@@ -1918,7 +2174,7 @@ window.sendMessage = async () => {
 
   const xp = myProfile.xp || 0;
   const lvl = calcLevel(xp).level;
-  await push(ref(rtdb,'chat'),{uid:me.uid,username:myProfile.username,avatar:myProfile.avatar,text,level:lvl,nameColor:activeNameColor,ts:Date.now()});
+  await pb.createRecord('chat', {uid:me.uid,username:myProfile.username,avatar:myProfile.avatar,text,level:lvl,nameColor:activeNameColor,ts:Date.now()}).catch(()=>{});
   input.value='';
   await grantRewards(2, 1, null); // chat: +2 XP, +1 coin
 };
@@ -1945,29 +2201,46 @@ function addSystemMsg(text) {
 }
 
 // ── STAGE METADATA (who is on stage — shown to all viewers) ──
-// Track last known UIDs to detect real changes vs duplicate Firebase fires
+// Track last known UIDs to detect real changes vs duplicate fires
 let _lastStageUids = { left: null, right: null };
+// Cache stage record IDs for updates
+let _stageRecordIds = { left: null, right: null };
 
 function listenStage() {
-  onValue(ref(rtdb,'stage'), snap => {
-    const d = snap.val() || {};
-    const newLeft  = d.left?.uid  || null;
-    const newRight = d.right?.uid || null;
+  // Load initial stage state
+  pb.listRecords('stage').then(items => {
+    const d = { left: null, right: null };
+    items.forEach(r => { if (r.slot) d[r.slot] = r; _stageRecordIds[r.slot] = r.id; });
+    _handleStageUpdate(d);
+  }).catch(()=>{});
 
-    // Always clear when slot goes empty — only skip showSlot if same UID (no flicker)
-    if (newLeft !== _lastStageUids.left || !newLeft) {
-      _lastStageUids.left = newLeft;
-      stageUids.left = newLeft;
-      if (d.left) showSlot('left', d.left); else clearSlotUI('left');
+  // Subscribe to realtime updates
+  pb.subscribe('stage', '', evt => {
+    const rec = evt.record;
+    if (!rec || !rec.slot) return;
+    _stageRecordIds[rec.slot] = rec.id;
+    if (evt.action === 'delete' || !rec.uid) {
+      _handleStageSlot(rec.slot, null);
+    } else {
+      _handleStageSlot(rec.slot, rec);
     }
-    if (newRight !== _lastStageUids.right || !newRight) {
-      _lastStageUids.right = newRight;
-      stageUids.right = newRight;
-      if (d.right) showSlot('right', d.right); else clearSlotUI('right');
-    }
-
-    checkStageFull();
   });
+}
+
+function _handleStageUpdate(d) {
+  _handleStageSlot('left',  d.left);
+  _handleStageSlot('right', d.right);
+  checkStageFull();
+}
+
+function _handleStageSlot(slot, data) {
+  const newUid = data?.uid || null;
+  if (newUid !== _lastStageUids[slot] || !newUid) {
+    _lastStageUids[slot] = newUid;
+    stageUids[slot] = newUid;
+    if (data && data.uid) showSlot(slot, data); else clearSlotUI(slot);
+  }
+  checkStageFull();
 }
 
 function showSlot(slot, data) {
@@ -2066,32 +2339,34 @@ function clearSlotUI(slot) {
   document.querySelectorAll('audio[data-slot="'+slot+'"]').forEach(x=>{ x.pause(); x.muted=true; x.remove(); });
 }
 
-// ── GO LIVE — try to claim a slot with a transaction ──
+// ── GO LIVE — try to claim a slot ──
 async function goLive(slot) {
-  const slotData = { uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, wins:myProfile.wins||0, losses:myProfile.losses||0 };
+  const slotData = { uid:me.uid, slot, username:myProfile.username, avatar:myProfile.avatar, wins:myProfile.wins||0, losses:myProfile.losses||0 };
 
-  // Try preferred slot, then the other one
   const slots = [slot, slot === 'left' ? 'right' : 'left'];
   let claimedSlot = null;
 
   for (const s of slots) {
     try {
-      const result = await runTransaction(ref(rtdb,'stage/'+s), current => {
-        // Abort if already occupied (has a uid)
-        if (current && current.uid) return undefined;
-        return slotData;
-      });
-      if (result && result.committed) { claimedSlot = s; break; }
-    } catch(e) { console.warn('goLive transaction error on', s, e); }
+      // Check if slot is empty
+      const existing = await pb.getRecordByFilter('stage', `slot='${s}'`);
+      if (existing && existing.uid) continue; // occupied
+      if (existing) {
+        // Empty record — update it
+        await pb.patchRecord('stage', existing.id, { ...slotData, slot: s });
+        _stageRecordIds[s] = existing.id;
+      } else {
+        // No record — create one
+        const rec = await pb.createRecord('stage', { ...slotData, slot: s });
+        _stageRecordIds[s] = rec.id;
+      }
+      claimedSlot = s; break;
+    } catch(e) { console.warn('goLive error on', s, e); }
   }
 
-  if (!claimedSlot) {
-    return false; // caller handles retry
-  }
+  if (!claimedSlot) return false;
 
   mySlot = claimedSlot;
-  onDisconnect(ref(rtdb,'stage/'+claimedSlot)).remove().catch(()=>{});
-  onDisconnect(ref(rtdb,'queue/'+me.uid)).remove().catch(()=>{});
   addSystemMsg(myProfile.username + ' entered the arena!');
   await joinAsFighter(claimedSlot);
   showToast('You are LIVE!');
@@ -2105,13 +2380,10 @@ async function leaveStage() {
   updateStreakBadge(0);
   if (!mySlot) return;
   const slot = mySlot; mySlot = null;
-  // Cancel onDisconnect handlers FIRST — if we don't, they stay registered on Firebase
-  // and will fire later, wiping whoever next occupies this slot
-  try { await onDisconnect(ref(rtdb,'stage/'+slot)).cancel(); } catch(e){}
-  try { await onDisconnect(ref(rtdb,'queue/'+me.uid)).cancel(); } catch(e){}
-  // Now remove — listenStage will call clearSlotUI for ALL clients
-  await remove(ref(rtdb,'stage/'+slot)).catch(()=>{});
-  await remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
+  const recId = _stageRecordIds[slot];
+  if (recId) await pb.deleteRecord('stage', recId).catch(()=>{});
+  else await pb.deleteRecordsByFilter('stage', `slot='${slot}'`).catch(()=>{});
+  await pb.deleteRecordsByFilter('queue', `uid='${me.uid}'`).catch(()=>{});
   // Clean up media locally
   document.querySelectorAll('audio').forEach(a => { try { a.pause(); a.muted = true; a.srcObject = null; a.remove(); } catch(e){} });
   if (lkRoom) { await lkRoom.disconnect(); lkRoom=null; }
@@ -2206,15 +2478,19 @@ window.goToQueue = () => {
 //  - _qMyTs is stored module-level so retries reuse same timestamp
 // ══════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════
+// QUEUE SYSTEM (PocketBase)
+// collection: queue — records: { uid, username, avatar, ts }
+// ══════════════════════════════════════════════════════
+
+let _queueRecordId = null; // our own queue record ID
+
 async function enterQueue() {
-  // Stop any previous listeners
   _qLaunching = false;
   stopQueueListeners();
 
-  // Preserve original timestamp so retries don't move us to the back
   if (!_qMyTs) _qMyTs = Date.now();
 
-  // Update modal UI
   setAvatar('q-av', myProfile.avatar, myProfile.username);
   document.getElementById('q-name').textContent   = myProfile.username;
   document.getElementById('q-status').textContent = 'In queue...';
@@ -2224,80 +2500,62 @@ async function enterQueue() {
   if (qfPos) qfPos.textContent = '...';
   document.getElementById('q-chips').innerHTML    = '';
 
-  // Write queue entry — only update ts if this is a fresh entry
-  const existSnap = await get(ref(rtdb,'queue/'+me.uid)).catch(()=>null);
-  const savedTs   = existSnap?.val()?.ts;
-  _qMyTs          = savedTs || _qMyTs;
-  await set(ref(rtdb,'queue/'+me.uid), {
-    uid: me.uid, username: myProfile.username,
-    avatar: myProfile.avatar, ts: _qMyTs
-  });
-  // Auto-remove if we disconnect
-  onDisconnect(ref(rtdb,'queue/'+me.uid)).remove().catch(()=>{});
+  // Write queue entry (upsert)
+  try {
+    const existing = await pb.getRecordByFilter('queue', `uid='${me.uid}'`);
+    if (existing) {
+      _qMyTs = existing.ts || _qMyTs;
+      _queueRecordId = existing.id;
+    } else {
+      const rec = await pb.createRecord('queue', { uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, ts:_qMyTs });
+      _queueRecordId = rec.id;
+    }
+  } catch(e) { console.warn('Queue write error', e); }
 
   async function tryAdvance() {
     if (_qLaunching) return;
 
-    const [stageSnap, qSnap] = await Promise.all([
-      get(ref(rtdb,'stage')),
-      get(ref(rtdb,'queue'))
+    const [stageItems, queueItems] = await Promise.all([
+      pb.listRecords('stage'),
+      pb.listRecords('queue', '', '+ts')
     ]);
 
-    const stage = stageSnap.val() || {};
-    const qData = qSnap.val()     || {};
-
-    // Slot is free only when it has no uid
-    const leftFree  = !stage.left?.uid;
-    const rightFree = !stage.right?.uid;
+    const occupiedSlots = new Set(stageItems.filter(r=>r.uid).map(r=>r.slot));
+    const leftFree  = !occupiedSlots.has('left');
+    const rightFree = !occupiedSlots.has('right');
     const freeSlots = (leftFree ? 1 : 0) + (rightFree ? 1 : 0);
 
-    // Filter to real entries only (must have uid + ts)
-    const sorted = Object.values(qData)
-      .filter(w => w?.uid && w?.ts)
-      .sort((a,b) => a.ts - b.ts);
-
-    const myPos = sorted.findIndex(w => w.uid === me.uid);
+    const sorted = queueItems.filter(w => w?.uid && w?.ts).sort((a,b) => a.ts - b.ts);
+    const myPos  = sorted.findIndex(w => w.uid === me.uid);
 
     updateQueueUI(sorted, myPos);
 
-    if (freeSlots === 0) {
-      document.getElementById('q-status').textContent = 'Waiting for a slot...';
-      return;
-    }
-
-    // My write may not have propagated yet — just wait for next event
+    if (freeSlots === 0) { document.getElementById('q-status').textContent = 'Waiting for a slot...'; return; }
     if (myPos === -1) return;
-
-    // Only the first N people try for N free slots
     if (myPos >= freeSlots) return;
 
-    // ── Claim atomically ──
-    // Transaction deletes our queue entry; if it's already gone someone else grabbed it
+    // Claim: delete our queue entry atomically
     _qLaunching = true;
     stopQueueListeners();
 
     let claimed = false;
     try {
-      const res = await runTransaction(ref(rtdb,'queue/'+me.uid), cur => {
-        if (!cur) return undefined; // already removed — abort
-        return null;                // delete it → we win
-      });
-      claimed = !!(res && res.committed);
-    } catch(e) { console.warn('Queue claim tx error', e); }
+      if (_queueRecordId) {
+        await pb.deleteRecord('queue', _queueRecordId);
+        claimed = true;
+      }
+    } catch(e) { console.warn('Queue claim error', e); }
 
     if (!claimed) {
-      // Lost the race — re-queue with same ts, re-attach listeners
       _qLaunching = false;
-      await set(ref(rtdb,'queue/'+me.uid), {
-        uid: me.uid, username: myProfile.username,
-        avatar: myProfile.avatar, ts: _qMyTs
-      }).catch(()=>{});
+      try {
+        const rec = await pb.createRecord('queue', { uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, ts:_qMyTs });
+        _queueRecordId = rec.id;
+      } catch(e){}
       _attachQueueListeners(tryAdvance);
       return;
     }
 
-    // We won — go live
-    document.getElementById('q-status').textContent = 'Going live!';
     document.getElementById('q-pos').textContent    = 'GO!';
     document.getElementById('q-pos').style.color    = '#4CAF50';
 
@@ -2306,15 +2564,13 @@ async function enterQueue() {
     const success = await goLive(targetSlot);
 
     if (!success) {
-      // goLive transaction also lost — re-queue keeping ts
       _qLaunching = false;
-      await set(ref(rtdb,'queue/'+me.uid), {
-        uid: me.uid, username: myProfile.username,
-        avatar: myProfile.avatar, ts: _qMyTs
-      }).catch(()=>{});
+      try {
+        const rec = await pb.createRecord('queue', { uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, ts:_qMyTs });
+        _queueRecordId = rec.id;
+      } catch(e){}
       _attachQueueListeners(tryAdvance);
     }
-    // On success _qLaunching stays true — we're live, done with queue
   }
 
   _attachQueueListeners(tryAdvance);
@@ -2322,8 +2578,9 @@ async function enterQueue() {
 
 function _attachQueueListeners(fn) {
   stopQueueListeners();
-  queueUnsubStage = onValue(ref(rtdb,'stage'), fn);
-  queueUnsubList  = onValue(ref(rtdb,'queue'), fn);
+  // Subscribe to stage and queue changes
+  queueUnsubStage = pb.subscribe('stage', '', fn);
+  queueUnsubList  = pb.subscribe('queue', '', fn);
 }
 
 function updateQueueUI(sorted, myPos) {
@@ -2364,8 +2621,9 @@ window.leaveQueue = async () => {
   _qLaunching = false;
   _qMyTs = 0;
   stopQueueListeners();
-  try { await onDisconnect(ref(rtdb,'queue/'+me.uid)).cancel(); } catch(e){}
-  await remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
+  if (_queueRecordId) await pb.deleteRecord('queue', _queueRecordId).catch(()=>{});
+  else await pb.deleteRecordsByFilter('queue', `uid='${me.uid}'`).catch(()=>{});
+  _queueRecordId = null;
   const chips = document.getElementById('q-chips');
   if (chips) chips.innerHTML = '';
   hideQueueFloater();
@@ -2401,64 +2659,76 @@ window.openArenaFromFloater = () => {
   document.getElementById('arena-s2').style.display = 'block';
 };
 
-// ── VOTES (Firebase-backed, real-time) ──
-// rtdb/votes/{roundIndex}/left/{uid} = true
-// rtdb/votes/{roundIndex}/right/{uid} = true
-// rtdb/votes/{roundIndex}/total = number of unique voters this round
-
+// ── VOTES (PocketBase realtime) ──
+// collection: votes — records: { roundIndex, side, uid }
 let currentRoundIndex = -1;
 let voteUnsub = null;
+let _votesCache = {}; // roundIndex → { left: Set, right: Set }
 
 function listenVotes(roundIndex) {
   if (voteUnsub) { voteUnsub(); voteUnsub = null; }
   currentRoundIndex = roundIndex;
+  _votesCache[roundIndex] = { left: new Set(), right: new Set() };
 
-  voteUnsub = onValue(ref(rtdb, 'votes/' + roundIndex), snap => {
-    if (currentRoundIndex !== roundIndex) return;
+  // Load existing votes
+  pb.listRecords('votes', `roundIndex=${roundIndex}`).then(items => {
+    items.forEach(r => { if (r.side && r.uid) _votesCache[roundIndex][r.side]?.add(r.uid); });
+    _renderVotes(roundIndex);
+  }).catch(()=>{});
 
-    const data       = snap.val() || {};
-    const leftVotes  = data.left  ? Object.keys(data.left).length  : 0;
-    const rightVotes = data.right ? Object.keys(data.right).length : 0;
-    const total      = leftVotes + rightVotes;
-
-    const lp = total > 0 ? Math.round((leftVotes  / total) * 100) : 0;
-    const rp = total > 0 ? Math.round((rightVotes / total) * 100) : 0;
-
-    const pLeft = document.getElementById('pct-left');
-    const pRight = document.getElementById('pct-right');
-    if (pLeft)  { pLeft.textContent  = lp + '%'; pLeft.style.animation='none';  void pLeft.offsetWidth;  pLeft.style.animation='votePop 0.25s ease'; }
-    if (pRight) { pRight.textContent = rp + '%'; pRight.style.animation='none'; void pRight.offsetWidth; pRight.style.animation='votePop 0.25s ease'; }
-    document.getElementById('vbar-left').style.width  = lp + '%';
-    document.getElementById('vbar-right').style.width = rp + '%';
-
-    // Update vote count badges on buttons
-    const vcntL = document.getElementById('vcnt-left');
-    const vcntR = document.getElementById('vcnt-right');
-    if (vcntL) vcntL.textContent = leftVotes > 0 ? leftVotes : '';
-    if (vcntR) vcntR.textContent = rightVotes > 0 ? rightVotes : '';
-
-    // Update VS split bars
-    const splitRed  = [document.getElementById('vs-split-red'),  document.getElementById('vs-split-red2')];
-    const splitBlue = [document.getElementById('vs-split-blue'), document.getElementById('vs-split-blue2')];
-    const redFlex  = total > 0 ? lp  : 50;
-    const blueFlex = total > 0 ? rp : 50;
-    splitRed.forEach(el  => { if (el) el.style.flex = redFlex; });
-    splitBlue.forEach(el => { if (el) el.style.flex = blueFlex; });
-
-    // Lock buttons only if user actually voted this round (node was empty on subscribe)
-    if (me && !hasVoted) {
-      const myLeft  = data.left  && data.left[me.uid];
-      const myRight = data.right && data.right[me.uid];
-      if (myLeft || myRight) {
-        hasVoted = true;
-        const mySide = myLeft ? 'left' : 'right';
-        document.getElementById('vbtn-left').disabled  = true;
-        document.getElementById('vbtn-right').disabled = true;
-        document.getElementById('vbtn-'+mySide).classList.add('voted-'+mySide);
-        document.getElementById('vbtn-'+mySide).textContent = 'VOTED';
-      }
+  // Subscribe to new votes
+  voteUnsub = pb.subscribe('votes', '', evt => {
+    if (evt.record?.roundIndex !== roundIndex) return;
+    const side = evt.record.side;
+    if (side && evt.record.uid) {
+      if (!_votesCache[roundIndex]) _votesCache[roundIndex] = { left: new Set(), right: new Set() };
+      if (evt.action === 'delete') _votesCache[roundIndex][side]?.delete(evt.record.uid);
+      else _votesCache[roundIndex][side]?.add(evt.record.uid);
+      _renderVotes(roundIndex);
     }
   });
+}
+
+function _renderVotes(roundIndex) {
+  if (currentRoundIndex !== roundIndex) return;
+  const cache = _votesCache[roundIndex] || { left: new Set(), right: new Set() };
+  const leftVotes  = cache.left.size;
+  const rightVotes = cache.right.size;
+  const total = leftVotes + rightVotes;
+  const lp = total > 0 ? Math.round((leftVotes  / total) * 100) : 0;
+  const rp = total > 0 ? Math.round((rightVotes / total) * 100) : 0;
+
+  const pLeft = document.getElementById('pct-left');
+  const pRight = document.getElementById('pct-right');
+  if (pLeft)  { pLeft.textContent  = lp + '%'; pLeft.style.animation='none';  void pLeft.offsetWidth;  pLeft.style.animation='votePop 0.25s ease'; }
+  if (pRight) { pRight.textContent = rp + '%'; pRight.style.animation='none'; void pRight.offsetWidth; pRight.style.animation='votePop 0.25s ease'; }
+  document.getElementById('vbar-left').style.width  = lp + '%';
+  document.getElementById('vbar-right').style.width = rp + '%';
+
+  const vcntL = document.getElementById('vcnt-left');
+  const vcntR = document.getElementById('vcnt-right');
+  if (vcntL) vcntL.textContent = leftVotes > 0 ? leftVotes : '';
+  if (vcntR) vcntR.textContent = rightVotes > 0 ? rightVotes : '';
+
+  const splitRed  = [document.getElementById('vs-split-red'),  document.getElementById('vs-split-red2')];
+  const splitBlue = [document.getElementById('vs-split-blue'), document.getElementById('vs-split-blue2')];
+  const redFlex  = total > 0 ? lp  : 50;
+  const blueFlex = total > 0 ? rp : 50;
+  splitRed.forEach(el  => { if (el) el.style.flex = redFlex; });
+  splitBlue.forEach(el => { if (el) el.style.flex = blueFlex; });
+
+  if (me && !hasVoted) {
+    const myLeft  = cache.left.has(me.uid);
+    const myRight = cache.right.has(me.uid);
+    if (myLeft || myRight) {
+      hasVoted = true;
+      const mySide = myLeft ? 'left' : 'right';
+      document.getElementById('vbtn-left').disabled  = true;
+      document.getElementById('vbtn-right').disabled = true;
+      document.getElementById('vbtn-'+mySide).classList.add('voted-'+mySide);
+      document.getElementById('vbtn-'+mySide).textContent = 'VOTED';
+    }
+  }
 }
 
 window.castVote = async side => {
@@ -2472,7 +2742,7 @@ window.castVote = async side => {
   document.getElementById('vbtn-right').disabled = true;
   document.getElementById('vbtn-'+side).classList.add('voted-'+side);
   document.getElementById('vbtn-'+side).textContent = 'VOTED';
-  await set(ref(rtdb, 'votes/' + currentRoundIndex + '/' + side + '/' + me.uid), true);
+  await pb.createRecord('votes', { roundIndex: currentRoundIndex, side, uid: me.uid }).catch(()=>{});
   SFX.vote(); showToast('Vote locked in!');
 };
 
@@ -2492,10 +2762,9 @@ async function resolveRound(roundIndex) {
   // Only fighters resolve their own round — loser leaves
   if (!mySlot || !me) return;
 
-  const snap    = await get(ref(rtdb, 'votes/' + roundIndex));
-  const data    = snap.val() || {};
-  const leftVotes  = data.left  ? Object.keys(data.left).length  : 0;
-  const rightVotes = data.right ? Object.keys(data.right).length : 0;
+  const cache = _votesCache[roundIndex] || { left: new Set(), right: new Set() };
+  const leftVotes  = cache.left.size;
+  const rightVotes = cache.right.size;
 
   // Determine loser's slot
   let loserSlot = null;
@@ -2509,7 +2778,7 @@ async function resolveRound(roundIndex) {
     addSystemMsg('Round over! You lost the vote and were eliminated.');
     showToast('You lost the round!');
     try {
-      await updateDoc(doc(db,'users',me.uid),{ losses: (myProfile.losses||0)+1, currentStreak: 0 });
+      await pb.updateUser(me.uid,{ losses: (myProfile.losses||0)+1, currentStreak: 0 });
       myProfile.losses = (myProfile.losses||0)+1;
       myProfile.currentStreak = 0;
       updateStreakBadge(0);
@@ -2525,7 +2794,7 @@ async function resolveRound(roundIndex) {
       const newWins = (myProfile.wins||0)+1;
       const newStreak = (myProfile.currentStreak||0)+1;
       const newBest = Math.max(myProfile.bestStreak||0, newStreak);
-      await updateDoc(doc(db,'users',me.uid),{ wins: newWins, currentStreak: newStreak, bestStreak: newBest });
+      await pb.updateUser(me.uid,{ wins: newWins, currentStreak: newStreak, bestStreak: newBest });
       myProfile.wins = newWins;
       myProfile.currentStreak = newStreak;
       myProfile.bestStreak = newBest;
@@ -2540,14 +2809,11 @@ async function resolveRound(roundIndex) {
 }
 
 // Viewers need their own round resolution for bets + voter rewards
-// This fires on the same timer tick, for non-fighters
 async function resolveRoundViewer(roundIndex) {
   if (mySlot || !me) return; // fighters handled above
-  const snap = await get(ref(rtdb, 'votes/' + roundIndex)).catch(() => null);
-  if (!snap) return;
-  const data = snap.val() || {};
-  const leftVotes  = data.left  ? Object.keys(data.left).length  : 0;
-  const rightVotes = data.right ? Object.keys(data.right).length : 0;
+  const cache = _votesCache[roundIndex] || { left: new Set(), right: new Set() };
+  const leftVotes  = cache.left.size;
+  const rightVotes = cache.right.size;
   if (leftVotes === rightVotes) return;
   const winnerSlot = leftVotes > rightVotes ? 'left' : 'right';
   await resolveBets(winnerSlot);
@@ -2581,12 +2847,10 @@ function resetRound() {
 }
 
 // ── SYNCED TIMER ──
-// Firebase stores a single epoch timestamp (ms) marking when round 1 started.
-// Every client derives the current round and remaining time from that one value.
-// No client needs to "own" the timer — it's purely math from the shared start time.
+// PocketBase stores a single record in 'battle' collection with { key:'epoch', value: timestamp }
+// Every client derives the current round from that value.
 
 const ROUND_DURATION_MS = 120_000; // 2 minutes in ms
-const timerRef = ref(rtdb, 'timer/epoch');
 
 function updateTimerUI(remainingMs) {
   const s   = Math.max(0, Math.ceil(remainingMs / 1000));
@@ -2639,8 +2903,9 @@ function checkStageFull() {
       const epoch = Date.now();
       roundEpoch = epoch;
       lastRoundIndex = 0;
-      set(ref(rtdb, 'battle/epoch'), epoch).catch(()=>{});
-      remove(ref(rtdb, 'votes')).catch(()=>{});
+      pb.upsertRecord('battle', `key='epoch'`, { key:'epoch', value: epoch }).catch(()=>{});
+      pb.deleteRecordsByFilter('votes', '').catch(()=>{});
+      _votesCache = {};
       resetRound();
       listenVotes(0);
       const leftName  = stageUids.left  ? (document.getElementById('un-left')?.textContent  || '') : '';
@@ -2653,14 +2918,13 @@ function checkStageFull() {
     } else {
       // Page loaded mid-battle — fetch the stored epoch, DON'T touch votes
       _battleEpochLoading = true;
-      get(ref(rtdb, 'battle/epoch')).then(snap => {
-        const epoch = snap.val();
+      pb.getRecordByFilter('battle', `key='epoch'`).then(rec => {
+        const epoch = rec?.value;
         if (epoch) {
           roundEpoch = epoch;
         } else {
-          // No stored epoch — write one now
           roundEpoch = Date.now();
-          set(ref(rtdb, 'battle/epoch'), roundEpoch).catch(()=>{});
+          pb.upsertRecord('battle', `key='epoch'`, { key:'epoch', value: roundEpoch }).catch(()=>{});
         }
         const elapsed = Date.now() - roundEpoch;
         const currentRound = Math.max(0, Math.floor(elapsed / ROUND_DURATION_MS));
@@ -2676,11 +2940,10 @@ function checkStageFull() {
     const anyoneLeft = !!(stageUids.left || stageUids.right);
     if (anyoneLeft) {
       // One fighter remains — keep epoch/votes running, winner stays fullscreen
-      // The queue will fill the empty slot and a new battle begins naturally
       resetBetUI();
       if (voteUnsub) { voteUnsub(); voteUnsub = null; }
-      // Wipe votes for the interrupted round and reset so next pairing is fresh
-      remove(ref(rtdb, 'votes')).catch(()=>{});
+      pb.deleteRecordsByFilter('votes', '').catch(()=>{});
+      _votesCache = {};
       resetRound();
       // Update solo-mode to show correct side fullscreen
       const occupiedSlot = stageUids.left ? 'left' : 'right';
@@ -2695,8 +2958,9 @@ function checkStageFull() {
       lastRoundIndex = -1;
       _battleEpochLoading = false;
       if (voteUnsub) { voteUnsub(); voteUnsub = null; }
-      remove(ref(rtdb, 'votes')).catch(()=>{});
-      remove(ref(rtdb, 'battle/epoch')).catch(()=>{});
+      pb.deleteRecordsByFilter('votes', '').catch(()=>{});
+      pb.deleteRecordsByFilter('battle', `key='epoch'`).catch(()=>{});
+      _votesCache = {};
       resetRound();
       document.getElementById('timer-display').textContent = '2:00';
       document.getElementById('timer-display').style.color = 'var(--gold)';
@@ -2737,8 +3001,9 @@ function startSyncedTick(epoch) {
       Promise.all([
         resolveRound(finishedRound).catch(()=>{}),
         resolveRoundViewer(finishedRound).catch(()=>{})
-      ]).then(() => remove(ref(rtdb, 'votes')).catch(()=>{}))
+      ]).then(() => pb.deleteRecordsByFilter('votes', '').catch(()=>{}))
         .then(() => {
+          _votesCache = {};
           resetRound();
           listenVotes(roundIndex);
           SFX.newRound();
@@ -2748,21 +3013,21 @@ function startSyncedTick(epoch) {
   }, 500);
 }
 
-// Bootstrap: read epoch from Firebase. If missing, write it (first visitor only).
-onValue(timerRef, async snap => {
-  if (snap.exists()) {
-    startSyncedTick(snap.val());
-  } else {
-    // Use a transaction so only one client writes the epoch even if many load at once
-    try {
-      await runTransaction(timerRef, current => {
-        if (current !== null && current !== undefined) return; // already written
-        return Date.now();
-      });
-      // onValue will fire again with the new value
-    } catch(e) { console.warn('Timer bootstrap error:', e); }
-  }
-});
+// Bootstrap: read epoch from PocketBase. If missing, write it (first visitor only).
+async function bootstrapTimer() {
+  try {
+    const rec = await pb.getRecordByFilter('battle', `key='epoch'`);
+    if (rec?.value) {
+      startSyncedTick(rec.value);
+    } else {
+      // Write epoch (only one client needs to — others will read it)
+      const epoch = Date.now();
+      await pb.createRecord('battle', { key:'epoch', value: epoch }).catch(()=>{});
+      startSyncedTick(epoch);
+    }
+  } catch(e) { startSyncedTick(Date.now()); }
+}
+bootstrapTimer();
 
 // no signup avatar grid — initials used by default
 
@@ -2811,13 +3076,6 @@ window.closeModal = id => document.getElementById(id).classList.remove('open');
 // ── ENTER ARENA BTN ──
 document.getElementById('enter-arena-btn').addEventListener('click', ()=>window.openArenaModal());
 
-// ── TAB CLOSE CLEANUP ──
-window.addEventListener('beforeunload', () => {
-  if (mySlot && me) {
-    navigator.sendBeacon('https://fdsdsdfsdf-5432e-default-rtdb.firebaseio.com/stage/'+mySlot+'.json', JSON.stringify(null));
-    navigator.sendBeacon('https://fdsdsdfsdf-5432e-default-rtdb.firebaseio.com/queue/'+me.uid+'.json', JSON.stringify(null));
-  }
-});
 
 // ── TOAST ──
 let toastTimer;
@@ -2935,7 +3193,7 @@ async function grantRewards(xpAmount, coinAmount, reason) {
   myProfile.coins = newCoins;
 
   try {
-    await updateDoc(doc(db, 'users', me.uid), { xp: newXp, coins: newCoins });
+    await pb.updateUser(me.uid, { xp: newXp, coins: newCoins });
   } catch(e) {}
 
   // Update coin display everywhere
@@ -3051,7 +3309,7 @@ window.buyItem = async (itemId, cost) => {
   const newCoins = coins - cost;
   const newItems = [...owned, itemId];
   try {
-    await updateDoc(doc(db,'users',me.uid), { coins: newCoins, items: newItems });
+    await pb.updateUser(me.uid, { coins: newCoins, items: newItems });
     myProfile.coins = newCoins; myProfile.items = newItems;
     userCoins = newCoins;
     document.getElementById('shop-coins').textContent = '🪙 ' + newCoins;
@@ -3104,19 +3362,15 @@ async function loadMenuLb(tab) {
     if (tab === 'losses') { field = 'losses';     label = w => w + ' L'; }
     if (tab === 'coins')  { field = 'coins';      label = w => '🪙 ' + w; }
     if (tab === 'flappy') { field = 'flappyBest'; label = w => w + ' pipes'; }
-    const q = query(collection(db, 'users'), orderBy(field, 'desc'), limit(20));
-    const snap = await getDocs(q);
-    if (snap.empty) { list.innerHTML = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">No data yet.</div>'; return; }
+    const items = await pb.getUsers(field, 'DESC', 20);
+    const filtered = items.filter(p => (p[field] || 0) > 0);
+    if (!filtered.length) { list.innerHTML = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">No scores yet — be the first!</div>'; return; }
     list.innerHTML = '';
-    let count = 0;
-    snap.docs.forEach((d, i) => {
-      const data = d.data();
+    filtered.forEach((data, i) => {
+      const rank = i + 1;
       const val = data[field] || 0;
-      if (!val) return;
-      count++;
-      const rank = count;
       const rankColor = rank === 1 ? 'var(--gold)' : rank === 2 ? '#C0C0C0' : rank === 3 ? '#CD7F32' : 'var(--muted)';
-      const isSelf = me && d.id === me.uid;
+      const isSelf = me && data.id === me.uid;
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border);' + (isSelf ? 'background:rgba(217,43,43,0.05);' : '');
       row.innerHTML = `<span style="font-family:'Bebas Neue',sans-serif;font-size:1rem;color:${rankColor};width:22px;flex-shrink:0;">${rank}</span>`
@@ -3124,7 +3378,6 @@ async function loadMenuLb(tab) {
         + `<span style="font-family:'Bebas Neue',sans-serif;font-size:0.95rem;color:var(--text);">${label(val)}</span>`;
       list.appendChild(row);
     });
-    if (!count) list.innerHTML = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">No scores yet — be the first!</div>';
   } catch(e) { console.error('LB error:', e); list.innerHTML = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">Could not load leaderboard.</div>'; }
 }
 
@@ -3140,13 +3393,13 @@ window.applyTheme = val => {
   r.setProperty('--dark2',  t.dark2);
   r.setProperty('--dark3',  t.dark3);
   document.getElementById('active-theme-label').textContent = val.charAt(0).toUpperCase()+val.slice(1);
-  if (me) updateDoc(doc(db,'users',me.uid),{activeTheme:val}).catch(()=>{});
+  if (me) pb.updateUser(me.uid,{activeTheme:val}).catch(()=>{});
   showToast('Theme applied!');
 };
 
 window.applyNameColor = val => {
   activeNameColor = val;
-  if (me) updateDoc(doc(db,'users',me.uid),{nameColor:val}).catch(()=>{});
+  if (me) pb.updateUser(me.uid,{nameColor:val}).catch(()=>{});
   showToast('Name color updated!');
 };
 
@@ -3188,19 +3441,16 @@ window.openChangePassword = () => {
 };
 
 window.doChangePassword = async () => {
-  const { updatePassword } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
   const val = document.getElementById('new-pw').value;
   const err = document.getElementById('pw-change-err');
   err.textContent = '';
   if (val.length < 6) { err.textContent = 'Min 6 characters'; return; }
   try {
-    await updatePassword(auth, val);
+    await pb.changePassword(val);
     document.getElementById('pw-change-form').style.display = 'none';
     showToast('Password updated!');
   } catch(e) {
-    err.textContent = e.code === 'auth/requires-recent-login'
-      ? 'Please log out and log back in first.'
-      : e.message;
+    err.textContent = e.message || 'Please log out and log back in first.';
   }
 };
 
@@ -3402,7 +3652,7 @@ window.bjDeal = async () => {
   // Deduct bet immediately
   const newCoins = coins - bjBet;
   myProfile.coins = newCoins;
-  try { await updateDoc(doc(db,'users',me.uid),{coins:newCoins}); } catch(e){}
+  try { await pb.updateUser(me.uid,{coins:newCoins}); } catch(e){}
   updateCoinDisplays(newCoins);
 
   bjShowScreen('bj-game-screen');
@@ -3441,7 +3691,7 @@ window.bjDouble = async () => {
   const newCoins = coins - bjBet;
   bjBet *= 2;
   myProfile.coins = newCoins;
-  try { await updateDoc(doc(db,'users',me.uid),{coins:newCoins}); } catch(e){}
+  try { await pb.updateUser(me.uid,{coins:newCoins}); } catch(e){}
   updateCoinDisplays(newCoins);
   document.getElementById('bj-bet-display').textContent = '🪙 ' + bjBet;
   // One card only then stand
@@ -3623,7 +3873,7 @@ window.bjClaim = async () => {
     // Award the coins
     const newCoins = (myProfile.coins || 0) + coinChange;
     myProfile.coins = newCoins;
-    try { await updateDoc(doc(db,'users',me.uid),{coins:newCoins}); } catch(e){}
+    try { await pb.updateUser(me.uid,{coins:newCoins}); } catch(e){}
     updateCoinDisplays(newCoins);
 
     // Coin burst + triumphant SFX
@@ -3750,9 +4000,8 @@ window.handleAvatarUpload = async (e) => {
   try {
     showToast('Uploading...');
     const data = await resizeImage(file);
-    await updateDoc(doc(db,'users',me.uid), { avatar: data });
+    await pb.updateUser(me.uid, { avatar: data });
     myProfile.avatar = data;
-    // Update all avatar spots
     refreshAllAvatars();
     showToast('Profile photo updated!');
     SFX.win && SFX.win();
@@ -3870,7 +4119,7 @@ window.faStart = async () => {
   // Deduct bet
   const newCoins = coins - faBet;
   myProfile.coins = newCoins;
-  try { await updateDoc(doc(db,'users',me.uid),{coins:newCoins}); } catch(e){}
+  try { await pb.updateUser(me.uid,{coins:newCoins}); } catch(e){}
   updateCoinDisplays(newCoins);
 
   document.getElementById('fa-bet-screen').style.display    = 'none';
@@ -4325,7 +4574,7 @@ window.faClaim = async () => {
   if (earned > 0) {
     const newCoins = Math.round((myProfile.coins || 0) + earned);
     myProfile.coins = newCoins;
-    try { await updateDoc(doc(db,'users',me.uid),{coins:newCoins}); } catch(e){}
+    try { await pb.updateUser(me.uid,{coins:newCoins}); } catch(e){}
     updateCoinDisplays(newCoins);
   }
   // Save flappy best score
@@ -4333,7 +4582,7 @@ window.faClaim = async () => {
     const best = myProfile.flappyBest || 0;
     if (faPipes > best) {
       myProfile.flappyBest = faPipes;
-      try { await updateDoc(doc(db,'users',me.uid),{flappyBest:faPipes}); } catch(e){}
+      try { await pb.updateUser(me.uid,{flappyBest:faPipes}); } catch(e){}
     }
   }
   // Always reset regardless of earn/error, no delay that can get stuck
@@ -4421,10 +4670,10 @@ window.sendTts = async () => {
   if ((myProfile.coins||0) < 2500) { err.textContent = 'Not enough coins (need 2500🪙)'; return; }
   const newCoins = (myProfile.coins||0) - 2500;
   myProfile.coins = newCoins;
-  await updateDoc(doc(db,'users',me.uid),{coins:newCoins}).catch(()=>{});
+  await pb.updateUser(me.uid,{coins:newCoins}).catch(()=>{});
   updateCoinDisplays(newCoins);
-  await set(push(ref(rtdb,'events/tts')), {
-    uid: me.uid, username: myProfile.username,
+  await pb.createRecord('events', {
+    type: 'tts', uid: me.uid, username: myProfile.username,
     text, voice: 'default', ts: Date.now()
   }).catch(()=>{});
   closeModal('tts-overlay');
@@ -4689,10 +4938,10 @@ window.sendCustomSfx = async () => {
 
   const newCoins = (myProfile.coins||0) - 1250;
   myProfile.coins = newCoins;
-  await updateDoc(doc(db,'users',me.uid), { coins: newCoins }).catch(()=>{});
+  await pb.updateUser(me.uid, { coins: newCoins }).catch(()=>{});
   updateCoinDisplays(newCoins);
-  await set(push(ref(rtdb,'events/sfx')), {
-    uid: me.uid, username: myProfile.username,
+  await pb.createRecord('events', {
+    type: 'sfx', uid: me.uid, username: myProfile.username,
     sound: 'custom', audioData,
     trimStart: start, trimEnd: end, volume: Math.min(1, volume),
     ts: Date.now()
@@ -4708,10 +4957,10 @@ window.sendSfx = async (sound) => {
   if ((myProfile.coins||0) < 1250) { err.textContent = 'Not enough coins (need 1250🪙)'; return; }
   const newCoins = (myProfile.coins||0) - 1250;
   myProfile.coins = newCoins;
-  await updateDoc(doc(db,'users',me.uid),{coins:newCoins}).catch(()=>{});
+  await pb.updateUser(me.uid,{coins:newCoins}).catch(()=>{});
   updateCoinDisplays(newCoins);
-  await set(push(ref(rtdb,'events/sfx')), {
-    uid: me.uid, username: myProfile.username,
+  await pb.createRecord('events', {
+    type: 'sfx', uid: me.uid, username: myProfile.username,
     sound, ts: Date.now()
   }).catch(()=>{});
   closeModal('sfx-overlay');
@@ -4763,24 +5012,21 @@ function applyTtsVoice(utt, voice) {
 
 // Listen for TTS/SFX events from other users
 function listenGlobalEvents() {
-  const ttsRef = ref(rtdb,'events/tts');
-  const sfxRef = ref(rtdb,'events/sfx');
   const now = Date.now();
-  onChildAdded(ttsRef, snap => {
-    const d = snap.val();
+  pb.subscribe('events', '', evt => {
+    const d = evt.record;
     if (!d || d.ts < now - 2000) return;
-    if ('speechSynthesis' in window) {
-      const utt = new SpeechSynthesisUtterance(d.username + ' says: ' + d.text);
-      applyTtsVoice(utt, d.voice || 'default');
-      window.speechSynthesis.speak(utt);
+    if (d.type === 'tts') {
+      if ('speechSynthesis' in window) {
+        const utt = new SpeechSynthesisUtterance(d.username + ' says: ' + d.text);
+        applyTtsVoice(utt, d.voice || 'default');
+        window.speechSynthesis.speak(utt);
+      }
+      addSystemMsg('🔊 TTS from ' + d.username + ': ' + d.text);
+    } else if (d.type === 'sfx') {
+      playSfxSound(d.sound, d.audioData, d.trimStart, d.trimEnd, d.volume);
+      addSystemMsg('🎵 ' + d.username + ' played a sound');
     }
-    addSystemMsg('🔊 TTS from ' + d.username + ': ' + d.text);
-  });
-  onChildAdded(sfxRef, snap => {
-    const d = snap.val();
-    if (!d || d.ts < now - 2000) return;
-    playSfxSound(d.sound, d.audioData, d.trimStart, d.trimEnd, d.volume);
-    addSystemMsg('🎵 ' + d.username + ' played a sound');
   });
 }
 
@@ -4820,13 +5066,13 @@ window.placeBet = async (slot) => {
   // Deduct coins immediately
   const newCoins = (myProfile.coins || 0) - amount;
   myProfile.coins = newCoins;
-  try { await updateDoc(doc(db,'users',me.uid), { coins: newCoins }); } catch(e){}
+  try { await pb.updateUser(me.uid, { coins: newCoins }); } catch(e){}
   updateCoinDisplays(newCoins);
 
-  // Store bet in Firebase
+  // Store bet in PocketBase
   const roundIdx = currentRoundIndex >= 0 ? currentRoundIndex : 0;
   myBet = { slot, amount, roundIndex: roundIdx };
-  await set(ref(rtdb, 'bets/' + roundIdx + '/' + me.uid), { slot, amount, uid: me.uid, ts: Date.now() }).catch(()=>{});
+  await pb.createRecord('bets', { slot, amount, uid: me.uid, roundIndex: roundIdx, ts: Date.now() }).catch(()=>{});
 
   // Lock UI
   ['left','right'].forEach(s => {
@@ -4849,7 +5095,7 @@ async function resolveBets(winnerSlot) {
     const payout = myBet.amount * 2;
     const newCoins = (myProfile.coins || 0) + payout;
     myProfile.coins = newCoins;
-    try { await updateDoc(doc(db,'users',me.uid), { coins: newCoins }); } catch(e){}
+    try { await pb.updateUser(me.uid, { coins: newCoins }); } catch(e){}
     updateCoinDisplays(newCoins);
     showToast('🎰 BET WON! +' + payout + '🪙');
     sfxChord([523,659,784,1046],'sine',0.6,0.22);
@@ -4860,7 +5106,7 @@ async function resolveBets(winnerSlot) {
   }
 
   // Clean up old bet data
-  await remove(ref(rtdb, 'bets/' + (myBet.roundIndex - 2))).catch(()=>{});
+  pb.deleteRecordsByFilter('bets', `roundIndex<${myBet.roundIndex - 1}`).catch(()=>{});
   myBet = null;
 }
 
@@ -4869,10 +5115,11 @@ let _betTotalsUnsub = null;
 function listenBetTotals(roundIndex) {
   if (_betTotalsUnsub) { _betTotalsUnsub(); _betTotalsUnsub = null; }
   if (roundIndex < 0) { hideBetTotals(); return; }
-  _betTotalsUnsub = onValue(ref(rtdb, 'bets/' + roundIndex), snap => {
-    const data = snap.val() || {};
+
+  async function refreshTotals() {
+    const items = await pb.listRecords('bets', `roundIndex=${roundIndex}`).catch(()=>[]);
     let leftTotal = 0, rightTotal = 0;
-    Object.values(data).forEach(b => {
+    items.forEach(b => {
       if (b.slot === 'left') leftTotal += (b.amount||0);
       else if (b.slot === 'right') rightTotal += (b.amount||0);
     });
@@ -4883,6 +5130,11 @@ function listenBetTotals(roundIndex) {
     const crEl = document.getElementById('bet-chip-right');
     if (tlEl) { tlEl.classList.toggle('visible', hasLeft); if (clEl) clEl.textContent = '🪙 ' + leftTotal.toLocaleString(); }
     if (trEl) { trEl.classList.toggle('visible', hasRight); if (crEl) crEl.textContent = '🪙 ' + rightTotal.toLocaleString(); }
+  }
+
+  refreshTotals();
+  _betTotalsUnsub = pb.subscribe('bets', '', evt => {
+    if (evt.record?.roundIndex === roundIndex) refreshTotals();
   });
 }
 function hideBetTotals() {
@@ -4899,16 +5151,13 @@ function hideBetTotals() {
 
 async function rewardVoters(winnerSlot, roundIndex) {
   if (!me || !myProfile) return;
-  // Check if this user voted this round and for which side
-  const snap = await get(ref(rtdb, 'votes/' + roundIndex)).catch(() => null);
-  if (!snap) return;
-  const data = snap.val() || {};
-  const votedWinner = data[winnerSlot] && data[winnerSlot][me.uid];
-  if (votedWinner && !mySlot) { // only viewers get this (fighters get their own reward)
+  const cache = _votesCache[roundIndex] || { left: new Set(), right: new Set() };
+  const votedWinner = cache[winnerSlot]?.has(me.uid);
+  if (votedWinner && !mySlot) {
     const reward = 10;
     const newCoins = (myProfile.coins || 0) + reward;
     myProfile.coins = newCoins;
-    try { await updateDoc(doc(db,'users',me.uid), { coins: newCoins }); } catch(e){}
+    try { await pb.updateUser(me.uid, { coins: newCoins }); } catch(e){}
     updateCoinDisplays(newCoins);
     showToast('✅ Correct vote! +' + reward + '🪙');
   }
@@ -4929,7 +5178,7 @@ window.claimDailyReward = async () => {
   const newCoins = (myProfile.coins || 0) + reward;
   myProfile.coins = newCoins;
   myProfile.lastDaily = now;
-  try { await updateDoc(doc(db,'users',me.uid), { coins: newCoins, lastDaily: now }); } catch(e){}
+  try { await pb.updateUser(me.uid, { coins: newCoins, lastDaily: now }); } catch(e){}
   updateCoinDisplays(newCoins);
   sfxChord([440,554,659,880],'sine',0.7,0.2);
   showToast('🎁 Daily reward claimed! +100🪙');
