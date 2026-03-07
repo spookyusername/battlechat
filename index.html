@@ -93,7 +93,7 @@
   .daily-btn { width: 100%; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 3px; background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05)); border: 1px solid rgba(201,168,76,0.5); color: var(--gold); padding: 12px 0; cursor: pointer; transition: background 0.2s, border-color 0.2s; margin-bottom: 14px; }
   .daily-btn:hover:not(:disabled) { background: rgba(201,168,76,0.22); border-color: var(--gold); }
   .daily-btn:disabled { opacity: 0.4; cursor: default; border-color: var(--border); color: var(--muted); }
-  .vote-pct { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 1px; line-height: 1; flex-shrink: 0; transition: transform 0.2s ease; }
+  .vote-pct { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 1px; line-height: 1; flex-shrink: 0; }
   .cam-panel:first-child .vote-pct { color: var(--red-hot); }
   .cam-panel.right-cam .vote-pct { color: #60a5fa; }
 
@@ -120,7 +120,7 @@
 
   /* TIMER BAR */
   /* ── BATTLE STRIP (sits between topbar and arena) ── */
-  .battle-strip { display: flex; align-items: center; background: var(--dark2); border-bottom: 1px solid var(--border); height: 48px; padding: 0 16px; gap: 12px; overflow: hidden; flex: 1; min-width: 0; position: relative; z-index: 1; }
+  .battle-strip { display: flex; align-items: center; background: var(--dark2); border-bottom: 1px solid var(--border); height: 48px; padding: 0 16px; gap: 12px; overflow: hidden; flex: 1; min-width: 0; }
   .bstrip-left  { display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer; border-radius: 4px; padding: 4px 6px; transition: background 0.15s, opacity 0.3s; overflow: hidden; }
   .bstrip-right { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; cursor: pointer; border-radius: 4px; padding: 4px 10px 4px 6px; transition: background 0.15s, opacity 0.3s; overflow: hidden; }
   .bstrip-left:hover, .bstrip-right:hover { background: rgba(255,255,255,0.05); }
@@ -128,7 +128,7 @@
   .bstrip-progress-wrap { width: 100%; height: 3px; background: var(--dark3); border-radius: 2px; overflow: hidden; }
   .bstrip-progress-fill { height: 100%; width: 100%; transform-origin: left; background: linear-gradient(to right, var(--red), #e8321a, var(--gold)); transition: none; border-radius: 2px; }
   /* ── SUBHEADER ROW ── */
-  .subheader-row { display: flex; flex-direction: row; flex-shrink: 0; height: 48px; position: relative; z-index: 2; }
+  .subheader-row { display: flex; flex-direction: row; flex-shrink: 0; height: 48px; }
   .chat-subheader { width: 280px; flex-shrink: 0; background: var(--dark2); border-left: 1px solid var(--border); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 14px; transition: width 0.35s ease, opacity 0.35s ease; overflow: hidden; }
   .main.chat-collapsed ~ * .chat-subheader { width: 0; opacity: 0; padding: 0; }
   .timer-bar-num { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 4px; color: var(--gold); text-shadow: 0 0 12px rgba(201,168,76,0.3); line-height: 1; transition: color 0.3s; flex-shrink: 0; }
@@ -140,11 +140,6 @@
   .streak-badge.s4 { font-size: 0.82rem; color: var(--red-hot); background: rgba(217,43,43,0.15); border: 1px solid rgba(217,43,43,0.5); text-shadow: 0 0 8px rgba(217,43,43,0.6); animation: streakPulse 1.5s ease-in-out infinite; }
   .streak-badge.s5 { font-size: 0.85rem; color: #ff2244; background: rgba(255,34,68,0.2); border: 1px solid #ff2244; text-shadow: 0 0 14px #ff2244; letter-spacing: 3px; animation: streakPulse 1s ease-in-out infinite; }
   @keyframes streakPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.75;transform:scale(1.05)} }
-  @keyframes slotEnter { 0%{opacity:0;transform:scale(0.95)} 60%{transform:scale(1.02)} 100%{opacity:1;transform:scale(1)} }
-  @keyframes slotExit  { 0%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:scale(0.95)} }
-  @keyframes votePop   { 0%{transform:scale(1)} 40%{transform:scale(1.15)} 100%{transform:scale(1)} }
-  @keyframes chipPop   { 0%{opacity:0;transform:translateY(6px)} 100%{opacity:1;transform:translateY(0)} }
-  @keyframes roundStart { 0%{opacity:0;transform:translateY(-10px) scale(0.9)} 60%{transform:translateY(2px) scale(1.03)} 100%{opacity:1;transform:translateY(0) scale(1)} }
   /* BET TOTALS OVERLAY */
   .bet-totals { display: none; position: absolute; bottom: 54px; left: 0; right: 0; pointer-events: none; z-index: 5; }
   .bet-totals.visible { display: flex; }
@@ -209,9 +204,7 @@
   .chat-msg:hover .msg-ts { opacity: 1; }
   .chat-msg.system { padding: 5px 14px; margin: 3px 8px; background: rgba(217,43,43,0.06); border-left: 2px solid var(--red); }
   .chat-msg.system .msg-text { color: rgba(232,232,232,0.45); font-size: 0.8rem; font-style: italic; }
-  .chat-footer { border-top: 1px solid var(--border); padding: 8px 10px 10px; flex-shrink: 0; }
-  .discord-chat-btn { display: flex; align-items: center; gap: 7px; width: 100%; padding: 6px 10px; margin-bottom: 7px; background: rgba(88,101,242,0.08); border: 1px solid rgba(88,101,242,0.25); color: #7289da; font-family: 'Bebas Neue', sans-serif; font-size: 0.75rem; letter-spacing: 2px; text-decoration: none; transition: background 0.2s, border-color 0.2s; border-radius: 2px; }
-  .discord-chat-btn:hover { background: rgba(88,101,242,0.18); border-color: rgba(88,101,242,0.5); color: #99aaf0; }
+  .chat-footer { border-top: 1px solid var(--border); padding: 10px; flex-shrink: 0; }
   .chat-actions { display: flex; gap: 6px; margin-bottom: 8px; }
   .chat-action-btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.68rem; letter-spacing: 1.5px; text-transform: uppercase; border: 1px solid var(--border); background: transparent; color: var(--muted); padding: 4px 10px; cursor: pointer; flex: 1; transition: all 0.2s; }
   .chat-action-btn:hover { border-color: var(--gold); color: var(--gold); }
@@ -230,10 +223,10 @@
   .lb-stat.w { color: var(--red-hot); } .lb-stat.l { color: var(--muted); }
 
   /* MODALS */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 500; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; backdrop-filter: blur(4px); }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 500; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.25s; backdrop-filter: blur(4px); }
   .modal-overlay.open { opacity: 1; pointer-events: all; }
-  .modal { background: var(--dark2); border: 1px solid rgba(255,255,255,0.08); width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; position: relative; transform: translateY(24px) scale(0.98); transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease; opacity: 0; scrollbar-width: thin; }
-  .modal-overlay.open .modal { transform: translateY(0) scale(1); opacity: 1; }
+  .modal { background: var(--dark2); border: 1px solid rgba(255,255,255,0.08); width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; position: relative; transform: translateY(20px); transition: transform 0.25s; scrollbar-width: thin; }
+  .modal-overlay.open .modal { transform: translateY(0); }
   .modal-wide { max-width: 600px; }
   .modal-close { position: absolute; top: 14px; right: 16px; background: none; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; z-index: 2; }
   .modal-close:hover { color: var(--text); }
@@ -315,18 +308,6 @@
   .arena-next-btn:hover { background: var(--red-hot); }
   .arena-next-btn:disabled { opacity: 0.35; cursor: default; }
   .queue-screen { text-align: center; padding: 8px 0; }
-  /* ── QUEUE FLOATER (persistent after modal closed) ── */
-  .queue-floater { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--dark2); border: 1px solid rgba(201,168,76,0.4); padding: 8px 16px 8px 12px; display: flex; align-items: center; gap: 10px; z-index: 300; opacity: 0; transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease; pointer-events: none; box-shadow: 0 4px 24px rgba(0,0,0,0.5); white-space: nowrap; }
-  .queue-floater.visible { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: all; }
-  .qf-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 6px var(--gold); animation: blink 1.2s infinite; flex-shrink: 0; }
-  .qf-text { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 2px; color: var(--text); }
-  .qf-pos { color: var(--gold); }
-  .qf-open { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'Bebas Neue', sans-serif; font-size: 0.72rem; letter-spacing: 1px; padding: 2px 8px; cursor: pointer; transition: border-color 0.15s, color 0.15s; margin-left: 4px; }
-  .qf-open:hover { border-color: var(--gold); color: var(--gold); }
-  .qf-leave { background: none; border: none; color: rgba(255,255,255,0.25); font-size: 0.9rem; cursor: pointer; padding: 0 0 0 4px; transition: color 0.15s; }
-  .qf-leave:hover { color: var(--red-hot); }
-  /* ── MENU OVERLAY MODE — arena still visible behind ── */
-  .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 400; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
   .q-avatar { width: 80px; height: 80px; border-radius: 50%; background: var(--dark3); border: 3px solid var(--red); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-family:'Bebas Neue',sans-serif; font-weight:700; margin: 0 auto 14px; box-shadow: 0 0 30px rgba(217,43,43,0.3); animation: qp 2s ease-in-out infinite; overflow:hidden; }
   .q-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
   @keyframes qp { 0%,100%{box-shadow:0 0 20px rgba(217,43,43,0.3)} 50%{box-shadow:0 0 40px rgba(217,43,43,0.6)} }
@@ -351,8 +332,10 @@
   .menu-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
 
   /* MENU PANEL */
-  .menu-panel { position: fixed; top: 48px; left: 0; bottom: 0; width: 360px; background: rgba(10,10,12,0.96); border-right: 1px solid rgba(255,255,255,0.08); z-index: 401; transform: translateX(-100%); transition: transform 0.35s cubic-bezier(0.22,1,0.36,1); display: flex; flex-direction: column; overflow: hidden; pointer-events: none; }
-  .menu-panel.open { transform: translateX(0); pointer-events: all; }
+  .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 400; opacity: 0; pointer-events: none; transition: opacity 0.25s; backdrop-filter: blur(3px); }
+  .menu-overlay.open { opacity: 1; pointer-events: all; }
+  .menu-panel { position: fixed; top: 0; left: 0; bottom: 0; width: 380px; background: var(--dark2); border-right: 1px solid rgba(255,255,255,0.08); z-index: 401; transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.22,1,0.36,1); display: flex; flex-direction: column; overflow: hidden; }
+  .menu-panel.open { transform: translateX(0); }
   .menu-header { height: 48px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 18px; flex-shrink: 0; }
   .menu-logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 4px; }
   .menu-logo span { color: var(--red-hot); }
@@ -362,8 +345,7 @@
   .menu-nav-btn { flex: 1; font-family: 'Bebas Neue', sans-serif; font-size: 0.82rem; letter-spacing: 2px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer; padding: 11px 6px; transition: color 0.2s, border-color 0.2s; }
   .menu-nav-btn:hover { color: var(--text); }
   .menu-nav-btn.active { color: var(--text); border-bottom-color: var(--red); }
-  .menu-tab { flex: 1; overflow-y: auto; padding: 16px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent; animation: tabFadeIn 0.2s ease; }
-  @keyframes tabFadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .menu-tab { flex: 1; overflow-y: auto; padding: 16px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent; }
   .menu-section-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
 
   /* SHOP */
@@ -568,7 +550,7 @@
 
 <!-- TOPBAR -->
 <div class="topbar">
-  <div class="topbar-left"><button class="menu-btn" id="menu-btn" onclick="toggleMenu()">☰ MENU</button><span class="topbar-coins" id="topbar-coins" style="display:none;">🪙 0</span></div>
+  <div class="topbar-left"><button class="menu-btn" id="menu-btn" onclick="toggleMenu()">☰ MENU</button><div class="chat-online" style="margin-left:4px;"><div class="online-dot"></div><span id="online-count">0 online</span></div><span class="topbar-coins" id="topbar-coins" style="display:none;">🪙 0</span></div>
   <div class="logo" id="logo"><span>BATTLE</span>CHAT</div>
   <div class="topbar-right">
     <button class="collapse-btn" onclick="toggleChat()">
@@ -608,7 +590,6 @@
   </div>
   <div class="chat-subheader" id="chat-subheader">
     <div class="chat-title">Global Chat</div>
-    <div class="chat-online" style="margin-left:auto;"><div class="online-dot"></div><span id="online-count">0 online</span></div>
   </div>
 </div>
 
@@ -706,10 +687,6 @@
       <div id="lb-list" style="overflow-y:auto;flex:1;"></div>
     </div>
     <div class="chat-footer">
-      <a class="discord-chat-btn" href="https://discord.gg/wqNEHs2AqF" target="_blank" rel="noopener">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.031.054a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
-        JOIN DISCORD — BIGBLOCKS
-      </a>
       <div class="chat-actions">
         <button class="chat-action-btn" id="tts-btn" onclick="openTtsModal()" title="Spend coins to send a TTS message to everyone">🔊 TTS <span style="font-size:0.65rem;color:var(--gold);">2500🪙</span></button>
         <button class="chat-action-btn" id="sfx-btn" onclick="openSfxModal()" title="Spend coins to play a sound for everyone">🎵 SFX <span style="font-size:0.65rem;color:var(--gold);">1250🪙</span></button>
@@ -992,24 +969,13 @@
           </div>
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;" id="q-chips-label" style="display:none;">In Queue</div>
           <div class="q-chips" id="q-chips"></div>
-          <div style="display:flex;gap:10px;flex-direction:column;width:100%;">
-            <button class="q-leave-btn" style="background:transparent;border-color:rgba(255,255,255,0.1);color:var(--muted);font-size:0.72rem;padding:8px;" onclick="minimizeQueue()">↙ MINIMIZE — STAY IN QUEUE</button>
-            <button class="q-leave-btn" onclick="leaveQueue()">LEAVE QUEUE</button>
-          </div>
+          <button class="q-leave-btn" onclick="leaveQueue()">LEAVE QUEUE</button>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-
-<!-- QUEUE FLOATER -->
-<div class="queue-floater" id="queue-floater">
-  <div class="qf-dot"></div>
-  <span class="qf-text">IN QUEUE — <span class="qf-pos" id="qf-pos">...</span></span>
-  <button class="qf-open" onclick="openArenaFromFloater()">VIEW</button>
-  <button class="qf-leave" onclick="leaveQueue()" title="Leave queue">✕</button>
-</div>
 
 <!-- MENU OVERLAY -->
 <div class="menu-overlay" id="menu-overlay" onclick="closeMenu()"></div>
@@ -1021,6 +987,7 @@
   <div class="menu-nav">
     <button class="menu-nav-btn active" onclick="switchMenuTab(this,'shop')" data-tab="shop">🏪 SHOP</button>
     <button class="menu-nav-btn" onclick="switchMenuTab(this,'gamble')" data-tab="gamble">🃏 GAMBLE</button>
+    <button class="menu-nav-btn" onclick="switchMenuTab(this,'community')" data-tab="community" style="white-space:nowrap;">🔷 DISCORD</button>
     <button class="menu-nav-btn" onclick="switchMenuTab(this,'settings')" data-tab="settings">⚙️ SETTINGS</button>
   </div>
 
@@ -1702,30 +1669,6 @@ async function _loadLbTab(tab) {
 let _chatMsgTimes = []; // timestamps of recent messages
 let _chatCooldownUntil = 0;
 
-// ── CHAT STALENESS CLEAR ──
-// Clear rendered chat messages if user was away > 5 minutes
-(function() {
-  const AWAY_LIMIT = 5 * 60 * 1000;
-  const key = 'bc_last_active';
-  const last = parseInt(sessionStorage.getItem(key) || '0');
-  if (last && (Date.now() - last) > AWAY_LIMIT) {
-    const cv = document.getElementById('chat-view');
-    if (cv) cv.innerHTML = '<div class="chat-msg system"><span class="msg-text">⚡ Welcome back — chat refreshed.</span></div>';
-  }
-  sessionStorage.setItem(key, Date.now());
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') sessionStorage.setItem(key, Date.now());
-    else {
-      const gone = Date.now() - parseInt(sessionStorage.getItem(key)||'0');
-      if (gone > AWAY_LIMIT) {
-        const cv = document.getElementById('chat-view');
-        if (cv) cv.innerHTML = '<div class="chat-msg system"><span class="msg-text">⚡ Chat refreshed after being away.</span></div>';
-      }
-      sessionStorage.setItem(key, Date.now());
-    }
-  });
-})();
-
 function listenChat() {
   onChildAdded(ref(rtdb,'chat'), snap=>addChatBubble(snap.val()));
 }
@@ -2053,8 +1996,6 @@ async function enterQueue() {
   document.getElementById('q-status').textContent = 'In queue...';
   document.getElementById('q-pos').textContent    = '...';
   document.getElementById('q-pos').style.color    = 'var(--gold)';
-  const qfPos = document.getElementById('qf-pos');
-  if (qfPos) qfPos.textContent = '...';
   document.getElementById('q-chips').innerHTML    = '';
 
   // Write queue entry — only update ts if this is a fresh entry
@@ -2165,7 +2106,7 @@ function updateQueueUI(sorted, myPos) {
   chips.innerHTML = '';
   sorted.forEach((w,i) => {
     const chip = document.createElement('div');
-    chip.className = 'q-chip' + (w.uid === me.uid ? ' you' : ''); chip.style.animation = 'chipPop 0.2s ease ' + (i*0.04) + 's both';
+    chip.className = 'q-chip' + (w.uid === me.uid ? ' you' : '');
     chip.innerHTML = '<span>'+(i+1)+'.</span> '
       + escHtml(w.username||'?')
       + (w.uid === me.uid ? ' <span style="opacity:0.5;font-size:0.7rem;">(you)</span>' : '');
@@ -2176,9 +2117,6 @@ function updateQueueUI(sorted, myPos) {
   document.getElementById('q-pos').textContent    = pos;
   document.getElementById('q-pos').style.color    = pos === 1 ? 'var(--gold)' : 'var(--red-hot)';
   document.getElementById('q-status').textContent = pos === 1 ? "You're up next!" : 'Waiting in line...';
-  // Update floater
-  const qfPos = document.getElementById('qf-pos');
-  if (qfPos) qfPos.textContent = pos === 1 ? 'YOU'RE NEXT!' : pos + ' OF ' + sorted.length;
 }
 
 function stopQueueListeners() {
@@ -2194,28 +2132,7 @@ window.leaveQueue = async () => {
   await remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
   const chips = document.getElementById('q-chips');
   if (chips) chips.innerHTML = '';
-  hideQueueFloater();
   closeArenaModal();
-};
-
-function showQueueFloater() {
-  const f = document.getElementById('queue-floater');
-  if (f) f.classList.add('visible');
-}
-function hideQueueFloater() {
-  const f = document.getElementById('queue-floater');
-  if (f) f.classList.remove('visible');
-}
-window.minimizeQueue = () => {
-  closeArenaModal();
-  showQueueFloater();
-};
-window.openArenaFromFloater = () => {
-  hideQueueFloater();
-  openModal('arena-overlay');
-  // Jump to queue step
-  document.getElementById('arena-s1').style.display = 'none';
-  document.getElementById('arena-s2').style.display = 'block';
 };
 
 // ── VOTES (Firebase-backed, real-time) ──
@@ -2241,10 +2158,8 @@ function listenVotes(roundIndex) {
     const lp = total > 0 ? Math.round((leftVotes  / total) * 100) : 0;
     const rp = total > 0 ? Math.round((rightVotes / total) * 100) : 0;
 
-    const pLeft = document.getElementById('pct-left');
-    const pRight = document.getElementById('pct-right');
-    if (pLeft)  { pLeft.textContent  = lp + '%'; pLeft.style.animation='none';  void pLeft.offsetWidth;  pLeft.style.animation='votePop 0.25s ease'; }
-    if (pRight) { pRight.textContent = rp + '%'; pRight.style.animation='none'; void pRight.offsetWidth; pRight.style.animation='votePop 0.25s ease'; }
+    document.getElementById('pct-left').textContent  = lp + '%';
+    document.getElementById('pct-right').textContent = rp + '%';
     document.getElementById('vbar-left').style.width  = lp + '%';
     document.getElementById('vbar-right').style.width = rp + '%';
 
@@ -2440,8 +2355,6 @@ function checkStageFull() {
       const leftName  = stageUids.left  ? (document.getElementById('un-left')?.textContent  || '') : '';
       const rightName = stageUids.right ? (document.getElementById('un-right')?.textContent || '') : '';
       addSystemMsg('⚔ ' + leftName + ' vs ' + rightName + ' — BATTLE STARTS!');
-      const bs = document.getElementById('battle-strip');
-      if (bs) { bs.style.animation='none'; void bs.offsetWidth; bs.style.animation='roundStart 0.5s ease'; }
       listenBetTotals(currentRoundIndex);
       SFX.newRound();
     } else {
@@ -2814,11 +2727,8 @@ window.closeMenu  = closeMenu;
 window.switchMenuTab = (btn, tab) => {
   document.querySelectorAll('.menu-nav-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  document.querySelectorAll('.menu-tab').forEach(t=>{ t.style.display='none'; t.style.animation='none'; });
-  const el = document.getElementById('mtab-'+tab);
-  el.style.display='block';
-  void el.offsetWidth; // reflow to restart animation
-  el.style.animation='';
+  document.querySelectorAll('.menu-tab').forEach(t=>t.style.display='none');
+  document.getElementById('mtab-'+tab).style.display='block';
   if (tab==='settings') loadSettingsState();
 };
 
