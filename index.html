@@ -1429,7 +1429,20 @@ onAuthStateChanged(auth, async user => {
   renderTopbar();
   listenStage(); // everyone sees stage updates
   listenGlobalEvents();
-  if (me) { listenChat(); applyUserPrefs(myProfile); }
+  if (me) {
+    listenChat();
+    applyUserPrefs(myProfile);
+    // Clean up any stale entries from a previous crashed/disconnected session
+    // (onDisconnect may not have fired if the browser was force-killed)
+    remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
+    // Also clean up stage if we somehow have a ghost slot
+    ['left','right'].forEach(async slot => {
+      const snap = await get(ref(rtdb,'stage/'+slot)).catch(()=>null);
+      if (snap && snap.val()?.uid === me.uid) {
+        await remove(ref(rtdb,'stage/'+slot)).catch(()=>{});
+      }
+    });
+  }
   joinAsViewer();
 });
 
@@ -1881,96 +1894,130 @@ window.goToQueue = () => {
   enterQueue();
 };
 
-// ── QUEUE SYSTEM ──
-// Each user in queue: rtdb/queue/{uid} = { uid, username, avatar, ts }
-// When a stage slot opens, the person with the lowest ts (first in line) gets it
+// ══════════════════════════════════════════════════
+//  QUEUE SYSTEM  — clean rewrite
+//  rtdb/queue/{uid} = { uid, username, avatar, ts }
+//  Only one listener loop; launching is serialised
+//  via a transaction that removes the entry atomically.
+// ══════════════════════════════════════════════════
+let _qLaunching = false; // global guard — true while this client is mid-launch
 
 async function enterQueue() {
+  _qLaunching = false;
+  stopQueueListeners();
+
+  // Write our entry (preserving original ts if already present, so retries keep position)
+  const existingSnap = await get(ref(rtdb,'queue/'+me.uid)).catch(()=>null);
+  const existingTs   = existingSnap?.val()?.ts;
+  const myTs         = existingTs || Date.now();
+  await set(ref(rtdb,'queue/'+me.uid), {
+    uid: me.uid, username: myProfile.username,
+    avatar: myProfile.avatar, ts: myTs
+  });
+  onDisconnect(ref(rtdb,'queue/'+me.uid)).remove().catch(()=>{});
+
+  // Update modal UI
   setAvatar('q-av', myProfile.avatar, myProfile.username);
   document.getElementById('q-name').textContent   = myProfile.username;
-  document.getElementById('q-status').textContent = 'Finding a slot...';
+  document.getElementById('q-status').textContent = 'In queue...';
   document.getElementById('q-pos').textContent    = '...';
   document.getElementById('q-pos').style.color    = 'var(--gold)';
   document.getElementById('q-chips').innerHTML    = '';
 
-  // Write to queue with timestamp
-  await set(ref(rtdb,'queue/'+me.uid), {
-    uid: me.uid, username: myProfile.username,
-    avatar: myProfile.avatar, ts: Date.now()
-  });
+  // Single combined listener on both stage + queue
+  async function onQueueOrStageChange() {
+    if (_qLaunching) return;
 
-  let launched = false;
-
-  async function checkAndClaim() {
-    if (launched) return;
-
-    const [stageSnap, queueSnap] = await Promise.all([
+    const [stageSnap, qSnap] = await Promise.all([
       get(ref(rtdb,'stage')),
       get(ref(rtdb,'queue'))
     ]);
 
     const stage     = stageSnap.val() || {};
-    const queueData = queueSnap.val() || {};
-    const sorted    = Object.values(queueData).sort((a,b) => a.ts - b.ts);
-    const myPos     = sorted.findIndex(w => w.uid === me.uid);
+    const queueData = qSnap.val()     || {};
+
+    // A slot is free only if it has no uid
+    const leftFree  = !stage.left?.uid;
+    const rightFree = !stage.right?.uid;
+    const freeSlots = (leftFree ? 1 : 0) + (rightFree ? 1 : 0);
+
+    // Sort queue by timestamp — only real entries (must have ts)
+    const sorted = Object.values(queueData)
+      .filter(w => w && w.uid && w.ts)
+      .sort((a,b) => a.ts - b.ts);
+
+    const myPos = sorted.findIndex(w => w.uid === me.uid);
 
     updateQueueUI(sorted, myPos);
 
-    // Count free slots and people ahead of me
-    const freeSlots = (!stage.left ? 1 : 0) + (!stage.right ? 1 : 0);
     if (freeSlots === 0) {
       document.getElementById('q-status').textContent = 'Waiting for a slot...';
       return;
     }
 
-    // Only attempt if I'm within range of available slots
-    // e.g. 1 free slot → only position 1 should try; 2 free → positions 1 and 2
-    if (myPos === -1 || myPos >= freeSlots) {
+    // Not in queue yet (write not propagated) — wait for next tick
+    if (myPos === -1) return;
+
+    // Only try if I'm within the number of free slots
+    if (myPos >= freeSlots) {
+      const pos = myPos + 1;
+      document.getElementById('q-pos').textContent    = pos;
       document.getElementById('q-status').textContent = 'Waiting in line...';
       return;
     }
 
-    // I'm in range — try to claim
-    launched = true;
+    // I'm eligible — claim atomically
+    // Use a transaction on my queue entry: delete it only if it still exists
+    // This prevents two tabs/clients from double-launching
+    _qLaunching = true;
     stopQueueListeners();
+
+    let removed = false;
+    try {
+      const res = await runTransaction(ref(rtdb,'queue/'+me.uid), cur => {
+        if (!cur) return; // already removed by another process — abort
+        return null;      // delete it
+      });
+      removed = res && res.committed;
+    } catch(e) { console.warn('Queue transaction error', e); }
+
+    if (!removed) {
+      // Someone else grabbed it — re-enter with same timestamp
+      _qLaunching = false;
+      await set(ref(rtdb,'queue/'+me.uid), {
+        uid: me.uid, username: myProfile.username,
+        avatar: myProfile.avatar, ts: myTs
+      }).catch(()=>{});
+      queueUnsubStage = onValue(ref(rtdb,'stage'), onQueueOrStageChange);
+      queueUnsubList  = onValue(ref(rtdb,'queue'), onQueueOrStageChange);
+      return;
+    }
+
+    // Slot we're aiming for (first free)
+    const targetSlot = leftFree ? 'left' : 'right';
 
     document.getElementById('q-status').textContent = 'Going live!';
     document.getElementById('q-pos').textContent    = 'GO!';
     document.getElementById('q-pos').style.color    = '#4CAF50';
 
-    const freeSlot = !stage.left ? 'left' : 'right';
-
-    // Small stagger based on position to reduce collisions
-    await new Promise(r => setTimeout(r, myPos * 300 + 200));
-
     closeModal('arena-overlay');
-    const success = await goLive(freeSlot);
+    const success = await goLive(targetSlot);
+
     if (!success) {
-      // Lost the race — re-enter queue cleanly
-      launched = false;
+      // goLive transaction failed (another race) — re-queue keeping original ts
+      _qLaunching = false;
       await set(ref(rtdb,'queue/'+me.uid), {
         uid: me.uid, username: myProfile.username,
-        avatar: myProfile.avatar, ts: Date.now()
+        avatar: myProfile.avatar, ts: myTs
       }).catch(()=>{});
-      // Re-attach listeners without re-opening modal
-      queueUnsubStage = onValue(ref(rtdb,'stage'), () => checkAndClaim());
-      queueUnsubList  = onValue(ref(rtdb,'queue'), async snap => {
-        if (launched) return;
-        const qd = snap.val() || {};
-        const s2 = Object.values(qd).sort((a,b) => a.ts - b.ts);
-        updateQueueUI(s2, s2.findIndex(w => w.uid === me.uid));
-      });
+      queueUnsubStage = onValue(ref(rtdb,'stage'), onQueueOrStageChange);
+      queueUnsubList  = onValue(ref(rtdb,'queue'), onQueueOrStageChange);
     }
+    // On success _qLaunching stays true — we're live, no more queue logic needed
   }
 
-  queueUnsubStage = onValue(ref(rtdb,'stage'), () => checkAndClaim());
-  queueUnsubList  = onValue(ref(rtdb,'queue'), async snap => {
-    if (launched) return;
-    const queueData = snap.val() || {};
-    const sorted    = Object.values(queueData).sort((a,b) => a.ts - b.ts);
-    const myPos     = sorted.findIndex(w => w.uid === me.uid);
-    updateQueueUI(sorted, myPos);
-  });
+  queueUnsubStage = onValue(ref(rtdb,'stage'), onQueueOrStageChange);
+  queueUnsubList  = onValue(ref(rtdb,'queue'), onQueueOrStageChange);
 }
 
 function updateQueueUI(sorted, myPos) {
@@ -1980,25 +2027,28 @@ function updateQueueUI(sorted, myPos) {
   sorted.forEach((w,i) => {
     const chip = document.createElement('div');
     chip.className = 'q-chip' + (w.uid === me.uid ? ' you' : '');
-    chip.innerHTML = '<span>'+(i+1)+'.</span> ' + escHtml(w.username||'?') + (w.uid===me.uid ? ' <span style="opacity:0.5;font-size:0.7rem;">(you)</span>' : '');
+    chip.innerHTML = '<span>'+(i+1)+'.</span> '
+      + escHtml(w.username||'?')
+      + (w.uid === me.uid ? ' <span style="opacity:0.5;font-size:0.7rem;">(you)</span>' : '');
     chips.appendChild(chip);
   });
-  if (myPos === -1) return; // not in queue, skip pos display
+  if (myPos === -1) return;
   const pos = myPos + 1;
-  document.getElementById('q-pos').textContent   = pos;
-  document.getElementById('q-pos').style.color   = pos === 1 ? 'var(--gold)' : 'var(--red-hot)';
-  document.getElementById('q-status').textContent = pos === 1 ? 'You are up next!' : 'Waiting in line...';
+  document.getElementById('q-pos').textContent    = pos;
+  document.getElementById('q-pos').style.color    = pos === 1 ? 'var(--gold)' : 'var(--red-hot)';
+  document.getElementById('q-status').textContent = pos === 1 ? 'You're up next!' : 'Waiting in line...';
 }
 
 function stopQueueListeners() {
-  if (queueUnsubStage) { queueUnsubStage(); queueUnsubStage=null; }
-  if (queueUnsubList)  { queueUnsubList();  queueUnsubList=null; }
+  if (queueUnsubStage) { queueUnsubStage(); queueUnsubStage = null; }
+  if (queueUnsubList)  { queueUnsubList();  queueUnsubList  = null; }
 }
 
 window.leaveQueue = async () => {
+  _qLaunching = false;
+  stopQueueListeners();
   try { await onDisconnect(ref(rtdb,'queue/'+me.uid)).cancel(); } catch(e){}
   await remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
-  stopQueueListeners();
   const chips = document.getElementById('q-chips');
   if (chips) chips.innerHTML = '';
   closeArenaModal();
