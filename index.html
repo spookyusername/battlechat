@@ -338,7 +338,150 @@
   .qf-leave { background: none; border: 1px solid rgba(255,255,255,0.07); color: rgba(255,255,255,0.2); font-size: 0.7rem; cursor: pointer; padding: 3px 6px; transition: border-color 0.15s, color 0.15s; font-family: 'Barlow Condensed', sans-serif; }
   .qf-leave:hover { border-color: rgba(217,43,43,0.5); color: var(--red-hot); }
   /* ── MENU OVERLAY MODE — arena still visible behind ── */
-  .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 400; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+  .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0); z-index: 400; opacity: 0; pointer-events: none; transition: opacity 0.4s ease, background 0.4s ease; }
+  .menu-overlay.open { opacity: 1; pointer-events: all; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); }
+
+  /* ── MENU TRIGGER BUTTON ── */
+  .menu-btn { font-family: 'Bebas Neue', sans-serif; font-size: 0.82rem; letter-spacing: 3px; text-transform: uppercase; border: 1px solid var(--border); background: transparent; color: var(--muted); padding: 5px 14px; cursor: pointer; transition: border-color 0.2s, color 0.2s, background 0.2s; display: flex; align-items: center; gap: 7px; }
+  .menu-btn:hover { border-color: rgba(255,255,255,0.25); color: var(--text); background: rgba(255,255,255,0.03); }
+  .menu-btn-bars { display: flex; flex-direction: column; gap: 3.5px; }
+  .menu-btn-bar { width: 14px; height: 1.5px; background: currentColor; transition: transform 0.25s, opacity 0.25s; transform-origin: center; }
+
+  /* ── MENU PANEL — full-height, slides from right ── */
+  .menu-panel {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: 520px; max-width: 100vw;
+    background: var(--black);
+    border-left: 1px solid rgba(255,255,255,0.07);
+    z-index: 401;
+    display: flex; flex-direction: row;
+    transform: translateX(100%);
+    transition: transform 0.45s cubic-bezier(0.22,1,0.36,1);
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .menu-panel.open { transform: translateX(0); pointer-events: all; }
+
+  /* Animated diagonal accent on open */
+  .menu-panel::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(to right, transparent, var(--red), transparent);
+    opacity: 0; transition: opacity 0.5s ease 0.2s;
+    z-index: 10;
+  }
+  .menu-panel.open::before { opacity: 1; }
+
+  /* ── LEFT RAIL — vertical icon tabs ── */
+  .menu-rail {
+    width: 64px; flex-shrink: 0;
+    background: rgba(8,8,8,0.95);
+    border-right: 1px solid rgba(255,255,255,0.05);
+    display: flex; flex-direction: column;
+    padding: 16px 0;
+    gap: 2px;
+  }
+  .menu-rail-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.7rem; letter-spacing: 3px;
+    color: var(--red-hot);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    padding: 0 0 18px;
+    margin: 0 auto 10px;
+    border-bottom: 1px solid rgba(217,43,43,0.2);
+    text-align: center;
+    width: 100%;
+    padding-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .menu-rail-btn {
+    width: 100%; aspect-ratio: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px;
+    background: none; border: none; cursor: pointer;
+    color: var(--muted);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.55rem; letter-spacing: 1.5px; text-transform: uppercase;
+    font-weight: 700;
+    transition: color 0.2s, background 0.2s;
+    position: relative;
+    padding: 6px 0;
+    border-left: 2px solid transparent;
+  }
+  .menu-rail-btn:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  .menu-rail-btn.active {
+    color: var(--text);
+    background: rgba(217,43,43,0.06);
+    border-left-color: var(--red-hot);
+  }
+  .menu-rail-btn.active .mrb-icon { filter: drop-shadow(0 0 6px rgba(217,43,43,0.7)); }
+  .mrb-icon { font-size: 1.2rem; line-height: 1; }
+  .mrb-label { font-size: 0.5rem; letter-spacing: 1px; opacity: 0.7; }
+  .menu-rail-spacer { flex: 1; }
+  .menu-rail-close {
+    width: 100%; aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer;
+    color: rgba(255,255,255,0.2);
+    font-size: 1rem;
+    transition: color 0.2s, background 0.2s;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .menu-rail-close:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+
+  /* ── CONTENT AREA ── */
+  .menu-content {
+    flex: 1; display: flex; flex-direction: column;
+    overflow: hidden; min-width: 0;
+  }
+  .menu-content-header {
+    height: 56px; flex-shrink: 0;
+    display: flex; align-items: center; padding: 0 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.015);
+    gap: 12px;
+  }
+  .menu-content-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem; letter-spacing: 4px;
+    color: var(--text); line-height: 1;
+  }
+  .menu-content-title span { color: var(--red-hot); }
+  .menu-content-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--muted); margin-left: auto;
+  }
+
+  /* ── TABS ── */
+  .menu-tab {
+    flex: 1; overflow-y: auto;
+    padding: 20px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.06) transparent;
+  }
+  .menu-tab::-webkit-scrollbar { width: 3px; }
+  .menu-tab::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); }
+  @keyframes tabFadeIn {
+    from { opacity:0; transform:translateX(10px); }
+    to   { opacity:1; transform:translateX(0); }
+  }
+
+  /* ── SECTION TITLES ── */
+  .menu-section-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 0.65rem; letter-spacing: 3px;
+    text-transform: uppercase; color: rgba(255,255,255,0.25);
+    margin-bottom: 10px; display: flex; align-items: center; gap: 10px;
+  }
+  .menu-section-title::after {
+    content: ''; flex: 1; height: 1px;
+    background: rgba(255,255,255,0.05);
+  }
   .q-avatar { width: 80px; height: 80px; border-radius: 50%; background: var(--dark3); border: 3px solid var(--red); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-family:'Bebas Neue',sans-serif; font-weight:700; margin: 0 auto 14px; box-shadow: 0 0 30px rgba(217,43,43,0.3); animation: qp 2s ease-in-out infinite; overflow:hidden; }
   .q-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
   @keyframes qp { 0%,100%{box-shadow:0 0 20px rgba(217,43,43,0.3)} 50%{box-shadow:0 0 40px rgba(217,43,43,0.6)} }
@@ -358,25 +501,7 @@
   .cam-panel:first-child .round-bar-fill { background: linear-gradient(to right, #8B0000, var(--red-hot)); }
   .cam-panel.right-cam .round-bar-fill { background: linear-gradient(to right, #1a4fa8, #60a5fa); }
 
-  /* MENU BUTTON */
-  .menu-btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.78rem; letter-spacing: 2px; text-transform: uppercase; border: 1px solid var(--border); background: transparent; color: var(--muted); padding: 5px 12px; cursor: pointer; transition: border-color 0.2s, color 0.2s; }
-  .menu-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
-
-  /* MENU PANEL */
-  .menu-panel { position: fixed; top: 48px; left: 0; bottom: 0; width: 360px; background: rgba(10,10,12,0.96); border-right: 1px solid rgba(255,255,255,0.08); z-index: 401; transform: translateX(-100%); transition: transform 0.35s cubic-bezier(0.22,1,0.36,1); display: flex; flex-direction: column; overflow: hidden; pointer-events: none; }
-  .menu-panel.open { transform: translateX(0); pointer-events: all; }
-  .menu-header { height: 48px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 18px; flex-shrink: 0; }
-  .menu-logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 4px; }
-  .menu-logo span { color: var(--red-hot); }
-  .menu-close { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; padding: 4px 8px; }
-  .menu-close:hover { color: var(--text); }
-  .menu-nav { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-  .menu-nav-btn { flex: 1; font-family: 'Bebas Neue', sans-serif; font-size: 0.82rem; letter-spacing: 2px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer; padding: 11px 6px; transition: color 0.2s, border-color 0.2s; }
-  .menu-nav-btn:hover { color: var(--text); }
-  .menu-nav-btn.active { color: var(--text); border-bottom-color: var(--red); }
-  .menu-tab { flex: 1; overflow-y: auto; padding: 16px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent; animation: tabFadeIn 0.2s ease; }
-  @keyframes tabFadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-  .menu-section-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  /* menu-btn and menu-panel styles are above in the menu section */
 
   /* SHOP */
   .shop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -584,7 +709,7 @@
 
 <!-- TOPBAR -->
 <div class="topbar" id="topbar">
-  <div class="topbar-left"><button class="menu-btn" id="menu-btn" onclick="toggleMenu()">☰ MENU</button><span class="topbar-coins" id="topbar-coins" style="display:none;">🪙 0</span></div>
+  <div class="topbar-left"><button class="menu-btn" id="menu-btn" onclick="toggleMenu()"><div class="menu-btn-bars"><div class="menu-btn-bar"></div><div class="menu-btn-bar"></div><div class="menu-btn-bar"></div></div>MENU</button><span class="topbar-coins" id="topbar-coins" style="display:none;">🪙 0</span></div>
   <div class="logo" id="logo"><span>BATTLE</span>CHAT</div>
   <div class="topbar-right">
     <div class="queue-floater" id="queue-floater">
@@ -1037,16 +1162,37 @@
 <!-- MENU OVERLAY -->
 <div class="menu-overlay" id="menu-overlay" onclick="closeMenu()"></div>
 <div class="menu-panel" id="menu-panel">
-  <div class="menu-header">
-    <div class="menu-logo"><span>BATTLE</span>CHAT</div>
-    <button class="menu-close" onclick="closeMenu()">✕</button>
+
+  <!-- LEFT ICON RAIL -->
+  <div class="menu-rail">
+    <div class="menu-rail-logo">BC</div>
+    <button class="menu-rail-btn active" id="mrb-shop"     onclick="switchMenuTab(this,'shop')"     data-tab="shop">
+      <span class="mrb-icon">🏪</span>
+      <span class="mrb-label">Shop</span>
+    </button>
+    <button class="menu-rail-btn" id="mrb-gamble"   onclick="switchMenuTab(this,'gamble')"   data-tab="gamble">
+      <span class="mrb-icon">🃏</span>
+      <span class="mrb-label">Gamble</span>
+    </button>
+    <button class="menu-rail-btn" id="mrb-lb"       onclick="switchMenuTab(this,'lb')"       data-tab="lb">
+      <span class="mrb-icon">🏆</span>
+      <span class="mrb-label">Ranks</span>
+    </button>
+    <button class="menu-rail-btn" id="mrb-settings" onclick="switchMenuTab(this,'settings')" data-tab="settings">
+      <span class="mrb-icon">⚙️</span>
+      <span class="mrb-label">Config</span>
+    </button>
+    <div class="menu-rail-spacer"></div>
+    <button class="menu-rail-close" onclick="closeMenu()" title="Close">✕</button>
   </div>
-  <div class="menu-nav">
-    <button class="menu-nav-btn active" onclick="switchMenuTab(this,'shop')" data-tab="shop">🏪 SHOP</button>
-    <button class="menu-nav-btn" onclick="switchMenuTab(this,'gamble')" data-tab="gamble">🃏 GAMBLE</button>
-    <button class="menu-nav-btn" onclick="switchMenuTab(this,'lb')" data-tab="lb">🏆 LEADERBOARDS</button>
-    <button class="menu-nav-btn" onclick="switchMenuTab(this,'settings')" data-tab="settings">⚙️ SETTINGS</button>
-  </div>
+
+  <!-- CONTENT AREA -->
+  <div class="menu-content">
+
+    <div class="menu-content-header" id="menu-content-header">
+      <div class="menu-content-title" id="menu-content-title">SHOP</div>
+      <div class="menu-content-sub" id="menu-content-sub">SPEND YOUR COINS</div>
+    </div>
 
   <!-- SHOP TAB -->
   <div class="menu-tab" id="mtab-shop">
@@ -1125,21 +1271,17 @@
 
   <!-- GAMBLE TAB -->
   <div class="menu-tab" id="mtab-gamble" style="display:none;">
-    <!-- GAME SELECTOR -->
     <div class="gamble-selector">
       <button class="gamble-game-btn active" id="gbtn-blackjack" onclick="switchGambleGame('blackjack')">🃏 BLACKJACK</button>
       <button class="gamble-game-btn" id="gbtn-flappy" onclick="switchGambleGame('flappy')">🐦 FLAPPY ADAM</button>
     </div>
 
-    <!-- BLACKJACK SECTION -->
     <div id="gamble-blackjack">
     <div class="bj-header">
       <div class="bj-title">BLACKJACK</div>
       <div class="bj-subtitle">Get to 21 — beat the dealer to double your bet</div>
       <div class="bj-balance">Balance: <span class="bj-balance-num" id="bj-balance">🪙 0</span></div>
     </div>
-
-    <!-- BET SCREEN -->
     <div id="bj-bet-screen">
       <div class="bj-bet-label">Place your bet</div>
       <div class="bj-bet-presets">
@@ -1157,17 +1299,12 @@
       <div class="bj-err" id="bj-err"></div>
       <button class="bj-deal-btn" id="bj-deal-btn" onclick="bjDeal()">DEAL</button>
     </div>
-
-    <!-- GAME SCREEN -->
     <div id="bj-game-screen" style="display:none;">
       <div class="bj-bet-display">Bet: <span id="bj-bet-display">🪙 0</span></div>
-
       <div class="bj-section-label">DEALER <span class="bj-score" id="dealer-score">?</span></div>
       <div class="bj-hand" id="dealer-hand"></div>
-
       <div class="bj-section-label" style="margin-top:14px;">YOU <span class="bj-score" id="player-score">0</span></div>
       <div class="bj-hand" id="player-hand"></div>
-
       <div class="bj-actions" id="bj-actions">
         <button class="bj-action-btn hit"   onclick="bjHit()">HIT</button>
         <button class="bj-action-btn stand" onclick="bjStand()">STAND</button>
@@ -1175,8 +1312,6 @@
       </div>
       <button class="bj-new-game-btn" id="bj-new-game-btn" onclick="sweepAndReset()" style="display:none;">NEW GAME</button>
     </div>
-
-    <!-- RESULT SCREEN -->
     <div id="bj-result-screen" style="display:none;position:relative;overflow:hidden;">
       <canvas id="bj-coin-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:10;"></canvas>
       <div style="text-align:center;padding:16px 0 8px;">
@@ -1187,17 +1322,14 @@
       </div>
       <button class="bj-claim-btn" id="bj-claim-btn" onclick="bjClaim()">COLLECT WINNINGS</button>
     </div>
-    </div> <!-- end gamble-blackjack -->
+    </div>
 
-    <!-- FLAPPY ADAM SECTION -->
     <div id="gamble-flappy" style="display:none;">
       <div class="bj-header">
         <div class="bj-title">FLAPPY ADAM</div>
         <div class="bj-subtitle">Fly through pipes — earn coins per gap cleared</div>
         <div class="bj-balance">Balance: <span class="bj-balance-num" id="fa-balance">🪙 0</span></div>
       </div>
-
-      <!-- BET SCREEN -->
       <div id="fa-bet-screen">
         <div class="bj-bet-label">Place your bet</div>
         <div class="bj-bet-presets">
@@ -1222,10 +1354,7 @@
         </div>
         <button class="bj-deal-btn" onclick="faStart()">FLY</button>
       </div>
-
-      <!-- GAME SCREEN -->
       <div id="fa-game-screen" style="display:none;">
-        <!-- Hidden spans so JS can still update them (used in HUD) -->
         <span id="fa-bet-display" style="display:none;">0</span>
         <span id="fa-pipes" style="display:none;">0</span>
         <span id="fa-earned" style="display:none;">+0</span>
@@ -1233,8 +1362,6 @@
         <button id="fa-cashout-btn" onclick="faCashout()" style="width:100%;margin-top:8px;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:4px;background:rgba(201,168,76,0.1);border:2px solid var(--gold);color:var(--gold);padding:14px 0;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(201,168,76,0.22)'" onmouseout="this.style.background='rgba(201,168,76,0.1)'">💰 CASH OUT [C]</button>
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.68rem;color:var(--muted);text-align:center;margin-top:5px;letter-spacing:1px;">SPACE / TAP to flap &nbsp;·&nbsp; <span style="color:var(--gold);">C</span> to cash out</div>
       </div>
-
-      <!-- RESULT SCREEN -->
       <div id="fa-result-screen" style="display:none;">
         <div style="text-align:center;padding:16px 0 8px;">
           <div class="bj-result-icon" id="fa-result-icon">🐦</div>
@@ -1242,10 +1369,9 @@
           <div class="bj-result-amount" id="fa-result-amount"></div>
           <div class="bj-final-hands" id="fa-result-detail"></div>
         </div>
-        <button class="bj-claim-btn" id="fa-claim-btn" onclick="faClaim()" >COLLECT WINNINGS</button>
+        <button class="bj-claim-btn" id="fa-claim-btn" onclick="faClaim()">COLLECT WINNINGS</button>
       </div>
-    </div> <!-- end gamble-flappy -->
-
+    </div>
   </div>
 
   <!-- LEADERBOARD TAB -->
@@ -1339,8 +1465,6 @@
         </label>
       </div>
     </div>
-
-    <!-- Change Password Form (hidden by default) -->
     <div id="pw-change-form" style="display:none;margin-top:16px;">
       <div class="menu-section-title">Change Password</div>
       <div class="settings-group">
@@ -1356,8 +1480,11 @@
       </div>
     </div>
   </div>
+
+  </div><!-- end .menu-content -->
 </div>
 
+  <!-- SHOP TAB -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -2892,13 +3019,20 @@ window.toggleMenu = toggleMenu;
 window.closeMenu  = closeMenu;
 
 window.switchMenuTab = (btn, tab) => {
-  document.querySelectorAll('.menu-nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.menu-rail-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   document.querySelectorAll('.menu-tab').forEach(t=>{ t.style.display='none'; t.style.animation='none'; });
   const el = document.getElementById('mtab-'+tab);
   el.style.display='block';
   void el.offsetWidth; // reflow to restart animation
-  el.style.animation='';
+  el.style.animation='tabFadeIn 0.2s ease';
+  // Update content header
+  const titles = { shop:'SHOP', gamble:'GAMBLE', lb:'LEADERBOARDS', settings:'SETTINGS' };
+  const subs   = { shop:'SPEND YOUR COINS', gamble:'RISK IT ALL', lb:'TOP PLAYERS', settings:'CONFIGURE' };
+  const titleEl = document.getElementById('menu-content-title');
+  const subEl   = document.getElementById('menu-content-sub');
+  if (titleEl) titleEl.textContent = titles[tab] || tab.toUpperCase();
+  if (subEl)   subEl.textContent   = subs[tab]   || '';
   if (tab==='settings') loadSettingsState();
 };
 
