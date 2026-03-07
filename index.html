@@ -1975,11 +1975,8 @@ let voteUnsub = null;
 function listenVotes(roundIndex) {
   if (voteUnsub) { voteUnsub(); voteUnsub = null; }
   currentRoundIndex = roundIndex;
-  // Snapshot the round start time so we can ignore stale votes from a previous cycle
-  const roundStartedAt = Date.now();
 
   voteUnsub = onValue(ref(rtdb, 'votes/' + roundIndex), snap => {
-    // If listenVotes was called again for a different round, this callback is stale — ignore
     if (currentRoundIndex !== roundIndex) return;
 
     const data       = snap.val() || {};
@@ -1995,25 +1992,17 @@ function listenVotes(roundIndex) {
     document.getElementById('vbar-left').style.width  = lp + '%';
     document.getElementById('vbar-right').style.width = rp + '%';
 
-    // Only lock the vote buttons if the user genuinely voted THIS round.
-    // We guard with roundStartedAt: Firebase fires immediately on subscribe with
-    // whatever data is in the node — if the vote ts is older than when we started
-    // listening, it's leftover from a previous cycle of the same roundIndex.
+    // Lock buttons only if user actually voted this round (node was empty on subscribe)
     if (me && !hasVoted) {
       const myLeft  = data.left  && data.left[me.uid];
       const myRight = data.right && data.right[me.uid];
       if (myLeft || myRight) {
-        // Extra guard: only count it if the vote was written after this round started
-        const voteTs = (myLeft || myRight);
-        const isStale = typeof voteTs === 'object' && voteTs.ts && voteTs.ts < roundStartedAt;
-        if (!isStale) {
-          hasVoted = true;
-          const mySide = myLeft ? 'left' : 'right';
-          document.getElementById('vbtn-left').disabled  = true;
-          document.getElementById('vbtn-right').disabled = true;
-          document.getElementById('vbtn-'+mySide).classList.add('voted-'+mySide);
-          document.getElementById('vbtn-'+mySide).textContent = 'VOTED';
-        }
+        hasVoted = true;
+        const mySide = myLeft ? 'left' : 'right';
+        document.getElementById('vbtn-left').disabled  = true;
+        document.getElementById('vbtn-right').disabled = true;
+        document.getElementById('vbtn-'+mySide).classList.add('voted-'+mySide);
+        document.getElementById('vbtn-'+mySide).textContent = 'VOTED';
       }
     }
   });
@@ -2028,7 +2017,7 @@ window.castVote = async side => {
   document.getElementById('vbtn-right').disabled = true;
   document.getElementById('vbtn-'+side).classList.add('voted-'+side);
   document.getElementById('vbtn-'+side).textContent = 'VOTED';
-  await set(ref(rtdb, 'votes/' + currentRoundIndex + '/' + side + '/' + me.uid), { ts: Date.now() });
+  await set(ref(rtdb, 'votes/' + currentRoundIndex + '/' + side + '/' + me.uid), true);
   SFX.vote(); showToast('Vote locked in!');
 };
 
@@ -2145,19 +2134,25 @@ function checkStageFull() {
   } else {
     mainGrid.classList.add('solo-mode');
   }
-  // Bet panels: show only when both fighters are on stage
   showBetPanels(stageFull);
   if (!stageFull) resetBetUI();
 
   if (stageFull && !wasFullBefore) {
-    // Both fighters just arrived — start a fresh round epoch
-    roundEpoch = Date.now();
+    // Both fighters just arrived — reset round tracking so tick picks up fresh
     lastRoundIndex = -1;
+    roundEpoch = Date.now(); // local epoch just for round-index math in THIS session
+    // Immediately wipe any leftover votes and reset UI
+    remove(ref(rtdb, 'votes')).catch(()=>{});
+    resetRound();
     addSystemMsg('Both fighters ready — round starting!');
     SFX.newRound();
   }
   if (!stageFull) {
-    // Reset timer display when stage empties
+    roundEpoch = null;
+    lastRoundIndex = -1;
+    // Wipe votes when stage empties
+    remove(ref(rtdb, 'votes')).catch(()=>{});
+    resetRound();
     document.getElementById('timer-display').textContent = '2:00';
     document.getElementById('timer-display').style.color = 'var(--gold)';
     const rb = document.getElementById('rbar-left'), rr = document.getElementById('rbar-right');
@@ -2187,23 +2182,22 @@ function startSyncedTick(epoch) {
       if (lastRoundIndex !== -1) {
         const finishedRound = lastRoundIndex;
         lastRoundIndex = roundIndex;
-        // Unsubscribe old vote listener immediately
+        // Stop listening to old votes immediately
         if (voteUnsub) { voteUnsub(); voteUnsub = null; }
-        // Resolve outcomes FIRST (needs the vote data), then wipe + start fresh
+        // Resolve outcomes (reads vote data), then wipe, then reset UI and listen fresh
         Promise.all([
           resolveRound(finishedRound).catch(()=>{}),
           resolveRoundViewer(finishedRound).catch(()=>{})
-        ]).then(() => {
-          // Now delete the finished round votes so listenVotes starts clean
-          return remove(ref(rtdb, 'votes/' + finishedRound)).catch(()=>{});
-        }).then(() => {
-          resetRound();
-          listenVotes(roundIndex);
-          SFX.newRound();
-          addSystemMsg('New round started!');
-        });
+        ]).then(() => remove(ref(rtdb, 'votes')).catch(()=>{}))
+          .then(() => {
+            resetRound();
+            listenVotes(roundIndex);
+            SFX.newRound();
+            addSystemMsg('New round started!');
+          });
       } else {
         lastRoundIndex = roundIndex;
+        // First round — votes already wiped by checkStageFull, just subscribe
         listenVotes(roundIndex);
       }
     }
