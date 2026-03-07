@@ -678,7 +678,7 @@
         <!-- Waveform -->
         <canvas id="sfx-waveform" height="64" style="width:100%;height:64px;background:#0d0d0d;border:1px solid var(--border);display:block;border-radius:3px;"></canvas>
 
-        <!-- Start slider -->
+        <!-- Start slider — end is always start + 5s -->
         <div>
           <div style="display:flex;justify-content:space-between;font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;margin-bottom:4px;">
             <span style="color:#ffa500;font-weight:700;">▶ START</span>
@@ -686,16 +686,9 @@
           </div>
           <input type="range" id="sfx-sl-start" min="0" max="1000" step="1" value="0"
             style="width:100%;accent-color:#ffa500;cursor:pointer;" oninput="sfxTrimChange()">
-        </div>
-
-        <!-- End slider -->
-        <div>
-          <div style="display:flex;justify-content:space-between;font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;margin-bottom:4px;">
-            <span style="color:#ff4455;font-weight:700;">■ END</span>
-            <span id="sfx-lbl-end" style="color:#ff4455;font-weight:700;">5.00s</span>
+          <div style="display:flex;justify-content:space-between;font-family:'Barlow Condensed',sans-serif;font-size:0.68rem;color:var(--muted);margin-top:3px;">
+            <span>0s</span><span id="sfx-lbl-end" style="color:#ff4455;">End: 5.00s</span><span id="sfx-lbl-maxtime">0s</span>
           </div>
-          <input type="range" id="sfx-sl-end" min="0" max="1000" step="1" value="1000"
-            style="width:100%;accent-color:#ff4455;cursor:pointer;" oninput="sfxTrimChange()">
         </div>
 
         <!-- Volume slider -->
@@ -3921,36 +3914,20 @@ function _sfxOpenTrimmer() {
   document.getElementById('sfx-ready-panel').style.display   = 'none';
   document.getElementById('sfx-trimmer-panel').style.display = 'flex';
 
-  // Reset sliders
+  // Reset sliders — start at 0, end is always start + min(5s, duration)
   document.getElementById('sfx-sl-start').value = 0;
-  // Default end = first 5 seconds (or full clip if shorter)
-  const defaultEndPct = Math.min(100, (SFX_MAX_DUR / _sfxDur) * 100);
-  document.getElementById('sfx-sl-end').value   = Math.round(defaultEndPct * 10);
   document.getElementById('sfx-sl-vol').value   = 100;
   _sfxVolume = 1.0;
+  // Update max-time label
+  const maxLbl = document.getElementById('sfx-lbl-maxtime');
+  if (maxLbl) maxLbl.textContent = _sfxDur.toFixed(1) + 's';
 
   requestAnimationFrame(() => { _sfxDrawWaveform(); _sfxUpdateLabels(); });
 }
 
 // ── slider callbacks ──────────────────────────────
 window.sfxTrimChange = () => {
-  const ss = document.getElementById('sfx-sl-start');
-  const se = document.getElementById('sfx-sl-end');
-  let sv = parseInt(ss.value), ev = parseInt(se.value);
-
-  // Keep at least 0.1s gap, enforce max 5s window
-  const startSec = (sv / 1000) * _sfxDur;
-  let   endSec   = (ev / 1000) * _sfxDur;
-  if (endSec - startSec > SFX_MAX_DUR) {
-    endSec = startSec + SFX_MAX_DUR;
-    ev = Math.round((endSec / _sfxDur) * 1000);
-    se.value = Math.min(1000, ev);
-  }
-  if (sv >= parseInt(se.value)) {
-    if (document.activeElement === ss) { ss.value = Math.max(0, parseInt(se.value) - 1); }
-    else                               { se.value = Math.min(1000, sv + 1); }
-  }
-
+  // End is always start + min(5s, remaining duration) — no end slider needed
   _sfxDrawWaveform();
   _sfxUpdateLabels();
 };
@@ -3963,23 +3940,22 @@ window.sfxVolChange = () => {
 
 // ── get trim times ────────────────────────────────
 function _sfxGetTrim() {
-  const sv = parseInt(document.getElementById('sfx-sl-start').value);
-  const ev = parseInt(document.getElementById('sfx-sl-end').value);
+  const sv    = parseInt(document.getElementById('sfx-sl-start').value);
   const start = (sv / 1000) * _sfxDur;
-  const end   = (ev / 1000) * _sfxDur;
-  return [start, Math.min(end, start + SFX_MAX_DUR)];
+  const end   = Math.min(_sfxDur, start + SFX_MAX_DUR);
+  return [start, end];
 }
 
 // ── update text labels ────────────────────────────
 function _sfxUpdateLabels() {
   const [start, end] = _sfxGetTrim();
-  const rawEnd = (parseInt(document.getElementById('sfx-sl-end').value) / 1000) * _sfxDur;
-  const dur    = end - start;
+  const dur = end - start;
   document.getElementById('sfx-lbl-start').textContent = start.toFixed(2) + 's';
-  document.getElementById('sfx-lbl-end').textContent   = end.toFixed(2) + 's';
+  const endLbl = document.getElementById('sfx-lbl-end');
+  if (endLbl) endLbl.textContent = 'End: ' + end.toFixed(2) + 's';
   document.getElementById('sfx-lbl-dur').textContent   = dur.toFixed(2) + 's';
   const warn = document.getElementById('sfx-lbl-warn');
-  if (warn) warn.style.display = (rawEnd - start > SFX_MAX_DUR) ? 'inline' : 'none';
+  if (warn) warn.style.display = 'none'; // can't exceed 5s now
 }
 
 // ── draw waveform using Web Audio (async, non-blocking) ──────────
@@ -4165,21 +4141,21 @@ window.sendSfx = async (sound) => {
 
 function playSfxSound(sound, audioData, trimStart, trimEnd, volume) {
   if (sound === 'custom' && audioData) {
+    const s   = parseFloat(trimStart) || 0;
+    const dur = Math.min(5, Math.max(0.1, (parseFloat(trimEnd) || 5) - s));
+    const v   = Math.max(0, Math.min(1, parseFloat(volume) || 1));
     const audio = new Audio(audioData);
-    const s = parseFloat(trimStart) || 0;
-    const e = parseFloat(trimEnd)   || 5;
-    const v = parseFloat(volume)    || 1;
-    audio.volume = Math.max(0, Math.min(1, v));
-    audio.addEventListener('loadedmetadata', () => {
+    audio.volume = v;
+    // Use canplaythrough so currentTime seek is reliable
+    const doPlay = () => {
       audio.currentTime = s;
       audio.play().catch(()=>{});
-      setTimeout(() => audio.pause(), (e - s) * 1000);
-    }, { once: true });
-    // Fallback if metadata already loaded
-    if (audio.readyState >= 1) {
-      audio.currentTime = s;
-      audio.play().catch(()=>{});
-      setTimeout(() => audio.pause(), (e - s) * 1000);
+      setTimeout(() => { audio.pause(); audio.src = ''; }, dur * 1000 + 200);
+    };
+    if (audio.readyState >= 3) {
+      doPlay();
+    } else {
+      audio.addEventListener('canplaythrough', doPlay, { once: true });
     }
     return;
   }
