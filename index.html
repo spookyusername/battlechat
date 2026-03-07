@@ -2125,8 +2125,8 @@ let lastRoundIndex = -1;
 let stageFull = false;
 let roundEpoch = null; // when the current round actually started (set when stage becomes full)
 
-let _stageInitialized = false; // true after first listenStage snapshot processed
-let _battleEpochRef = null; // Firebase ref for current battle epoch
+let _stageInitialized = false;
+let _battleEpochLoading = false; // true while async epoch fetch is in flight
 
 function checkStageFull() {
   const wasFullBefore = stageFull;
@@ -2142,44 +2142,43 @@ function checkStageFull() {
 
   if (stageFull && !wasFullBefore) {
     resetBetUI();
-    lastRoundIndex = -1;
 
     if (_stageInitialized) {
-      // Genuine new battle — write a fresh epoch to Firebase, wipe votes
+      // Genuine new battle — write fresh epoch, wipe votes, start clean
       const epoch = Date.now();
       roundEpoch = epoch;
+      lastRoundIndex = -1;
       set(ref(rtdb, 'battle/epoch'), epoch).catch(()=>{});
       remove(ref(rtdb, 'votes')).catch(()=>{});
       resetRound();
       addSystemMsg('Both fighters ready — round starting!');
       SFX.newRound();
     } else {
-      // Page loaded while battle already ongoing — read epoch from Firebase
+      // Page loaded mid-battle — fetch the stored epoch, DON'T touch votes
+      _battleEpochLoading = true;
       get(ref(rtdb, 'battle/epoch')).then(snap => {
         const epoch = snap.val();
         if (epoch) {
           roundEpoch = epoch;
-          const elapsed = Date.now() - epoch;
-          const currentRound = Math.max(0, Math.floor(elapsed / ROUND_DURATION_MS));
-          lastRoundIndex = currentRound;
-          resetRound();
-          listenVotes(currentRound); // subscribe without wiping
         } else {
-          // No epoch yet — treat as fresh start
-          const newEpoch = Date.now();
-          roundEpoch = newEpoch;
-          set(ref(rtdb, 'battle/epoch'), newEpoch).catch(()=>{});
-          resetRound();
-          listenVotes(0);
-          lastRoundIndex = 0;
+          // No stored epoch — write one now
+          roundEpoch = Date.now();
+          set(ref(rtdb, 'battle/epoch'), roundEpoch).catch(()=>{});
         }
-      }).catch(()=>{});
+        const elapsed = Date.now() - roundEpoch;
+        const currentRound = Math.max(0, Math.floor(elapsed / ROUND_DURATION_MS));
+        lastRoundIndex = currentRound;
+        resetRound();
+        listenVotes(currentRound);
+        _battleEpochLoading = false;
+      }).catch(() => { _battleEpochLoading = false; });
+      // Leave lastRoundIndex and roundEpoch alone until async resolves
     }
   } else if (!stageFull && wasFullBefore) {
-    // Battle ended — clean up
     resetBetUI();
     roundEpoch = null;
     lastRoundIndex = -1;
+    _battleEpochLoading = false;
     if (voteUnsub) { voteUnsub(); voteUnsub = null; }
     remove(ref(rtdb, 'votes')).catch(()=>{});
     remove(ref(rtdb, 'battle/epoch')).catch(()=>{});
@@ -2197,7 +2196,8 @@ function checkStageFull() {
 function startSyncedTick(epoch) {
   if (timerInterval) clearInterval(timerInterval);
   timerInterval = setInterval(() => {
-    if (!stageFull || !roundEpoch) return;
+    // Skip if stage not full, no epoch yet, or still fetching epoch from Firebase
+    if (!stageFull || !roundEpoch || _battleEpochLoading) return;
 
     const now        = Date.now();
     const elapsed    = now - roundEpoch;
@@ -2209,8 +2209,9 @@ function startSyncedTick(epoch) {
     const remSec = Math.ceil(remaining / 1000);
     if (remSec <= 5 && remSec > 0 && remaining % 1000 < 500) SFX.tick();
 
-    // Detect round boundary
-    if (roundIndex !== lastRoundIndex && lastRoundIndex !== -1) {
+    // Only handle round boundaries — never touch lastRoundIndex === -1 here
+    // (checkStageFull handles the initial subscribe)
+    if (lastRoundIndex !== -1 && roundIndex !== lastRoundIndex) {
       const finishedRound = lastRoundIndex;
       lastRoundIndex = roundIndex;
       if (voteUnsub) { voteUnsub(); voteUnsub = null; }
@@ -2224,9 +2225,6 @@ function startSyncedTick(epoch) {
           SFX.newRound();
           addSystemMsg('New round started!');
         });
-    } else if (lastRoundIndex === -1) {
-      lastRoundIndex = roundIndex;
-      listenVotes(roundIndex);
     }
   }, 500);
 }
