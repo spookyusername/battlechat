@@ -19,7 +19,8 @@
   .topbar { height: 48px; background: var(--dark); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; position: relative; z-index: 10; width: 100%; }
   .topbar-left, .topbar-right { display: flex; align-items: center; gap: 10px; flex: 1; position: relative; z-index: 1; }
   .topbar-right { justify-content: flex-end; }
-  .logo { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 4px; color: var(--text); pointer-events: none; white-space: nowrap; z-index: 0; }
+  .logo { position: absolute; left: calc(50% - 140px); top: 50%; transform: translate(-50%,-50%); font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 4px; color: var(--text); pointer-events: none; white-space: nowrap; z-index: 0; transition: left 0.35s ease; }
+  .chat-hidden-logo .logo { left: 50%; }
   .logo span { color: var(--red-hot); }
   .topbar-coins { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 2px; color: var(--gold); margin-left: 8px; }
   .topbar-btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.78rem; letter-spacing: 2px; text-transform: uppercase; border: 1px solid var(--border); background: transparent; color: var(--muted); padding: 5px 14px; cursor: pointer; transition: border-color 0.2s, color 0.2s; }
@@ -131,6 +132,34 @@
   .chat-subheader { width: 280px; flex-shrink: 0; background: var(--dark2); border-left: 1px solid var(--border); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 14px; transition: width 0.35s ease, opacity 0.35s ease; overflow: hidden; }
   .main.chat-collapsed ~ * .chat-subheader { width: 0; opacity: 0; padding: 0; }
   .timer-bar-num { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 4px; color: var(--gold); text-shadow: 0 0 12px rgba(201,168,76,0.3); line-height: 1; transition: color 0.3s; flex-shrink: 0; }
+  /* WIN STREAK */
+  .streak-badge { display: none; font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; text-align: center; padding: 2px 10px; border-radius: 2px; white-space: nowrap; }
+  .streak-badge.s1 { font-size: 0.7rem; color: #e8e8e8; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); }
+  .streak-badge.s2 { font-size: 0.75rem; color: var(--gold); background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.35); }
+  .streak-badge.s3 { font-size: 0.78rem; color: #ff9900; background: rgba(255,153,0,0.12); border: 1px solid rgba(255,153,0,0.4); animation: streakPulse 2s ease-in-out infinite; }
+  .streak-badge.s4 { font-size: 0.82rem; color: var(--red-hot); background: rgba(217,43,43,0.15); border: 1px solid rgba(217,43,43,0.5); text-shadow: 0 0 8px rgba(217,43,43,0.6); animation: streakPulse 1.5s ease-in-out infinite; }
+  .streak-badge.s5 { font-size: 0.85rem; color: #ff2244; background: rgba(255,34,68,0.2); border: 1px solid #ff2244; text-shadow: 0 0 14px #ff2244; letter-spacing: 3px; animation: streakPulse 1s ease-in-out infinite; }
+  @keyframes streakPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.75;transform:scale(1.05)} }
+  /* BET TOTALS OVERLAY */
+  .bet-totals { display: none; position: absolute; bottom: 54px; left: 0; right: 0; pointer-events: none; z-index: 5; }
+  .bet-totals.visible { display: flex; }
+  .bet-total-chip { font-family: 'Bebas Neue', sans-serif; font-size: 0.78rem; letter-spacing: 2px; color: var(--gold); background: rgba(0,0,0,0.8); border: 1px solid rgba(201,168,76,0.4); padding: 3px 10px; backdrop-filter: blur(4px); }
+  .bet-total-chip.left-chip { border-radius: 0 4px 4px 0; border-left: none; }
+  .bet-total-chip.right-chip { border-radius: 4px 0 0 4px; border-right: none; margin-left: auto; }
+  /* WIN STREAK */
+  .streak-badge { display: none; font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; text-align: center; padding: 2px 10px; border-radius: 2px; white-space: nowrap; animation: streakPulse 1.5s ease-in-out infinite; }
+  .streak-badge.s1 { font-size: 0.7rem; color: #e8e8e8; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); animation: none; }
+  .streak-badge.s2 { font-size: 0.75rem; color: var(--gold); background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.35); animation: none; }
+  .streak-badge.s3 { font-size: 0.78rem; color: #ff9900; background: rgba(255,153,0,0.12); border: 1px solid rgba(255,153,0,0.4); }
+  .streak-badge.s4 { font-size: 0.82rem; color: var(--red-hot); background: rgba(217,43,43,0.15); border: 1px solid rgba(217,43,43,0.5); text-shadow: 0 0 8px rgba(217,43,43,0.6); }
+  .streak-badge.s5 { font-size: 0.85rem; color: #ff2244; background: rgba(255,34,68,0.2); border: 1px solid #ff2244; text-shadow: 0 0 12px #ff2244; letter-spacing: 3px; }
+  @keyframes streakPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.75;transform:scale(1.04)} }
+  /* BET TOTALS DISPLAY */
+  .bet-totals { display: none; position: absolute; bottom: 54px; left: 0; right: 0; pointer-events: none; z-index: 5; }
+  .bet-totals.visible { display: flex; justify-content: space-between; }
+  .bet-total-chip { font-family: 'Bebas Neue', sans-serif; font-size: 0.78rem; letter-spacing: 2px; color: var(--gold); background: rgba(0,0,0,0.75); border: 1px solid rgba(201,168,76,0.35); padding: 3px 10px; backdrop-filter: blur(4px); }
+  .bet-total-chip.left-chip { border-radius: 0 4px 4px 0; border-left: none; }
+  .bet-total-chip.right-chip { border-radius: 4px 0 0 4px; border-right: none; }
   .tbar-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--dark3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-family:'Bebas Neue',sans-serif; font-weight:700; flex-shrink:0; overflow:hidden; }
   .tbar-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
   .tbar-info { overflow: hidden; }
@@ -169,6 +198,10 @@
   .p-level-bar-fill { height: 100%; background: linear-gradient(to right, var(--gold), #ffe082); border-radius: 3px; transition: width 0.6s ease; }
   .p-level-label { font-family: 'Barlow Condensed', sans-serif; font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); text-align: center; margin-bottom: 16px; }
   .msg-text { color: rgba(232,232,232,0.7); }
+  .msg-ts { font-size: 0.62rem; color: rgba(232,232,232,0.2); margin-left: 5px; flex-shrink: 0; align-self: flex-end; opacity: 0; transition: opacity 0.15s; white-space: nowrap; }
+  .chat-msg:hover .msg-ts { opacity: 1; }
+  .msg-ts { font-size: 0.62rem; color: rgba(232,232,232,0.2); margin-left: 5px; flex-shrink: 0; align-self: flex-end; opacity: 0; transition: opacity 0.15s; white-space: nowrap; }
+  .chat-msg:hover .msg-ts { opacity: 1; }
   .chat-msg.system { padding: 5px 14px; margin: 3px 8px; background: rgba(217,43,43,0.06); border-left: 2px solid var(--red); }
   .chat-msg.system .msg-text { color: rgba(232,232,232,0.45); font-size: 0.8rem; font-style: italic; }
   .chat-footer { border-top: 1px solid var(--border); padding: 10px; flex-shrink: 0; }
@@ -541,6 +574,7 @@
       </div>
     </div>
     <div class="bstrip-center">
+      <div class="streak-badge" id="streak-badge"></div>
       <div class="timer-bar-num" id="timer-display">2:00</div>
       <div class="bstrip-progress-wrap">
         <div class="bstrip-progress-fill" id="rbar-left"></div>
@@ -581,6 +615,9 @@
       </div>
     </div>
     <div class="cam-votebar"><div class="cam-votebar-fill" id="vbar-left" style="width:0%;margin-left:auto;"></div></div>
+    <div class="bet-totals" id="bet-totals-left">
+      <div class="bet-total-chip left-chip" id="bet-chip-left">🪙 0</div>
+    </div>
     <div class="cam-footer">
       <div class="vote-pct" id="pct-left">0%</div>
       <button class="vote-btn" id="vbtn-left" onclick="castVote('left')">VOTE</button>
@@ -616,6 +653,9 @@
       </div>
     </div>
     <div class="cam-votebar"><div class="cam-votebar-fill" id="vbar-right" style="width:0%;"></div></div>
+    <div class="bet-totals" id="bet-totals-right" style="justify-content:flex-end;">
+      <div class="bet-total-chip right-chip" id="bet-chip-right">🪙 0</div>
+    </div>
     <div class="cam-footer">
       <button class="vote-btn" id="vbtn-right" onclick="castVote('right')">VOTE</button>
       <div class="vote-pct" id="pct-right">0%</div>
@@ -793,10 +833,16 @@
         <div class="field-error" id="su-pw-err"></div>
       </div>
       <div class="field-group">
-        <div class="field-label">Choose Avatar</div>
-        <div style="display:flex;align-items:center;gap:12px;margin:8px 0;">
-          <div class="q-avatar" id="su-av-preview" style="width:56px;height:56px;font-size:1.4rem;margin:0;animation:none;flex-shrink:0;">?</div>
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;color:var(--muted);line-height:1.6;">Your avatar will show your initial by default.<br>Upload a profile photo after signing up.</div>
+        <div class="field-label">Choose Avatar <span style="color:var(--muted);font-size:0.7rem;letter-spacing:1px;">(OPTIONAL)</span></div>
+        <div style="display:flex;align-items:center;gap:14px;margin:8px 0;">
+          <div class="profile-avatar-lg" id="su-av-preview" style="width:56px;height:56px;font-size:1.3rem;cursor:pointer;flex-shrink:0;" onclick="document.getElementById('su-avatar-file').click()">
+            <span id="su-av-initials">?</span>
+          </div>
+          <input type="file" id="su-avatar-file" accept="image/*" style="display:none;" onchange="handleSignupAvatarUpload(event)">
+          <div>
+            <button class="topbar-btn" type="button" style="display:block;margin-bottom:6px;" onclick="document.getElementById('su-avatar-file').click()">📷 UPLOAD PHOTO</button>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);">JPG / PNG / WEBP · max 2MB<br>Or skip — your initial is used by default.</div>
+          </div>
         </div>
       </div>
       <button class="auth-submit" id="su-btn" onclick="doSignup()">CREATE ACCOUNT</button>
@@ -1315,6 +1361,7 @@ async function joinAsViewer() {
 
 // ── JOIN AS FIGHTER ──
 async function joinAsFighter(slot) {
+  if (myProfile) updateStreakBadge(myProfile.currentStreak || 0);
   // Disconnect viewer session first
   if (lkRoom) { await lkRoom.disconnect(); lkRoom = null; }
 
@@ -1442,8 +1489,8 @@ onAuthStateChanged(auth, async user => {
   renderTopbar();
   listenStage(); // everyone sees stage updates
   listenGlobalEvents();
+  listenChat(); // chat visible to everyone, logged in or not
   if (me) {
-    listenChat();
     applyUserPrefs(myProfile);
     // Wipe our own stale queue/stage entries from a previous crashed session
     remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
@@ -1489,6 +1536,21 @@ window.doLogin = async () => {
   btn.disabled=false; btn.textContent='LOG IN';
 };
 
+let _suAvatarData = '';
+window.handleSignupAvatarUpload = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    _suAvatarData = await resizeImage(file);
+    const el = document.getElementById('su-av-preview');
+    const init = document.getElementById('su-av-initials');
+    if (_suAvatarData && el) {
+      el.innerHTML = `<img src="${_suAvatarData}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    }
+    showToast('Avatar ready!');
+  } catch(err) { showToast('Upload failed: ' + err); }
+  e.target.value = '';
+};
 window.doSignup = async () => {
   const uEl=document.getElementById('su-username'), eEl=document.getElementById('su-email'), pEl=document.getElementById('su-pw');
   ['su-username-err','su-email-err','su-pw-err'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent='';});
@@ -1504,8 +1566,9 @@ window.doSignup = async () => {
   const btn=document.getElementById('su-btn'); btn.disabled=true; btn.textContent='CREATING...';
   try {
     const cred=await createUserWithEmailAndPassword(auth,email,pw);
-    const profile={uid:cred.user.uid,username:username.toUpperCase(),avatar:'',desc:'',wins:0,losses:0,bestStreak:0,currentStreak:0,xp:0,joined:new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'})};
+    const profile={uid:cred.user.uid,username:username.toUpperCase(),avatar:_suAvatarData||'',desc:'',wins:0,losses:0,bestStreak:0,currentStreak:0,xp:0,joined:new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'})};
     await setDoc(doc(db,'users',cred.user.uid),profile);
+    _suAvatarData='';
     myProfile=profile; closeModal('auth-overlay'); showToast('Welcome, '+profile.username+'!');
   } catch(e){document.getElementById('su-email-err').textContent=e.message;eEl.classList.add('error');}
   btn.disabled=false; btn.textContent='CREATE ACCOUNT';
@@ -1645,7 +1708,8 @@ function addChatBubble(msg) {
   const avHtml = msg.avatar
     ? `<img src="${msg.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
     : `<span>${(msg.username||'?')[0].toUpperCase()}</span>`;
-  div.innerHTML=`<div class="msg-avatar" onclick="openProfileByUid('${msg.uid}')">${avHtml}</div><div class="msg-body">${lvlBadge}<span class="msg-name ${color}" ${nameStyle} onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.username)}</span><span class="msg-text">${escHtml(msg.text)}</span></div>`;
+  const tsStr = msg.ts ? (() => { const d=new Date(msg.ts); const h=d.getHours()%12||12; const m=String(d.getMinutes()).padStart(2,'0'); const ap=d.getHours()>=12?'pm':'am'; return h+':'+m+ap; })() : '';
+  div.innerHTML=`<div class="msg-avatar" onclick="openProfileByUid('${msg.uid}')">${avHtml}</div><div class="msg-body">${lvlBadge}<span class="msg-name ${color}" ${nameStyle} onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.username)}</span><span class="msg-text">${escHtml(msg.text)}</span><span class="msg-ts">${tsStr}</span></div>`;
   view.appendChild(div); view.scrollTop=view.scrollHeight;
   while(view.children.length>100) view.removeChild(view.firstChild);
 }
@@ -1814,6 +1878,7 @@ async function goLive(slot) {
 
 // ── LEAVE STAGE ──
 async function leaveStage() {
+  updateStreakBadge(0);
   if (!mySlot) return;
   const slot = mySlot; mySlot = null;
   // Cancel onDisconnect handlers FIRST — if we don't, they stay registered on Firebase
@@ -2127,6 +2192,18 @@ window.castVote = async side => {
   SFX.vote(); showToast('Vote locked in!');
 };
 
+function updateStreakBadge(streak) {
+  const el = document.getElementById('streak-badge');
+  if (!el) return;
+  el.className = 'streak-badge';
+  if (!streak || streak < 2) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  if (streak <= 3)      { el.classList.add('s1'); el.textContent = '🔥 ' + streak + ' STREAK'; }
+  else if (streak <= 5) { el.classList.add('s2'); el.textContent = '🔥 ' + streak + ' STREAK'; }
+  else if (streak <= 8) { el.classList.add('s3'); el.textContent = '🔥🔥 ' + streak + ' STREAK'; }
+  else if (streak <= 12){ el.classList.add('s4'); el.textContent = '🔥🔥🔥 ' + streak + ' STREAK!!'; }
+  else                  { el.classList.add('s5'); el.textContent = '☠️ ' + streak + ' UNSTOPPABLE ☠️'; }
+}
 async function resolveRound(roundIndex) {
   // Only fighters resolve their own round — loser leaves
   if (!mySlot || !me) return;
@@ -2148,8 +2225,10 @@ async function resolveRound(roundIndex) {
     addSystemMsg('Round over! You lost the vote and were eliminated.');
     showToast('You lost the round!');
     try {
-      await updateDoc(doc(db,'users',me.uid),{ losses: (myProfile.losses||0)+1 });
+      await updateDoc(doc(db,'users',me.uid),{ losses: (myProfile.losses||0)+1, currentStreak: 0 });
       myProfile.losses = (myProfile.losses||0)+1;
+      myProfile.currentStreak = 0;
+      updateStreakBadge(0);
     } catch(e){}
     setTimeout(async () => await leaveStage(), 1200);
   } else if (winnerSlot && stageUids[winnerSlot] === me.uid) {
@@ -2159,8 +2238,14 @@ async function resolveRound(roundIndex) {
     addSystemMsg(winnerName + ' wins the round! Waiting for next challenger...');
     showToast('You won! Next challenger incoming...');
     try {
-      await updateDoc(doc(db,'users',me.uid),{ wins: (myProfile.wins||0)+1 });
-      myProfile.wins = (myProfile.wins||0)+1;
+      const newWins = (myProfile.wins||0)+1;
+      const newStreak = (myProfile.currentStreak||0)+1;
+      const newBest = Math.max(myProfile.bestStreak||0, newStreak);
+      await updateDoc(doc(db,'users',me.uid),{ wins: newWins, currentStreak: newStreak, bestStreak: newBest });
+      myProfile.wins = newWins;
+      myProfile.currentStreak = newStreak;
+      myProfile.bestStreak = newBest;
+      updateStreakBadge(newStreak);
     } catch(e){}
     await grantRewards(50, 25, '🏆 Round Win!');
     // Winner stays on stage — do NOT call leaveStage
@@ -2270,6 +2355,7 @@ function checkStageFull() {
       const leftName  = stageUids.left  ? (document.getElementById('un-left')?.textContent  || '') : '';
       const rightName = stageUids.right ? (document.getElementById('un-right')?.textContent || '') : '';
       addSystemMsg('⚔ ' + leftName + ' vs ' + rightName + ' — BATTLE STARTS!');
+      listenBetTotals(currentRoundIndex);
       SFX.newRound();
     } else {
       // Page loaded mid-battle — fetch the stored epoch, DON'T touch votes
@@ -2325,6 +2411,8 @@ function checkStageFull() {
       if (rb) { rb.style.width = '100%'; rb.style.background = ''; }
       mainGrid.classList.remove('solo-left','solo-right');
       document.body.classList.remove('solo-left','solo-right');
+      hideBetTotals();
+      if (_betTotalsUnsub) { _betTotalsUnsub(); _betTotalsUnsub = null; }
     }
   }
 
@@ -2396,6 +2484,7 @@ window.toggleChat = () => {
   document.getElementById('collapse-label').textContent = chatOpen?'HIDE CHAT':'SHOW CHAT';
   const sub = document.getElementById('chat-subheader');
   if (sub) { sub.style.width = chatOpen ? '280px' : '0'; sub.style.opacity = chatOpen ? '1' : '0'; sub.style.padding = chatOpen ? '' : '0'; }
+  document.querySelector('.topbar').classList.toggle('chat-hidden-logo', !chatOpen);
 };
 
 // ── TABS ──
@@ -4395,6 +4484,34 @@ async function resolveBets(winnerSlot) {
   // Clean up old bet data
   await remove(ref(rtdb, 'bets/' + (myBet.roundIndex - 2))).catch(()=>{});
   myBet = null;
+}
+
+// ── BET TOTALS REALTIME LISTENER ──
+let _betTotalsUnsub = null;
+function listenBetTotals(roundIndex) {
+  if (_betTotalsUnsub) { _betTotalsUnsub(); _betTotalsUnsub = null; }
+  if (roundIndex < 0) { hideBetTotals(); return; }
+  _betTotalsUnsub = onValue(ref(rtdb, 'bets/' + roundIndex), snap => {
+    const data = snap.val() || {};
+    let leftTotal = 0, rightTotal = 0;
+    Object.values(data).forEach(b => {
+      if (b.slot === 'left') leftTotal += (b.amount||0);
+      else if (b.slot === 'right') rightTotal += (b.amount||0);
+    });
+    const hasLeft = leftTotal > 0, hasRight = rightTotal > 0;
+    const tlEl = document.getElementById('bet-totals-left');
+    const trEl = document.getElementById('bet-totals-right');
+    const clEl = document.getElementById('bet-chip-left');
+    const crEl = document.getElementById('bet-chip-right');
+    if (tlEl) { tlEl.classList.toggle('visible', hasLeft); if (clEl) clEl.textContent = '🪙 ' + leftTotal.toLocaleString(); }
+    if (trEl) { trEl.classList.toggle('visible', hasRight); if (crEl) crEl.textContent = '🪙 ' + rightTotal.toLocaleString(); }
+  });
+}
+function hideBetTotals() {
+  ['left','right'].forEach(s => {
+    const el = document.getElementById('bet-totals-'+s);
+    if (el) el.classList.remove('visible');
+  });
 }
 
 // Show/hide bet panels when stage fills/empties
