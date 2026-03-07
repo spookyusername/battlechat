@@ -2110,7 +2110,6 @@ async function _loadLbTab(tab) {
     row.innerHTML = `<span class="lb-rank ${rc}">${i+1}</span><span class="lb-name">${p.displayName}</span><span class="msg-lvl" style="margin-right:6px;">LVL ${rowLvl}</span>${statHtml}`;
     row.onclick = () => openProfileByUid(p.id); list.appendChild(row);
   });
-  });
 }
 
 // ── CHAT ──
