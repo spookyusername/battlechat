@@ -1512,9 +1512,9 @@ const pb = {
     const r = await fetch(`${PB_URL}/api/collections/users/records`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, passwordConfirm: password, ...data })
+      body: JSON.stringify({ email, password, passwordConfirm: password, emailVisibility: true, ...data })
     });
-    if (!r.ok) { const e = await r.json(); throw new Error(e.message || 'Signup failed'); }
+    if (!r.ok) { const e = await r.json(); throw new Error(e?.data?.email?.message || e?.data?.displayName?.message || e.message || "Failed to create record"); }
     return r.json();
   },
   logout() { this._token = null; this._userId = null; },
@@ -1621,35 +1621,34 @@ const pb = {
     const es = new EventSource(url);
     let clientId = null;
 
-    es.onmessage = evt => {
+    const handleMsg = (evtData) => {
       try {
-        const msg = JSON.parse(evt.data);
-        // PocketBase sends clientId first, then subscribe confirmations and events
+        const msg = JSON.parse(evtData);
         if (msg.clientId) {
           clientId = msg.clientId;
-          // Now subscribe
           fetch(`${PB_URL}/api/realtime`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...(this._token ? { 'Authorization': this._token } : {}) },
             body: JSON.stringify({ clientId, subscriptions: [collection] })
           }).catch(()=>{});
           return;
         }
-        const topic = msg.action; // create, update, delete
+        const action = msg.action;
         const record = msg.record;
         if (!record) return;
-        // Apply filter client-side if provided
         if (filter) {
-          // Simple key=value filter
           const parts = filter.split('=');
           if (parts.length === 2) {
             const k = parts[0].trim(), v = parts[1].trim().replace(/'/g, '');
             if (String(record[k]) !== v) return;
           }
         }
-        callback({ action: topic, record });
+        callback({ action, record });
       } catch(e) {}
     };
+
+    es.onmessage = evt => handleMsg(evt.data);
+    es.addEventListener(collection, evt => handleMsg(evt.data));
     es.onerror = () => {
       // Reconnect after 2s
       setTimeout(() => {
