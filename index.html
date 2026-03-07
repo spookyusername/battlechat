@@ -38,6 +38,13 @@
   .main { display: grid; grid-template-columns: 1fr 4px 1fr 280px; grid-template-rows: 1fr 48px; height: calc(100vh - 48px); gap: 0; transition: grid-template-columns 0.35s ease; }
   .main.chat-collapsed { grid-template-columns: 1fr 4px 1fr 0px; }
 
+  /* CAM PANELS - explicit grid placement so solo-mode can't break it */
+  #cam-left  { grid-column: 1; grid-row: 1; }
+  #center-col { grid-column: 2; grid-row: 1; }
+  #cam-right { grid-column: 3; grid-row: 1; }
+  .chat-panel { grid-column: 4 !important; grid-row: 1 / 3; }
+  .timer-bar-bottom { grid-column: 1 / 4; grid-row: 2; }
+
   /* CAM PANELS */
   .cam-panel { position: relative; background: var(--dark2); overflow: hidden; display: flex; flex-direction: column; }
   .cam-feed { flex: 1; background: var(--dark); position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
@@ -70,6 +77,22 @@
   .vote-btn.voted-right { background: #3a86ff; border-color: #3a86ff; color: white; cursor: default; }
   .vote-btn:disabled { opacity: 0.5; cursor: default; }
   .fighter-name-tag { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 2px; color: var(--muted); text-align: center; padding: 3px 0 5px; background: var(--dark2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* BET PANEL */
+  .bet-panel { background: var(--dark2); border-top: 1px solid var(--border); padding: 6px 10px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .bet-panel.hidden { display: none; }
+  .bet-label { font-family: 'Bebas Neue', sans-serif; font-size: 0.75rem; letter-spacing: 2px; color: var(--gold); white-space: nowrap; }
+  .bet-input { flex: 1; background: var(--dark3); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 1px; outline: none; width: 0; min-width: 0; transition: border-color 0.2s; }
+  .bet-input:focus { border-color: rgba(201,168,76,0.5); }
+  .bet-btn { font-family: 'Bebas Neue', sans-serif; font-size: 0.75rem; letter-spacing: 2px; background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.4); color: var(--gold); padding: 4px 10px; cursor: pointer; white-space: nowrap; transition: background 0.2s; flex-shrink: 0; }
+  .bet-btn:hover { background: rgba(201,168,76,0.25); }
+  .bet-btn:disabled { opacity: 0.4; cursor: default; }
+  .bet-active-tag { font-family: 'Bebas Neue', sans-serif; font-size: 0.72rem; letter-spacing: 1px; color: var(--gold); background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.3); padding: 3px 8px; text-align: center; white-space: nowrap; }
+
+  /* DAILY REWARD */
+  .daily-btn { width: 100%; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 3px; background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05)); border: 1px solid rgba(201,168,76,0.5); color: var(--gold); padding: 12px 0; cursor: pointer; transition: background 0.2s, border-color 0.2s; margin-bottom: 14px; }
+  .daily-btn:hover:not(:disabled) { background: rgba(201,168,76,0.22); border-color: var(--gold); }
+  .daily-btn:disabled { opacity: 0.4; cursor: default; border-color: var(--border); color: var(--muted); }
   .vote-pct { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 1px; line-height: 1; flex-shrink: 0; }
   .cam-panel:first-child .vote-pct { color: var(--red-hot); }
   .cam-panel.right-cam .vote-pct { color: #60a5fa; }
@@ -77,16 +100,16 @@
   /* CENTER */
   .center-col { background: var(--border); border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; z-index: 2; transition: width 0.35s ease, opacity 0.35s ease; }
 
-  /* Single-fighter: left cam full width, center+right cam hidden */
+  /* Single-fighter solo mode: left cam spans cols 1-3, right cam hidden */
   .main.solo-mode { grid-template-columns: 1fr 0px 0px 280px; }
   .main.solo-mode.chat-collapsed { grid-template-columns: 1fr 0px 0px 0px; }
-  .main.solo-mode #center-col { overflow: hidden; border: none; opacity: 0; pointer-events: none; min-width: 0; }
-  .main.solo-mode #cam-right { overflow: hidden; opacity: 0; pointer-events: none; min-width: 0; }
-  .main.solo-mode .timer-bar-bottom #tbar-right { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .main.solo-mode #cam-left  { grid-column: 1 / 4; }
+  .main.solo-mode #center-col { display: none; }
+  .main.solo-mode #cam-right { display: none; }
+  .main.solo-mode .timer-bar-bottom { grid-column: 1 / 4; }
+  .main.solo-mode .timer-bar-bottom #tbar-right { display: none; }
   /* Smooth transitions */
   .main { transition: grid-template-columns 0.35s ease; }
-  #cam-right { transition: opacity 0.35s ease; }
-  #center-col { transition: opacity 0.35s ease, border 0.35s ease; }
 
   /* TIMER BAR */
   .timer-bar-bottom { grid-column: 1 / 4; grid-row: 2; background: var(--dark2); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; position: relative; overflow: hidden; gap: 12px; }
@@ -103,7 +126,7 @@
   .tbar-l { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.68rem; color: var(--red-hot); }
 
   /* CHAT PANEL */
-  .chat-panel { grid-column: 4; grid-row: 1 / 3; background: var(--dark2); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: border-color 0.35s ease; }
+  .chat-panel { background: var(--dark2); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: border-color 0.35s ease; }
   .main.chat-collapsed .chat-panel { border-left-color: transparent; overflow: hidden; visibility: hidden; }
   .chat-header { height: 44px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; flex-shrink: 0; }
   .chat-title { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 3px; }
@@ -518,6 +541,12 @@
     </div>
     <div class="fighter-name-tag" id="fname-left">—</div>
     <div class="round-bar-wrap"><div class="round-bar-fill" id="rbar-left"></div></div>
+    <div class="bet-panel hidden" id="bet-panel-left">
+      <span class="bet-label">BET</span>
+      <input class="bet-input" id="bet-input-left" type="number" min="1" placeholder="Coins...">
+      <button class="bet-btn" id="bet-btn-left" onclick="placeBet('left')">2× WIN</button>
+      <span class="bet-active-tag" id="bet-tag-left" style="display:none;"></span>
+    </div>
   </div>
 
   <!-- CENTER -->
@@ -549,6 +578,12 @@
     </div>
     <div class="fighter-name-tag" id="fname-right">—</div>
     <div class="round-bar-wrap"><div class="round-bar-fill" id="rbar-right"></div></div>
+    <div class="bet-panel hidden" id="bet-panel-right">
+      <span class="bet-label">BET</span>
+      <input class="bet-input" id="bet-input-right" type="number" min="1" placeholder="Coins...">
+      <button class="bet-btn" id="bet-btn-right" onclick="placeBet('right')">2× WIN</button>
+      <span class="bet-active-tag" id="bet-tag-right" style="display:none;"></span>
+    </div>
   </div>
 
   <!-- TIMER BAR -->
@@ -880,6 +915,7 @@
       <span>Your coins:</span>
       <span class="shop-coins-num" id="shop-coins">🪙 0</span>
     </div>
+    <button class="daily-btn" id="daily-reward-btn" onclick="claimDailyReward()">🎁 CLAIM DAILY REWARD — 100🪙</button>
     <div class="menu-section-title">Name Colors</div>
     <div class="shop-grid">
       <div class="shop-item" onclick="buyItem('color_crimson',300)">
@@ -1332,11 +1368,14 @@ function detachRemoteTrack(identity) {
   if (!slot || slot === mySlot) return;
   const vid = document.getElementById('vid-' + slot);
   if (vid) { vid.pause(); vid.muted = true; vid.srcObject = null; vid.style.display = 'none'; }
-  // Kill all audio elements for this slot immediately
+  // Kill ALL audio elements associated with this slot
   const audioEl = document.getElementById('audio-' + slot);
   if (audioEl) { audioEl.pause(); audioEl.muted = true; audioEl.srcObject = null; audioEl.remove(); }
-  // Also kill any stray audio elements attached to this slot's track
-  document.querySelectorAll('audio[data-slot="' + slot + '"]').forEach(a => { a.pause(); a.muted = true; a.remove(); });
+  document.querySelectorAll('audio[data-slot="' + slot + '"]').forEach(a => { a.pause(); a.muted = true; a.srcObject = null; a.remove(); });
+  // Kill any orphaned audio elements with no srcObject that may be lingering
+  document.querySelectorAll('audio').forEach(a => {
+    if (!a.id || a.id.startsWith('audio-')) { try { a.pause(); a.muted = true; } catch(e){} }
+  });
   // Show placeholder again
   const ph = document.getElementById('ph-' + slot);
   if (ph) ph.style.display = 'flex';
@@ -1510,6 +1549,9 @@ async function _loadLbTab(tab) {
 }
 
 // ── CHAT ──
+let _chatMsgTimes = []; // timestamps of recent messages
+let _chatCooldownUntil = 0;
+
 function listenChat() {
   onChildAdded(ref(rtdb,'chat'), snap=>addChatBubble(snap.val()));
 }
@@ -1517,6 +1559,22 @@ window.sendMessage = async () => {
   const input=document.getElementById('chat-input'), text=input.value.trim();
   if(!text) return;
   if(!me||!myProfile){showToast('Log in to chat!');return;}
+
+  // Rate limit: 3 messages allowed, then 3s cooldown
+  const now = Date.now();
+  if (now < _chatCooldownUntil) {
+    const rem = Math.ceil((_chatCooldownUntil - now) / 1000);
+    showToast('⏳ Slow down! ' + rem + 's cooldown');
+    return;
+  }
+  _chatMsgTimes = _chatMsgTimes.filter(t => now - t < 5000);
+  _chatMsgTimes.push(now);
+  if (_chatMsgTimes.length >= 3) {
+    _chatCooldownUntil = now + 3000;
+    _chatMsgTimes = [];
+    showToast('⏳ Sending too fast — 3s cooldown');
+  }
+
   const xp = myProfile.xp || 0;
   const lvl = calcLevel(xp).level;
   await push(ref(rtdb,'chat'),{uid:me.uid,username:myProfile.username,avatar:myProfile.avatar,text,level:lvl,nameColor:activeNameColor,ts:Date.now()});
@@ -1700,8 +1758,8 @@ async function leaveStage() {
   await remove(ref(rtdb,'stage/'+slot)).catch(()=>{});
   await remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
   clearSlotUI(slot);
-  // Clean up audio elements for both slots
-  ['left','right'].forEach(s => { const a=document.getElementById('audio-'+s); if(a) a.remove(); });
+  // Clean up ALL audio elements
+  document.querySelectorAll('audio').forEach(a => { try { a.pause(); a.muted = true; a.srcObject = null; a.remove(); } catch(e){} });
   if (lkRoom) { await lkRoom.disconnect(); lkRoom=null; }
   if (localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
   document.getElementById('enter-arena-btn').style.display = 'block';
@@ -1951,6 +2009,7 @@ async function resolveRound(roundIndex) {
   let loserSlot = null;
   if (leftVotes === rightVotes) loserSlot = null; // tie — nobody leaves
   else loserSlot = leftVotes < rightVotes ? 'left' : 'right';
+  const winnerSlot = loserSlot ? (loserSlot === 'left' ? 'right' : 'left') : null;
 
   if (loserSlot && stageUids[loserSlot] === me.uid) {
     SFX.lose(); animateLose(mySlot);
@@ -1962,7 +2021,6 @@ async function resolveRound(roundIndex) {
     } catch(e){}
     setTimeout(async () => await leaveStage(), 1200);
   } else if (loserSlot && stageUids[loserSlot] !== me.uid && mySlot) {
-    const winnerSlot = loserSlot === 'left' ? 'right' : 'left';
     const winnerName = document.getElementById('un-'+winnerSlot).textContent;
     SFX.win(); animateWin(winnerSlot); animateLose(loserSlot);
     addSystemMsg(winnerName + ' wins the round!');
@@ -1973,12 +2031,31 @@ async function resolveRound(roundIndex) {
     await grantRewards(50, 25, '🏆 Round Win!');
   }
 
+  // Resolve bets for all users (fighters too)
+  if (winnerSlot) await resolveBets(winnerSlot);
+
   // Clean up old votes
   await remove(ref(rtdb, 'votes/' + (roundIndex - 2))).catch(()=>{});
 }
 
+// Viewers need their own round resolution for bets + voter rewards
+// This fires on the same timer tick, for non-fighters
+async function resolveRoundViewer(roundIndex) {
+  if (mySlot || !me) return; // fighters handled above
+  const snap = await get(ref(rtdb, 'votes/' + roundIndex)).catch(() => null);
+  if (!snap) return;
+  const data = snap.val() || {};
+  const leftVotes  = data.left  ? Object.keys(data.left).length  : 0;
+  const rightVotes = data.right ? Object.keys(data.right).length : 0;
+  if (leftVotes === rightVotes) return;
+  const winnerSlot = leftVotes > rightVotes ? 'left' : 'right';
+  await resolveBets(winnerSlot);
+  await rewardVoters(winnerSlot, roundIndex);
+}
+
 function resetRound() {
   hasVoted = false;
+  resetBetUI();
   ['left','right'].forEach(s=>{
     const b=document.getElementById('vbtn-'+s);
     b.disabled=false;
@@ -2026,14 +2103,15 @@ function checkStageFull() {
   const wasFullBefore = stageFull;
   stageFull = !!(stageUids.left && stageUids.right);
   const mainGrid = document.getElementById('main-grid');
-  const anyFighter = !!(stageUids.left || stageUids.right);
   if (stageFull) {
     mainGrid.classList.remove('solo-mode');
-  } else if (anyFighter) {
-    mainGrid.classList.add('solo-mode');
   } else {
     mainGrid.classList.add('solo-mode');
   }
+  // Bet panels: show only when both fighters are on stage
+  showBetPanels(stageFull);
+  if (!stageFull) resetBetUI();
+
   if (stageFull && !wasFullBefore) {
     // Both fighters just arrived — start a fresh round epoch
     roundEpoch = Date.now();
@@ -2076,6 +2154,7 @@ function startSyncedTick(epoch) {
           SFX.newRound();
           addSystemMsg('New round started!');
         });
+        resolveRoundViewer(lastRoundIndex).catch(()=>{});
       } else {
         listenVotes(roundIndex);
       }
@@ -2347,6 +2426,7 @@ function toggleMenu() {
   document.getElementById('menu-panel').classList.toggle('open');
   document.getElementById('menu-overlay').classList.toggle('open');
   refreshMenuCoins();
+  if (typeof _updateDailyBtn === 'function') _updateDailyBtn();
 }
 function closeMenu() {
   document.getElementById('menu-panel').classList.remove('open');
@@ -4016,6 +4096,148 @@ function listenGlobalEvents() {
   });
 }
 
+// ── BETTING SYSTEM ──
+// rtdb/bets/{roundIndex}/{uid} = { slot, amount, uid, ts }
+let myBet = null; // { slot, amount, roundIndex }
+
+function showBetPanels(show) {
+  ['left','right'].forEach(s => {
+    const p = document.getElementById('bet-panel-' + s);
+    if (p) p.classList.toggle('hidden', !show);
+  });
+}
+
+function resetBetUI() {
+  myBet = null;
+  ['left','right'].forEach(s => {
+    const inp = document.getElementById('bet-input-' + s);
+    const btn = document.getElementById('bet-btn-' + s);
+    const tag = document.getElementById('bet-tag-' + s);
+    if (inp) { inp.value = ''; inp.disabled = false; }
+    if (btn) { btn.disabled = false; btn.textContent = '2× WIN'; }
+    if (tag) { tag.style.display = 'none'; tag.textContent = ''; }
+  });
+}
+
+window.placeBet = async (slot) => {
+  if (!me || !myProfile) { showToast('Log in to bet!'); return; }
+  if (myBet) { showToast('Already bet this round!'); return; }
+  if (!stageFull) { showToast('Wait for both fighters!'); return; }
+
+  const inp = document.getElementById('bet-input-' + slot);
+  const amount = parseInt(inp?.value || '0');
+  if (!amount || amount < 1) { showToast('Enter a valid bet amount'); return; }
+  if (amount > (myProfile.coins || 0)) { showToast('Not enough coins!'); return; }
+
+  // Deduct coins immediately
+  const newCoins = (myProfile.coins || 0) - amount;
+  myProfile.coins = newCoins;
+  try { await updateDoc(doc(db,'users',me.uid), { coins: newCoins }); } catch(e){}
+  updateCoinDisplays(newCoins);
+
+  // Store bet in Firebase
+  const roundIdx = currentRoundIndex >= 0 ? currentRoundIndex : 0;
+  myBet = { slot, amount, roundIndex: roundIdx };
+  await set(ref(rtdb, 'bets/' + roundIdx + '/' + me.uid), { slot, amount, uid: me.uid, ts: Date.now() }).catch(()=>{});
+
+  // Lock UI
+  ['left','right'].forEach(s => {
+    const btn = document.getElementById('bet-btn-' + s);
+    const inp2 = document.getElementById('bet-input-' + s);
+    if (btn) btn.disabled = true;
+    if (inp2) inp2.disabled = true;
+  });
+  const tag = document.getElementById('bet-tag-' + slot);
+  if (tag) { tag.textContent = '🎲 ' + amount + '🪙 on ' + (document.getElementById('fname-' + slot)?.textContent || slot.toUpperCase()); tag.style.display = 'inline'; }
+
+  showToast('Bet placed: ' + amount + '🪙 on ' + slot.toUpperCase() + ' — win 2×!');
+};
+
+async function resolveBets(winnerSlot) {
+  if (!me || !myBet) return;
+  if (myBet.roundIndex !== currentRoundIndex && myBet.roundIndex !== currentRoundIndex - 1) return;
+
+  if (myBet.slot === winnerSlot) {
+    const payout = myBet.amount * 2;
+    const newCoins = (myProfile.coins || 0) + payout;
+    myProfile.coins = newCoins;
+    try { await updateDoc(doc(db,'users',me.uid), { coins: newCoins }); } catch(e){}
+    updateCoinDisplays(newCoins);
+    showToast('🎰 BET WON! +' + payout + '🪙');
+    sfxChord([523,659,784,1046],'sine',0.6,0.22);
+    addSystemMsg('🎰 ' + myProfile.username + ' won their bet — +' + payout + '🪙!');
+  } else {
+    showToast('🎰 Bet lost — ' + myBet.amount + '🪙 gone');
+    addSystemMsg('🎰 ' + myProfile.username + ' lost their bet of ' + myBet.amount + '🪙');
+  }
+
+  // Clean up old bet data
+  await remove(ref(rtdb, 'bets/' + (myBet.roundIndex - 2))).catch(()=>{});
+  myBet = null;
+}
+
+// Show/hide bet panels when stage fills/empties
+// ── VOTER REWARD: coins per correct vote ──
+// Stored as: { side } per uid per round (already in votes/{roundIndex}/{side}/{uid})
+// On round resolve, check if viewer voted for winner
+
+async function rewardVoters(winnerSlot, roundIndex) {
+  if (!me || !myProfile) return;
+  // Check if this user voted this round and for which side
+  const snap = await get(ref(rtdb, 'votes/' + roundIndex)).catch(() => null);
+  if (!snap) return;
+  const data = snap.val() || {};
+  const votedWinner = data[winnerSlot] && data[winnerSlot][me.uid];
+  if (votedWinner && !mySlot) { // only viewers get this (fighters get their own reward)
+    const reward = 10;
+    const newCoins = (myProfile.coins || 0) + reward;
+    myProfile.coins = newCoins;
+    try { await updateDoc(doc(db,'users',me.uid), { coins: newCoins }); } catch(e){}
+    updateCoinDisplays(newCoins);
+    showToast('✅ Correct vote! +' + reward + '🪙');
+  }
+}
+
+// ── DAILY REWARD ──
+window.claimDailyReward = async () => {
+  if (!me || !myProfile) { showToast('Log in first!'); return; }
+  const now = Date.now();
+  const last = myProfile.lastDaily || 0;
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  if (now - last < oneDayMs) {
+    const hoursLeft = Math.ceil((oneDayMs - (now - last)) / 3600000);
+    showToast('⏰ Come back in ' + hoursLeft + 'h for your daily reward!');
+    return;
+  }
+  const reward = 100;
+  const newCoins = (myProfile.coins || 0) + reward;
+  myProfile.coins = newCoins;
+  myProfile.lastDaily = now;
+  try { await updateDoc(doc(db,'users',me.uid), { coins: newCoins, lastDaily: now }); } catch(e){}
+  updateCoinDisplays(newCoins);
+  sfxChord([440,554,659,880],'sine',0.7,0.2);
+  showToast('🎁 Daily reward claimed! +100🪙');
+  addSystemMsg('🎁 ' + myProfile.username + ' claimed their daily reward!');
+  _updateDailyBtn();
+};
+
+function _updateDailyBtn() {
+  const btn = document.getElementById('daily-reward-btn');
+  if (!btn || !myProfile) return;
+  const now = Date.now();
+  const last = myProfile.lastDaily || 0;
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  if (now - last < oneDayMs) {
+    const hoursLeft = Math.ceil((oneDayMs - (now - last)) / 3600000);
+    btn.disabled = true;
+    btn.textContent = '⏰ DAILY REWARD — ' + hoursLeft + 'H REMAINING';
+  } else {
+    btn.disabled = false;
+    btn.textContent = '🎁 CLAIM DAILY REWARD — 100🪙';
+  }
+}
+
+// Update daily btn when menu opens
 // ── UTIL ──
 function escHtml(s='') { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 </script>
