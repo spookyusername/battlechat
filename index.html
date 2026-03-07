@@ -17,9 +17,9 @@
 
   /* TOPBAR */
   .topbar { height: 48px; background: var(--dark); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; position: relative; z-index: 10; }
-  .topbar-left, .topbar-right { display: flex; align-items: center; gap: 10px; flex: 1; }
+  .topbar-left, .topbar-right { display: flex; align-items: center; gap: 10px; flex: 1; position: relative; z-index: 1; }
   .topbar-right { justify-content: flex-end; }
-  .logo { position: absolute; font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 4px; color: var(--text); pointer-events: none; transform: translateX(-50%); transition: left 0.35s ease; }
+  .logo { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 4px; color: var(--text); pointer-events: none; white-space: nowrap; z-index: 0; }
   .logo span { color: var(--red-hot); }
   .topbar-coins { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 2px; color: var(--gold); margin-left: 8px; }
   .topbar-btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.78rem; letter-spacing: 2px; text-transform: uppercase; border: 1px solid var(--border); background: transparent; color: var(--muted); padding: 5px 14px; cursor: pointer; transition: border-color 0.2s, color 0.2s; }
@@ -2367,18 +2367,7 @@ onValue(timerRef, async snap => {
 // no signup avatar grid — initials used by default
 
 // ── LOGO ALIGN ──
-function alignLogo() {
-  const logo = document.getElementById('logo');
-  if (!logo) return;
-  const chatPanel = document.querySelector('.chat-panel');
-  const totalWidth = window.innerWidth;
-  // Camera area = total width minus chat panel width (or full width if chat hidden)
-  const chatWidth = (chatPanel && chatOpen) ? chatPanel.offsetWidth : 0;
-  const arenaWidth = totalWidth - chatWidth;
-  // Center of the arena
-  logo.style.left = Math.round(arenaWidth / 2) + 'px';
-}
-alignLogo(); window.addEventListener('resize', alignLogo);
+// Logo is centered via CSS (position:absolute; left:50%; transform:translateX(-50%)) — no JS needed
 
 // ── COLLAPSE CHAT ──
 window.toggleChat = () => {
@@ -2386,7 +2375,7 @@ window.toggleChat = () => {
   document.getElementById('main-grid').classList.toggle('chat-collapsed',!chatOpen);
   document.getElementById('collapse-icon').textContent  = chatOpen?'▶▶':'◀◀';
   document.getElementById('collapse-label').textContent = chatOpen?'HIDE CHAT':'SHOW CHAT';
-  setTimeout(alignLogo,360);
+
 };
 
 // ── TABS ──
