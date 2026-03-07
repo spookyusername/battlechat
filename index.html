@@ -2128,6 +2128,7 @@ let roundEpoch = null; // when the current round actually started (set when stag
 function checkStageFull() {
   const wasFullBefore = stageFull;
   stageFull = !!(stageUids.left && stageUids.right);
+
   const mainGrid = document.getElementById('main-grid');
   if (stageFull) {
     mainGrid.classList.remove('solo-mode');
@@ -2135,22 +2136,22 @@ function checkStageFull() {
     mainGrid.classList.add('solo-mode');
   }
   showBetPanels(stageFull);
-  if (!stageFull) resetBetUI();
 
   if (stageFull && !wasFullBefore) {
-    // Both fighters just arrived — reset round tracking so tick picks up fresh
+    // Stage just became full — fresh battle start
+    resetBetUI();
     lastRoundIndex = -1;
-    roundEpoch = Date.now(); // local epoch just for round-index math in THIS session
-    // Immediately wipe any leftover votes and reset UI
+    roundEpoch = Date.now();
     remove(ref(rtdb, 'votes')).catch(()=>{});
     resetRound();
     addSystemMsg('Both fighters ready — round starting!');
     SFX.newRound();
-  }
-  if (!stageFull) {
+  } else if (!stageFull && wasFullBefore) {
+    // Stage just became empty — battle ended
+    resetBetUI();
     roundEpoch = null;
     lastRoundIndex = -1;
-    // Wipe votes when stage empties
+    if (voteUnsub) { voteUnsub(); voteUnsub = null; }
     remove(ref(rtdb, 'votes')).catch(()=>{});
     resetRound();
     document.getElementById('timer-display').textContent = '2:00';
@@ -2159,6 +2160,7 @@ function checkStageFull() {
     if (rb) { rb.style.width = '100%'; rb.style.background = ''; }
     if (rr) { rr.style.width = '100%'; rr.style.background = ''; }
   }
+  // If neither transition happened (e.g. solo fighter joined/left), do nothing to votes
 }
 
 function startSyncedTick(epoch) {
