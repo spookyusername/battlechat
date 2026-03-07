@@ -324,8 +324,9 @@
   .arena-next-btn:disabled { opacity: 0.35; cursor: default; }
   .queue-screen { text-align: center; padding: 8px 0; }
   /* ── QUEUE FLOATER (persistent after modal closed) ── */
-  .queue-floater { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--dark2); border: 1px solid rgba(201,168,76,0.35); padding: 10px 10px 10px 14px; display: flex; align-items: center; gap: 12px; z-index: 300; opacity: 0; transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease; pointer-events: none; box-shadow: 0 4px 28px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,168,76,0.08); white-space: nowrap; }
+  .queue-floater { position: absolute; left: calc(50% - 140px); top: calc(100% + 8px); transform: translateX(-50%) translateY(-6px); background: var(--dark2); border: 1px solid rgba(201,168,76,0.35); padding: 7px 10px 7px 12px; display: flex; align-items: center; gap: 12px; z-index: 300; opacity: 0; transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease, left 0.35s ease; pointer-events: none; box-shadow: 0 4px 28px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,168,76,0.08); white-space: nowrap; }
   .queue-floater.visible { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: all; }
+  .chat-hidden-logo .queue-floater { left: 50%; }
   .qf-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 7px var(--gold); animation: blink 1.2s infinite; flex-shrink: 0; }
   .qf-info { display: flex; flex-direction: column; gap: 1px; }
   .qf-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); line-height: 1; }
@@ -564,8 +565,9 @@
   .bj-result-title.push { color: var(--muted); }
   .bj-result-amount { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 3px; text-align: center; margin-top: 10px; }
 
-  .toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-10px); background: var(--gold); color: var(--black); font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; padding: 10px 28px; clip-path: polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%); opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.3s; z-index: 999; white-space: nowrap; }
+  .toast { position: absolute; left: calc(50% - 140px); top: calc(100% + 8px); transform: translateX(-50%) translateY(-6px); background: var(--gold); color: var(--black); font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 2px; padding: 7px 22px; clip-path: polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%); opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s, left 0.35s ease; z-index: 999; white-space: nowrap; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .chat-hidden-logo .toast { left: 50%; }
 </style>
 </head>
 <body>
@@ -577,8 +579,22 @@
   }, { once: true });
 </script>
 
+
+
 <!-- TOPBAR -->
-<div class="topbar">
+<div class="topbar" id="topbar">
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+  <!-- QUEUE FLOATER (inside topbar so it tracks logo centering) -->
+  <div class="queue-floater" id="queue-floater">
+    <div class="qf-dot"></div>
+    <div class="qf-info">
+      <div class="qf-label">IN QUEUE</div>
+      <div class="qf-pos-line"><span class="qf-pos" id="qf-pos">...</span><span class="qf-pos-sub" id="qf-pos-sub"></span></div>
+    </div>
+    <button class="qf-open" onclick="openArenaFromFloater()">↗ VIEW</button>
+    <button class="qf-leave" onclick="leaveQueue()" title="Leave queue">✕</button>
+  </div>
   <div class="topbar-left"><button class="menu-btn" id="menu-btn" onclick="toggleMenu()">☰ MENU</button><span class="topbar-coins" id="topbar-coins" style="display:none;">🪙 0</span></div>
   <div class="logo" id="logo"><span>BATTLE</span>CHAT</div>
   <div class="topbar-right">
@@ -733,9 +749,6 @@
     </div>
   </div>
 </div>
-
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
 
 <!-- TTS MODAL -->
 <div class="modal-overlay" id="tts-overlay" onclick="if(event.target===this)closeModal('tts-overlay')">
@@ -1012,18 +1025,6 @@
       </div>
     </div>
   </div>
-</div>
-
-
-<!-- QUEUE FLOATER -->
-<div class="queue-floater" id="queue-floater">
-  <div class="qf-dot"></div>
-  <div class="qf-info">
-    <div class="qf-label">IN QUEUE</div>
-    <div class="qf-pos-line"><span class="qf-pos" id="qf-pos">...</span><span class="qf-pos-sub" id="qf-pos-sub"></span></div>
-  </div>
-  <button class="qf-open" onclick="openArenaFromFloater()">↗ VIEW</button>
-  <button class="qf-leave" onclick="leaveQueue()" title="Leave queue">✕</button>
 </div>
 
 <!-- MENU OVERLAY -->
