@@ -1789,8 +1789,11 @@ async function goLive(slot) {
 async function leaveStage() {
   if (!mySlot) return;
   const slot = mySlot; mySlot = null;
-  // Remove from Firebase first — listenStage will call clearSlotUI for ALL clients
-  // Don't reset _lastStageUids here; let the Firebase null update do it via listenStage
+  // Cancel onDisconnect handlers FIRST — if we don't, they stay registered on Firebase
+  // and will fire later, wiping whoever next occupies this slot
+  try { await onDisconnect(ref(rtdb,'stage/'+slot)).cancel(); } catch(e){}
+  try { await onDisconnect(ref(rtdb,'queue/'+me.uid)).cancel(); } catch(e){}
+  // Now remove — listenStage will call clearSlotUI for ALL clients
   await remove(ref(rtdb,'stage/'+slot)).catch(()=>{});
   await remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
   // Clean up media locally
@@ -1974,9 +1977,9 @@ function stopQueueListeners() {
 }
 
 window.leaveQueue = async () => {
+  try { await onDisconnect(ref(rtdb,'queue/'+me.uid)).cancel(); } catch(e){}
   await remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
   stopQueueListeners();
-  // Clear queue UI
   const chips = document.getElementById('q-chips');
   if (chips) chips.innerHTML = '';
   closeArenaModal();
