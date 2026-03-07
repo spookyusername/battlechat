@@ -3858,23 +3858,18 @@ window.sendTts = async () => {
 };
 
 // ── SFX TRIMMER STATE ──
-// ══════════════════════════════════════════════════
-//  SFX TRIMMER  —  clean rewrite
-// ══════════════════════════════════════════════════
-let _sfxBuf      = null;   // decoded AudioBuffer of uploaded file
-let _sfxDur      = 0;      // total duration in seconds
+// ══════════════════════════════════════════════════════════════════
+//  SFX TRIMMER  —  File-based approach (no WAV encoding, no crashes)
+//  Strategy: keep the raw File, use URL.createObjectURL for playback.
+//  Trim = set audio.currentTime + stop at end via setTimeout.
+//  Volume = audio.volume. No ArrayBuffer manipulation at all.
+//  For Firebase transport: convert File → base64 only when sending.
+// ══════════════════════════════════════════════════════════════════
+let _sfxFile     = null;   // raw File from <input>
+let _sfxFileUrl  = null;   // blob URL of the file (for local playback/waveform)
+let _sfxDur      = 0;      // duration in seconds (from <audio> metadata)
 let _sfxVolume   = 1.0;    // 0.1 – 2.0
 const SFX_MAX_DUR = 5;
-
-// Single AudioContext reused throughout
-let _sfxActx = null;
-function _getSfxActx() {
-  if (!_sfxActx || _sfxActx.state === 'closed') {
-    _sfxActx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (_sfxActx.state === 'suspended') _sfxActx.resume().catch(()=>{});
-  return _sfxActx;
-}
 
 // ── open / reset ──────────────────────────────────
 window.openSfxModal = () => {
@@ -3890,26 +3885,34 @@ window.sfxReset = () => {
   document.getElementById('sfx-ready-panel').style.display   = 'none';
   document.getElementById('sfx-upload-panel').style.display  = 'flex';
   window._customSfxData = null;
-  _sfxBuf = null;
+  if (_sfxFileUrl) { URL.revokeObjectURL(_sfxFileUrl); _sfxFileUrl = null; }
+  _sfxFile = null;
+  _sfxDur  = 0;
+  _sfxWaveformData = null;
 };
 
 // ── file loaded ───────────────────────────────────
-window.sfxHandleFile = async (input) => {
+window.sfxHandleFile = (input) => {
   const file = input.files[0];
   if (!file) return;
   const err = document.getElementById('sfx-err');
-  err.textContent = 'Decoding…';
-  try {
-    const ab   = await file.arrayBuffer();
-    const actx = _getSfxActx();
-    // decodeAudioData needs a fresh copy if the context was reused
-    _sfxBuf = await actx.decodeAudioData(ab);
-    _sfxDur = _sfxBuf.duration;
-    err.textContent = '';
+  err.textContent = '';
+
+  if (_sfxFileUrl) URL.revokeObjectURL(_sfxFileUrl);
+  _sfxFile    = file;
+  _sfxFileUrl = URL.createObjectURL(file);
+
+  // Use a hidden <audio> to read duration metadata only
+  const probe = new Audio(_sfxFileUrl);
+  probe.addEventListener('loadedmetadata', () => {
+    _sfxDur = probe.duration;
+    if (!isFinite(_sfxDur) || _sfxDur <= 0) {
+      err.textContent = 'Could not read audio duration.';
+      return;
+    }
     _sfxOpenTrimmer();
-  } catch(e) {
-    err.textContent = 'Cannot decode audio file.';
-  }
+  }, { once: true });
+  probe.addEventListener('error', () => { err.textContent = 'Cannot decode audio file.'; }, { once: true });
 };
 
 // ── open trimmer panel ────────────────────────────
@@ -3920,12 +3923,13 @@ function _sfxOpenTrimmer() {
 
   // Reset sliders
   document.getElementById('sfx-sl-start').value = 0;
-  document.getElementById('sfx-sl-end').value   = 1000;
+  // Default end = first 5 seconds (or full clip if shorter)
+  const defaultEndPct = Math.min(100, (SFX_MAX_DUR / _sfxDur) * 100);
+  document.getElementById('sfx-sl-end').value   = Math.round(defaultEndPct * 10);
   document.getElementById('sfx-sl-vol').value   = 100;
   _sfxVolume = 1.0;
 
-  // Draw after paint so canvas has real dimensions
-  requestAnimationFrame(() => { _sfxDraw(); _sfxUpdateLabels(); });
+  requestAnimationFrame(() => { _sfxDrawWaveform(); _sfxUpdateLabels(); });
 }
 
 // ── slider callbacks ──────────────────────────────
@@ -3934,14 +3938,20 @@ window.sfxTrimChange = () => {
   const se = document.getElementById('sfx-sl-end');
   let sv = parseInt(ss.value), ev = parseInt(se.value);
 
-  // Keep start < end with at least 1 step gap
-  if (sv >= ev) {
-    // whichever moved last caused the collision — push the other
-    if (document.activeElement === ss) { sv = Math.max(0, ev - 1); ss.value = sv; }
-    else                               { ev = Math.min(1000, sv + 1); se.value = ev; }
+  // Keep at least 0.1s gap, enforce max 5s window
+  const startSec = (sv / 1000) * _sfxDur;
+  let   endSec   = (ev / 1000) * _sfxDur;
+  if (endSec - startSec > SFX_MAX_DUR) {
+    endSec = startSec + SFX_MAX_DUR;
+    ev = Math.round((endSec / _sfxDur) * 1000);
+    se.value = Math.min(1000, ev);
+  }
+  if (sv >= parseInt(se.value)) {
+    if (document.activeElement === ss) { ss.value = Math.max(0, parseInt(se.value) - 1); }
+    else                               { se.value = Math.min(1000, sv + 1); }
   }
 
-  _sfxDraw();
+  _sfxDrawWaveform();
   _sfxUpdateLabels();
 };
 
@@ -3951,7 +3961,7 @@ window.sfxVolChange = () => {
     document.getElementById('sfx-sl-vol').value + '%';
 };
 
-// ── helpers: get current trim seconds ────────────
+// ── get trim times ────────────────────────────────
 function _sfxGetTrim() {
   const sv = parseInt(document.getElementById('sfx-sl-start').value);
   const ev = parseInt(document.getElementById('sfx-sl-end').value);
@@ -3965,122 +3975,124 @@ function _sfxUpdateLabels() {
   const [start, end] = _sfxGetTrim();
   const rawEnd = (parseInt(document.getElementById('sfx-sl-end').value) / 1000) * _sfxDur;
   const dur    = end - start;
-
   document.getElementById('sfx-lbl-start').textContent = start.toFixed(2) + 's';
   document.getElementById('sfx-lbl-end').textContent   = end.toFixed(2) + 's';
   document.getElementById('sfx-lbl-dur').textContent   = dur.toFixed(2) + 's';
-
   const warn = document.getElementById('sfx-lbl-warn');
   if (warn) warn.style.display = (rawEnd - start > SFX_MAX_DUR) ? 'inline' : 'none';
 }
 
-// ── draw waveform ─────────────────────────────────
-function _sfxDraw() {
+// ── draw waveform using Web Audio (async, non-blocking) ──────────
+let _sfxWaveformData = null; // cached peak data
+function _sfxDrawWaveform() {
   const cv = document.getElementById('sfx-waveform');
-  if (!cv || !_sfxBuf) return;
-
-  // Sync canvas buffer size to its CSS rendered size
+  if (!cv) return;
   const rect = cv.getBoundingClientRect();
-  const W = Math.round(rect.width)  || cv.offsetWidth  || 360;
-  const H = Math.round(rect.height) || cv.offsetHeight || 64;
-  if (cv.width !== W) cv.width = W;
+  const W = Math.round(rect.width) || 360;
+  const H = Math.round(rect.height) || 64;
+  if (cv.width !== W)  cv.width  = W;
   if (cv.height !== H) cv.height = H;
+  const ctx2 = cv.getContext('2d');
 
-  const ctx  = cv.getContext('2d');
-  const data = _sfxBuf.getChannelData(0);
-  const step = Math.max(1, Math.floor(data.length / W));
-
-  ctx.fillStyle = '#0d0d0d';
-  ctx.fillRect(0, 0, W, H);
+  // Draw grey placeholder while loading waveform data
+  if (!_sfxWaveformData) {
+    ctx2.fillStyle = '#0d0d0d';
+    ctx2.fillRect(0, 0, W, H);
+    ctx2.fillStyle = '#2a2a2a';
+    ctx2.fillRect(0, H/2 - 1, W, 2);
+    // Kick off async decode for waveform display only (small, won't block)
+    _sfxDecodeWaveform().then(() => _sfxDrawWaveform());
+    return;
+  }
 
   const [startSec, endSec] = _sfxGetTrim();
   const sx = (startSec / _sfxDur) * W;
   const ex = (endSec   / _sfxDur) * W;
+  const peaks = _sfxWaveformData;
+  const step  = peaks.length / W;
+
+  ctx2.fillStyle = '#0d0d0d';
+  ctx2.fillRect(0, 0, W, H);
 
   for (let i = 0; i < W; i++) {
-    let peak = 0;
-    for (let j = 0; j < step; j++) {
-      const v = Math.abs(data[i * step + j] || 0);
-      if (v > peak) peak = v;
-    }
+    const peak = peaks[Math.floor(i * step)] || 0;
     const barH = Math.max(1, peak * H);
-    ctx.fillStyle = (i >= sx && i <= ex) ? '#ffa500' : '#2a2a2a';
-    ctx.fillRect(i, (H - barH) / 2, 1, barH);
+    ctx2.fillStyle = (i >= sx && i <= ex) ? '#ffa500' : '#2a2a2a';
+    ctx2.fillRect(i, (H - barH) / 2, 1, barH);
   }
 
-  // Highlight overlay
-  ctx.fillStyle = 'rgba(255,165,0,0.07)';
-  ctx.fillRect(sx, 0, ex - sx, H);
-
-  // Start line
-  ctx.strokeStyle = '#ffa500'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, H); ctx.stroke();
-
-  // End line
-  ctx.strokeStyle = '#ff4455'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(ex, 0); ctx.lineTo(ex, H); ctx.stroke();
+  ctx2.fillStyle = 'rgba(255,165,0,0.07)';
+  ctx2.fillRect(sx, 0, ex - sx, H);
+  ctx2.strokeStyle = '#ffa500'; ctx2.lineWidth = 2;
+  ctx2.beginPath(); ctx2.moveTo(sx, 0); ctx2.lineTo(sx, H); ctx2.stroke();
+  ctx2.strokeStyle = '#ff4455'; ctx2.lineWidth = 2;
+  ctx2.beginPath(); ctx2.moveTo(ex, 0); ctx2.lineTo(ex, H); ctx2.stroke();
 }
 
-// ── render clip to Blob URL — fast typed-array approach, no OfflineAudioContext ─
-// Runs in <50ms even on long files. No main-thread block, no tab crash.
-function _sfxRenderClip() {
-  const [startSec, endSec] = _sfxGetTrim();
-  const sr       = _sfxBuf.sampleRate;
-  const startSmp = Math.floor(startSec * sr);
-  const endSmp   = Math.min(Math.ceil(endSec * sr), _sfxBuf.length);
-  const len      = Math.max(1, endSmp - startSmp);
-  const numCh    = _sfxBuf.numberOfChannels;
-  const gain     = Math.max(0.05, Math.min(4, _sfxVolume));
-
-  // WAV header (44 bytes) + interleaved 16-bit PCM
-  const ab  = new ArrayBuffer(44 + len * numCh * 2);
-  const dv  = new DataView(ab);
-  const i16 = new Int16Array(ab, 44);
-
-  // Write WAV header
-  const ws = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
-  ws(0,'RIFF'); dv.setUint32(4, ab.byteLength - 8, true);
-  ws(8,'WAVE'); ws(12,'fmt ');
-  dv.setUint32(16,16,true); dv.setUint16(20,1,true);
-  dv.setUint16(22,numCh,true); dv.setUint32(24,sr,true);
-  dv.setUint32(28,sr*numCh*2,true); dv.setUint16(32,numCh*2,true);
-  dv.setUint16(34,16,true); ws(36,'data');
-  dv.setUint32(40,len*numCh*2,true);
-
-  // Grab slices upfront — avoids repeated getChannelData calls in the loop
-  const channels = [];
-  for (let ch = 0; ch < numCh; ch++) {
-    channels.push(_sfxBuf.getChannelData(ch).subarray(startSmp, endSmp));
-  }
-
-  // Interleave + apply gain in one tight typed-array pass
-  for (let i = 0; i < len; i++) {
-    for (let ch = 0; ch < numCh; ch++) {
-      const s = channels[ch][i] * gain;
-      i16[i * numCh + ch] = (s > 1 ? 32767 : s < -1 ? -32768 : s * 32767) | 0;
+// Decode audio for waveform display only — done once, async so it doesn't block
+async function _sfxDecodeWaveform() {
+  if (!_sfxFileUrl || _sfxWaveformData) return;
+  try {
+    const resp = await fetch(_sfxFileUrl);
+    const ab   = await resp.arrayBuffer();
+    const actx = new (window.AudioContext || window.webkitAudioContext)();
+    const buf  = await actx.decodeAudioData(ab);
+    actx.close();
+    const data = buf.getChannelData(0);
+    const BINS = 500; // low-res peak array — fast to generate and draw
+    const step = Math.floor(data.length / BINS);
+    _sfxWaveformData = new Float32Array(BINS);
+    for (let i = 0; i < BINS; i++) {
+      let peak = 0;
+      for (let j = 0; j < step; j++) {
+        const v = Math.abs(data[i * step + j] || 0);
+        if (v > peak) peak = v;
+      }
+      _sfxWaveformData[i] = peak;
     }
-  }
-
-  return URL.createObjectURL(new Blob([ab], { type: 'audio/wav' }));
+  } catch(e) { _sfxWaveformData = new Float32Array(500); /* silent fallback */ }
 }
 
-// ── preview (in trimmer) ──────────────────────────
+// ── play a trimmed clip locally (no encoding) ────
 let _sfxPreviewAudio = null;
+let _sfxPreviewTimer = null;
+function _sfxPlayTrimmed(startSec, endSec, volume) {
+  if (_sfxPreviewAudio) {
+    _sfxPreviewAudio.pause();
+    _sfxPreviewAudio = null;
+  }
+  if (_sfxPreviewTimer) { clearTimeout(_sfxPreviewTimer); _sfxPreviewTimer = null; }
+  if (!_sfxFileUrl) return;
+
+  const audio = new Audio(_sfxFileUrl);
+  audio.volume = Math.max(0, Math.min(1, volume)); // HTML audio clamps to 0-1
+  audio.currentTime = startSec;
+  audio.play().catch(()=>{});
+  _sfxPreviewAudio = audio;
+
+  // Stop at end of selection
+  const dur = endSec - startSec;
+  _sfxPreviewTimer = setTimeout(() => {
+    audio.pause();
+    _sfxPreviewAudio = null;
+  }, dur * 1000);
+}
+
 window.sfxTrimPreview = () => {
-  if (!_sfxBuf) return;
+  if (!_sfxFileUrl) return;
   const [s, e] = _sfxGetTrim();
   if (e - s < 0.05) { document.getElementById('sfx-err').textContent = 'Selection too short.'; return; }
-  if (_sfxPreviewAudio) { _sfxPreviewAudio.pause(); _sfxPreviewAudio = null; }
-  _sfxPreviewAudio = new Audio(_sfxRenderClip());
-  _sfxPreviewAudio.play().catch(()=>{});
+  _sfxPlayTrimmed(s, e, Math.min(1, _sfxVolume)); // clamp preview volume to 1
 };
 
-// ── confirm clip ──────────────────────────────────
+// ── confirm clip — store metadata, convert to base64 on send ─────
 window.sfxApplyTrim = () => {
-  if (!_sfxBuf) return;
+  if (!_sfxFileUrl || !_sfxFile) return;
   const [s, e] = _sfxGetTrim();
   if (e - s < 0.05) { document.getElementById('sfx-err').textContent = 'Selection too short.'; return; }
-  window._customSfxData = _sfxRenderClip();
+  // Store trim params — actual encoding happens only when sending
+  window._customSfxData   = _sfxFileUrl;   // blob URL for local preview
+  window._customSfxTrim   = { start: s, end: e, volume: _sfxVolume, file: _sfxFile };
   document.getElementById('sfx-trimmer-panel').style.display = 'none';
   document.getElementById('sfx-upload-panel').style.display  = 'none';
   document.getElementById('sfx-ready-dur').textContent       = (e - s).toFixed(2) + 's clip';
@@ -4089,30 +4101,34 @@ window.sfxApplyTrim = () => {
 
 // ── ready panel preview ───────────────────────────
 window.playCustomSfxPreview = () => {
-  if (!window._customSfxData) return;
-  new Audio(window._customSfxData).play().catch(()=>{});
+  if (!window._customSfxTrim) return;
+  const { start, end, volume } = window._customSfxTrim;
+  _sfxPlayTrimmed(start, end, Math.min(1, volume));
 };
 
 // ── send to Firebase ──────────────────────────────
 window.sendCustomSfx = async () => {
-  if (!me || !window._customSfxData) return;
+  if (!me) return;
   const err = document.getElementById('sfx-err');
+  if (!window._customSfxTrim) { err.textContent = 'No clip selected.'; return; }
   if ((myProfile.coins||0) < 1250) { err.textContent = 'Not enough coins (need 1250🪙)'; return; }
 
-  // Blob URLs are local-only; convert to base64 so other clients can play it
-  let audioData = window._customSfxData;
-  if (audioData.startsWith('blob:')) {
-    try {
-      const resp = await fetch(audioData);
-      const blob = await resp.blob();
-      audioData  = await new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload  = () => res(r.result);
-        r.onerror = rej;
-        r.readAsDataURL(blob);
-      });
-    } catch(e) { err.textContent = 'Failed to encode audio.'; return; }
-  }
+  const { start, end, volume, file } = window._customSfxTrim;
+
+  // Encode only at send time — read raw file as base64, then we'll slice server-side
+  // Actually: encode the full file to base64 and send trim metadata
+  // The receiving client will use an <audio> element with currentTime trick too
+  err.textContent = 'Encoding…';
+  let audioData;
+  try {
+    audioData = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload  = () => res(r.result);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+  } catch(e) { err.textContent = 'Failed to encode audio.'; return; }
+  err.textContent = '';
 
   const newCoins = (myProfile.coins||0) - 1250;
   myProfile.coins = newCoins;
@@ -4120,12 +4136,15 @@ window.sendCustomSfx = async () => {
   updateCoinDisplays(newCoins);
   await set(push(ref(rtdb,'events/sfx')), {
     uid: me.uid, username: myProfile.username,
-    sound: 'custom', audioData, ts: Date.now()
+    sound: 'custom', audioData,
+    trimStart: start, trimEnd: end, volume: Math.min(1, volume),
+    ts: Date.now()
   }).catch(()=>{});
   closeModal('sfx-overlay');
   showToast('SFX played!');
-  new Audio(window._customSfxData).play().catch(()=>{});
+  _sfxPlayTrimmed(start, end, Math.min(1, volume));
 };
+
 
 window.sendSfx = async (sound) => {
   if (!me) return;
@@ -4144,11 +4163,24 @@ window.sendSfx = async (sound) => {
   playSfxSound(sound);
 };
 
-function playSfxSound(sound, audioData) {
+function playSfxSound(sound, audioData, trimStart, trimEnd, volume) {
   if (sound === 'custom' && audioData) {
     const audio = new Audio(audioData);
-    
-    audio.play().catch(()=>{});
+    const s = parseFloat(trimStart) || 0;
+    const e = parseFloat(trimEnd)   || 5;
+    const v = parseFloat(volume)    || 1;
+    audio.volume = Math.max(0, Math.min(1, v));
+    audio.addEventListener('loadedmetadata', () => {
+      audio.currentTime = s;
+      audio.play().catch(()=>{});
+      setTimeout(() => audio.pause(), (e - s) * 1000);
+    }, { once: true });
+    // Fallback if metadata already loaded
+    if (audio.readyState >= 1) {
+      audio.currentTime = s;
+      audio.play().catch(()=>{});
+      setTimeout(() => audio.pause(), (e - s) * 1000);
+    }
     return;
   }
   const sounds = {
@@ -4192,7 +4224,7 @@ function listenGlobalEvents() {
   onChildAdded(sfxRef, snap => {
     const d = snap.val();
     if (!d || d.ts < now - 2000) return;
-    playSfxSound(d.sound, d.audioData);
+    playSfxSound(d.sound, d.audioData, d.trimStart, d.trimEnd, d.volume);
     addSystemMsg('🎵 ' + d.username + ' played a sound');
   });
 }
