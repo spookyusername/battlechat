@@ -1344,15 +1344,20 @@ function attachRemoteTrack(track, identity) {
 
   if (track.kind === Track.Kind.Video) {
     const vid = document.getElementById('vid-' + slot);
+    // Detach any existing track on this video element first
+    if (vid.srcObject) { vid.pause(); vid.srcObject = null; }
     track.attach(vid);
-    vid.muted = false;
+    vid.muted = true; // video element never plays audio — dedicated audio el does
     vid.style.display = 'block';
     document.getElementById('ph-' + slot).style.display = 'none';
   } else if (track.kind === Track.Kind.Audio) {
-    // Create a dedicated audio element for this participant
-    // so audio plays independently of the video element
+    // Always kill existing audio for this slot before creating a new one
+    document.querySelectorAll('audio[data-slot="' + slot + '"]').forEach(a => {
+      try { a.pause(); a.muted = true; track.detach(a); a.remove(); } catch(e){}
+    });
     const existingAudio = document.getElementById('audio-' + slot);
-    if (existingAudio) { existingAudio.pause(); existingAudio.muted = true; existingAudio.remove(); }
+    if (existingAudio) { try { existingAudio.pause(); existingAudio.muted = true; existingAudio.remove(); } catch(e){} }
+
     const audioEl = document.createElement('audio');
     audioEl.id = 'audio-' + slot;
     audioEl.dataset.slot = slot;
@@ -1603,13 +1608,27 @@ function addSystemMsg(text) {
 }
 
 // ── STAGE METADATA (who is on stage — shown to all viewers) ──
+// Track last known UIDs to detect real changes vs duplicate Firebase fires
+let _lastStageUids = { left: null, right: null };
+
 function listenStage() {
-  onValue(ref(rtdb,'stage'), snap=>{
-    const d=snap.val()||{};
-    stageUids.left  = d.left?.uid  || null;
-    stageUids.right = d.right?.uid || null;
-    d.left  ? showSlot('left',d.left)   : clearSlotUI('left');
-    d.right ? showSlot('right',d.right) : clearSlotUI('right');
+  onValue(ref(rtdb,'stage'), snap => {
+    const d = snap.val() || {};
+    const newLeft  = d.left?.uid  || null;
+    const newRight = d.right?.uid || null;
+
+    // Only update a slot if its UID actually changed
+    if (newLeft !== _lastStageUids.left) {
+      _lastStageUids.left = newLeft;
+      stageUids.left = newLeft;
+      if (d.left) showSlot('left', d.left); else clearSlotUI('left');
+    }
+    if (newRight !== _lastStageUids.right) {
+      _lastStageUids.right = newRight;
+      stageUids.right = newRight;
+      if (d.right) showSlot('right', d.right); else clearSlotUI('right');
+    }
+
     checkStageFull();
   });
 }
@@ -1755,6 +1774,7 @@ async function goLive(slot) {
 async function leaveStage() {
   if (!mySlot) return;
   const slot = mySlot; mySlot = null;
+  _lastStageUids[slot] = null; // force next occupant of this slot to trigger showSlot
   await remove(ref(rtdb,'stage/'+slot)).catch(()=>{});
   await remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
   clearSlotUI(slot);
@@ -2069,11 +2089,15 @@ async function resolveRoundViewer(roundIndex) {
 function resetRound() {
   hasVoted = false;
   resetBetUI();
-  ['left','right'].forEach(s=>{
-    const b=document.getElementById('vbtn-'+s);
-    b.disabled=false;
+  ['left','right'].forEach(s => {
+    const b = document.getElementById('vbtn-'+s);
+    if (!b) return;
+    b.disabled = false;
     b.classList.remove('voted-left','voted-right');
-    b.textContent='VOTE';
+    b.textContent = 'VOTE';
+    b.style.background = '';
+    b.style.borderColor = '';
+    b.style.color = '';
   });
   document.getElementById('pct-left').textContent  = '0%';
   document.getElementById('pct-right').textContent = '0%';
@@ -2163,19 +2187,21 @@ function startSyncedTick(epoch) {
       if (lastRoundIndex !== -1) {
         const finishedRound = lastRoundIndex;
         lastRoundIndex = roundIndex;
-        // Reset UI for everyone immediately
-        resetRound();
-        // Unsubscribe old vote listener before wiping data
+        // Unsubscribe old vote listener immediately
         if (voteUnsub) { voteUnsub(); voteUnsub = null; }
-        // Delete finished round's votes from Firebase so new listenVotes starts clean
-        remove(ref(rtdb, 'votes/' + finishedRound)).catch(()=>{});
-        // Resolve outcomes then start new round
-        resolveRound(finishedRound).then(() => {
+        // Resolve outcomes FIRST (needs the vote data), then wipe + start fresh
+        Promise.all([
+          resolveRound(finishedRound).catch(()=>{}),
+          resolveRoundViewer(finishedRound).catch(()=>{})
+        ]).then(() => {
+          // Now delete the finished round votes so listenVotes starts clean
+          return remove(ref(rtdb, 'votes/' + finishedRound)).catch(()=>{});
+        }).then(() => {
+          resetRound();
           listenVotes(roundIndex);
           SFX.newRound();
           addSystemMsg('New round started!');
         });
-        resolveRoundViewer(finishedRound).catch(()=>{});
       } else {
         lastRoundIndex = roundIndex;
         listenVotes(roundIndex);
