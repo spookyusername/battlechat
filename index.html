@@ -2657,17 +2657,19 @@ function listenVotes(roundIndex) {
     _renderVotes(roundIndex);
   }).catch(()=>{});
 
-  // Subscribe to new votes
-  voteUnsub = pb.subscribe('votes', '', evt => {
-    if (evt.record?.roundIndex !== roundIndex) return;
-    const side = evt.record.side;
-    if (side && evt.record.uid) {
-      if (!_votesCache[roundIndex]) _votesCache[roundIndex] = { left: new Set(), right: new Set() };
-      if (evt.action === 'delete') _votesCache[roundIndex][side]?.delete(evt.record.uid);
-      else _votesCache[roundIndex][side]?.add(evt.record.uid);
+  // Poll votes every 2s
+  async function refreshVotes() {
+    try {
+      const items = await pb.listRecords('votes', `roundIndex=${roundIndex}`);
+      const cache = { left: new Set(), right: new Set() };
+      items.forEach(r => { if (r.side && r.uid) cache[r.side]?.add(r.uid); });
+      _votesCache[roundIndex] = cache;
       _renderVotes(roundIndex);
-    }
-  });
+    } catch(e) {}
+  }
+  if (window._votePollInterval) clearInterval(window._votePollInterval);
+  window._votePollInterval = setInterval(refreshVotes, 2000);
+  voteUnsub = () => { clearInterval(window._votePollInterval); window._votePollInterval = null; };
 }
 
 function _renderVotes(roundIndex) {
