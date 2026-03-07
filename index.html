@@ -326,18 +326,17 @@
   .arena-next-btn:disabled { opacity: 0.35; cursor: default; }
   .queue-screen { text-align: center; padding: 8px 0; }
   /* ── QUEUE FLOATER (persistent after modal closed) ── */
-  .queue-floater { display: none; align-items: center; gap: 10px; background: rgba(201,168,76,0.07); border: 1px solid rgba(201,168,76,0.3); padding: 5px 10px 5px 10px; white-space: nowrap; }
+  .queue-floater { display: none; align-items: center; gap: 7px; background: rgba(201,168,76,0.07); border: 1px solid rgba(201,168,76,0.25); padding: 4px 8px; white-space: nowrap; }
   .queue-floater.visible { display: flex; }
-  body.chat-hidden-logo .queue-floater { left: 50%; }
-  .qf-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 7px var(--gold); animation: blink 1.2s infinite; flex-shrink: 0; }
-  .qf-info { display: flex; flex-direction: column; gap: 1px; }
-  .qf-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); line-height: 1; }
-  .qf-pos-line { display: flex; align-items: baseline; gap: 5px; }
-  .qf-pos { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; color: var(--gold); line-height: 1; }
-  .qf-pos-sub { font-family: 'Barlow Condensed', sans-serif; font-size: 0.72rem; font-weight: 700; color: var(--muted); letter-spacing: 1px; }
-  .qf-open { background: none; border: 1px solid rgba(201,168,76,0.3); color: var(--gold); font-family: 'Bebas Neue', sans-serif; font-size: 0.72rem; letter-spacing: 1.5px; padding: 5px 10px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+  .qf-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 5px var(--gold); animation: blink 1.2s infinite; flex-shrink: 0; }
+  .qf-info { display: flex; align-items: baseline; gap: 5px; }
+  .qf-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.68rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  .qf-pos-line { display: flex; align-items: baseline; gap: 4px; }
+  .qf-pos { font-family: 'Bebas Neue', sans-serif; font-size: 0.78rem; letter-spacing: 1.5px; color: var(--gold); line-height: 1; }
+  .qf-pos-sub { font-family: 'Barlow Condensed', sans-serif; font-size: 0.65rem; font-weight: 700; color: var(--muted); letter-spacing: 1px; }
+  .qf-open { background: none; border: 1px solid rgba(201,168,76,0.25); color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.68rem; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 8px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
   .qf-open:hover { border-color: var(--gold); background: rgba(201,168,76,0.1); }
-  .qf-leave { background: none; border: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.25); font-size: 0.8rem; cursor: pointer; padding: 5px 8px; transition: border-color 0.15s, color 0.15s; font-family: 'Barlow Condensed', sans-serif; }
+  .qf-leave { background: none; border: 1px solid rgba(255,255,255,0.07); color: rgba(255,255,255,0.2); font-size: 0.7rem; cursor: pointer; padding: 3px 6px; transition: border-color 0.15s, color 0.15s; font-family: 'Barlow Condensed', sans-serif; }
   .qf-leave:hover { border-color: rgba(217,43,43,0.5); color: var(--red-hot); }
   /* ── MENU OVERLAY MODE — arena still visible behind ── */
   .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 400; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
@@ -589,10 +588,10 @@
     <div class="queue-floater" id="queue-floater">
       <div class="qf-dot"></div>
       <div class="qf-info">
-        <div class="qf-label">IN QUEUE</div>
-        <div class="qf-pos-line"><span class="qf-pos" id="qf-pos">...</span><span class="qf-pos-sub" id="qf-pos-sub"></span></div>
+        <span class="qf-label">IN QUEUE</span>
+        <span class="qf-pos" id="qf-pos">...</span><span class="qf-pos-sub" id="qf-pos-sub"></span>
       </div>
-      <button class="qf-open" onclick="openArenaFromFloater()">↗ VIEW</button>
+      <button class="qf-open" onclick="openArenaFromFloater()">VIEW</button>
       <button class="qf-leave" onclick="leaveQueue()" title="Leave queue">✕</button>
     </div>
     <button class="collapse-btn" onclick="toggleChat()">
