@@ -13,10 +13,10 @@
     --black: #080808; --dark: #0e0e0e; --dark2: #141414; --dark3: #1c1c1c;
     --border: rgba(255,255,255,0.07); --text: #e8e8e8; --muted: rgba(232,232,232,0.35);
   }
-  html, body { height: 100%; overflow: hidden; background: var(--black); color: var(--text); font-family: 'Barlow', sans-serif; }
+  html, body { height: 100%; overflow: hidden; margin: 0; padding: 0; background: var(--black); color: var(--text); font-family: 'Barlow', sans-serif; display: flex; flex-direction: column; }
 
   /* TOPBAR */
-  .topbar { height: 48px; background: var(--dark); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; position: relative; z-index: 10; }
+  .topbar { height: 48px; background: var(--dark); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; position: relative; z-index: 10; width: 100%; }
   .topbar-left, .topbar-right { display: flex; align-items: center; gap: 10px; flex: 1; position: relative; z-index: 1; }
   .topbar-right { justify-content: flex-end; }
   .logo { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 4px; color: var(--text); pointer-events: none; white-space: nowrap; z-index: 0; }
@@ -35,7 +35,7 @@
   .topbar-username { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; }
 
   /* MAIN GRID */
-  .main { display: grid; grid-template-columns: 1fr 4px 1fr 280px; grid-template-rows: 1fr; height: calc(100vh - 96px); gap: 0; transition: grid-template-columns 0.35s ease; }
+  .main { display: grid; grid-template-columns: 1fr 4px 1fr 280px; grid-template-rows: 1fr; flex: 1; min-height: 0; gap: 0; transition: grid-template-columns 0.35s ease; }
   .main.chat-collapsed { grid-template-columns: 1fr 4px 1fr 0px; }
 
   /* CAM PANELS - explicit grid placement so solo-mode can't break it */
@@ -119,11 +119,11 @@
 
   /* TIMER BAR */
   /* ── BATTLE STRIP (sits between topbar and arena) ── */
-  .battle-strip { display: flex; align-items: center; background: var(--dark2); border-bottom: 1px solid var(--border); height: 48px; padding: 0 16px; gap: 12px; flex-shrink: 0; overflow: hidden; }
+  .battle-strip { display: flex; align-items: center; background: var(--dark2); border-bottom: 1px solid var(--border); height: 48px; padding: 0 16px; gap: 12px; flex-shrink: 0; overflow: hidden; width: 100%; }
   .bstrip-left  { display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer; border-radius: 4px; padding: 4px 6px; transition: background 0.15s, opacity 0.3s; overflow: hidden; }
-  .bstrip-right { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; cursor: pointer; border-radius: 4px; padding: 4px 6px; transition: background 0.15s, opacity 0.3s; overflow: hidden; }
+  .bstrip-right { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; cursor: pointer; border-radius: 4px; padding: 4px 10px 4px 6px; transition: background 0.15s, opacity 0.3s; overflow: hidden; }
   .bstrip-left:hover, .bstrip-right:hover { background: rgba(255,255,255,0.05); }
-  .bstrip-center { display: flex; flex-direction: column; align-items: center; gap: 3px; flex-shrink: 0; min-width: 90px; }
+  .bstrip-center { display: flex; flex-direction: column; align-items: center; gap: 3px; flex-shrink: 0; min-width: 80px; }
   .bstrip-progress-wrap { width: 100%; height: 3px; background: var(--dark3); border-radius: 2px; overflow: hidden; }
   .bstrip-progress-fill { height: 100%; width: 100%; transform-origin: left; background: linear-gradient(to right, var(--red), #e8321a, var(--gold)); transition: none; border-radius: 2px; }
   .timer-bar-num { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 4px; color: var(--gold); text-shadow: 0 0 12px rgba(201,168,76,0.3); line-height: 1; transition: color 0.3s; flex-shrink: 0; }
@@ -139,7 +139,7 @@
   body.solo-right .bstrip-left  { opacity: 0.3; pointer-events: none; }
 
   /* CHAT PANEL */
-  .chat-panel { background: var(--dark2); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: border-color 0.35s ease; }
+  .chat-panel { background: var(--dark2); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: border-color 0.35s ease; height: 100%; }
   .main.chat-collapsed .chat-panel { border-left-color: transparent; overflow: hidden; visibility: hidden; }
   .chat-header { height: 44px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; flex-shrink: 0; }
   .chat-title { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 3px; }
