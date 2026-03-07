@@ -381,8 +381,11 @@
 
   /* SHOP */
   .shop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .shop-item { background: var(--dark3); border: 1px solid var(--border); padding: 10px 8px; cursor: pointer; text-align: center; transition: border-color 0.2s, transform 0.15s; }
+  .shop-item { background: var(--dark3); border: 1px solid var(--border); padding: 10px 8px; cursor: pointer; text-align: center; transition: border-color 0.2s, transform 0.15s; position: relative; }
   .shop-item:hover { border-color: var(--gold); transform: translateY(-2px); }
+  .shop-item.owned { border-color: rgba(76,175,80,0.4); cursor: default; }
+  .shop-item.owned:hover { transform: none; border-color: rgba(76,175,80,0.55); }
+  .shop-price.is-owned { color: #4CAF50; font-size: 0.72rem; letter-spacing: 1px; }
   .shop-preview { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; margin-bottom: 4px; }
   .theme-preview { font-size: 0.78rem; padding: 4px 2px; letter-spacing: 2px; font-family:'Bebas Neue',sans-serif; }
   .void-prev    { background: #000; color: #555; border: 1px solid #1a1a1a; }
@@ -1035,6 +1038,7 @@
   <div class="menu-nav">
     <button class="menu-nav-btn active" onclick="switchMenuTab(this,'shop')" data-tab="shop">🏪 SHOP</button>
     <button class="menu-nav-btn" onclick="switchMenuTab(this,'gamble')" data-tab="gamble">🃏 GAMBLE</button>
+    <button class="menu-nav-btn" onclick="switchMenuTab(this,'lb')" data-tab="lb">🏆 LB</button>
     <button class="menu-nav-btn" onclick="switchMenuTab(this,'settings')" data-tab="settings">⚙️ SETTINGS</button>
   </div>
 
@@ -1047,68 +1051,68 @@
     <button class="daily-btn" id="daily-reward-btn" onclick="claimDailyReward()">🎁 CLAIM DAILY REWARD — 100🪙</button>
     <div class="menu-section-title">Name Colors</div>
     <div class="shop-grid">
-      <div class="shop-item" onclick="buyItem('color_crimson',300)">
+      <div class="shop-item" data-item-id="color_crimson" onclick="buyItem('color_crimson',300)">
         <div class="shop-preview" style="color:#FF3B3B;">PERIOD</div>
         <div class="shop-item-name">Period Blood Red</div>
-        <div class="shop-price">🪙 300</div>
+        <div class="shop-price" id="sp-color_crimson">🪙 300</div>
       </div>
-      <div class="shop-item" onclick="buyItem('color_toxic',450)">
+      <div class="shop-item" data-item-id="color_toxic" onclick="buyItem('color_toxic',450)">
         <div class="shop-preview" style="color:#39ff14;">VOMIT</div>
         <div class="shop-item-name">Vomit Green</div>
-        <div class="shop-price">🪙 450</div>
+        <div class="shop-price" id="sp-color_toxic">🪙 450</div>
       </div>
-      <div class="shop-item" onclick="buyItem('color_gold',600)">
+      <div class="shop-item" data-item-id="color_gold" onclick="buyItem('color_gold',600)">
         <div class="shop-preview" style="color:#C9A84C;">PISS</div>
         <div class="shop-item-name">Piss Yellow</div>
-        <div class="shop-price">🪙 600</div>
+        <div class="shop-price" id="sp-color_gold">🪙 600</div>
       </div>
-      <div class="shop-item" onclick="buyItem('color_cyan',750)">
+      <div class="shop-item" data-item-id="color_cyan" onclick="buyItem('color_cyan',750)">
         <div class="shop-preview" style="color:#00e5ff;">BONNIE</div>
         <div class="shop-item-name">Bonnie Blue</div>
-        <div class="shop-price">🪙 750</div>
+        <div class="shop-price" id="sp-color_cyan">🪙 750</div>
       </div>
-      <div class="shop-item" onclick="buyItem('color_violet',900)">
+      <div class="shop-item" data-item-id="color_violet" onclick="buyItem('color_violet',900)">
         <div class="shop-preview" style="color:#b45aff;">GRAPE BRUISE</div>
         <div class="shop-item-name">Purple Bruise</div>
-        <div class="shop-price">🪙 900</div>
+        <div class="shop-price" id="sp-color_violet">🪙 900</div>
       </div>
-      <div class="shop-item" onclick="buyItem('color_white',1100)">
+      <div class="shop-item" data-item-id="color_white" onclick="buyItem('color_white',1100)">
         <div class="shop-preview" style="color:#ffffff;">CUM</div>
         <div class="shop-item-name">Cum White</div>
-        <div class="shop-price">🪙 1100</div>
+        <div class="shop-price" id="sp-color_white">🪙 1100</div>
       </div>
     </div>
     <div class="menu-section-title" style="margin-top:18px;">Site Themes</div>
     <div class="shop-grid">
-      <div class="shop-item" onclick="buyItem('theme_rash',1000)">
+      <div class="shop-item" data-item-id="theme_rash" onclick="buyItem('theme_rash',1000)">
         <div class="shop-preview" style="color:#cc2200;">RASH</div>
         <div class="shop-item-name">Red Rash</div>
-        <div class="shop-price">🪙 1000</div>
+        <div class="shop-price" id="sp-theme_rash">🪙 1000</div>
       </div>
-      <div class="shop-item" onclick="buyItem('theme_void',1200)">
+      <div class="shop-item" data-item-id="theme_void" onclick="buyItem('theme_void',1200)">
         <div class="shop-preview" style="color:#6b3a1f;">SKIDMARK</div>
         <div class="shop-item-name">Brown Skidmark</div>
-        <div class="shop-price">🪙 1200</div>
+        <div class="shop-price" id="sp-theme_void">🪙 1200</div>
       </div>
-      <div class="shop-item" onclick="buyItem('theme_gold',1400)">
+      <div class="shop-item" data-item-id="theme_gold" onclick="buyItem('theme_gold',1400)">
         <div class="shop-preview" style="color:#C9A84C;">EARWAX</div>
         <div class="shop-item-name">Yellow Earwax</div>
-        <div class="shop-price">🪙 1400</div>
+        <div class="shop-price" id="sp-theme_gold">🪙 1400</div>
       </div>
-      <div class="shop-item" onclick="buyItem('theme_toxic',1600)">
+      <div class="shop-item" data-item-id="theme_toxic" onclick="buyItem('theme_toxic',1600)">
         <div class="shop-preview" style="color:#39ff14;">SEPTIC</div>
         <div class="shop-item-name">Green Septic</div>
-        <div class="shop-price">🪙 1600</div>
+        <div class="shop-price" id="sp-theme_toxic">🪙 1600</div>
       </div>
-      <div class="shop-item" onclick="buyItem('theme_ice',1800)">
+      <div class="shop-item" data-item-id="theme_ice" onclick="buyItem('theme_ice',1800)">
         <div class="shop-preview" style="color:#00bbff;">BLUEBALLS</div>
         <div class="shop-item-name">Blue Balls</div>
-        <div class="shop-price">🪙 1800</div>
+        <div class="shop-price" id="sp-theme_ice">🪙 1800</div>
       </div>
-      <div class="shop-item" onclick="buyItem('theme_coal',2200)">
+      <div class="shop-item" data-item-id="theme_coal" onclick="buyItem('theme_coal',2200)">
         <div class="shop-preview" style="color:#555;text-shadow:0 0 6px rgba(255,255,255,0.2);">MOLD</div>
         <div class="shop-item-name">Black Mold</div>
-        <div class="shop-price">🪙 2200</div>
+        <div class="shop-price" id="sp-theme_coal">🪙 2200</div>
       </div>
     </div>
   </div>
@@ -1236,6 +1240,18 @@
       </div>
     </div> <!-- end gamble-flappy -->
 
+  </div>
+
+  <!-- LEADERBOARD TAB -->
+  <div class="menu-tab" id="mtab-lb" style="display:none;">
+    <div style="display:flex;border-bottom:1px solid var(--border);margin-bottom:12px;flex-shrink:0;">
+      <button class="lb-tab-btn active" id="lbmenu-wins" onclick="switchMenuLb(this,'wins')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.8rem;letter-spacing:1.5px;background:none;border:none;border-bottom:2px solid var(--red-hot);color:var(--text);cursor:pointer;">⚔️ WINS</button>
+      <button class="lb-tab-btn" id="lbmenu-coins" onclick="switchMenuLb(this,'coins')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.8rem;letter-spacing:1.5px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;">🪙 COINS</button>
+      <button class="lb-tab-btn" id="lbmenu-flappy" onclick="switchMenuLb(this,'flappy')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.8rem;letter-spacing:1.5px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;">🐦 FLAPPY</button>
+    </div>
+    <div id="lbmenu-list" style="display:flex;flex-direction:column;gap:2px;">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">Loading...</div>
+    </div>
   </div>
 
   <!-- COMMUNITY TAB -->
@@ -1534,6 +1550,7 @@ onAuthStateChanged(auth, async user => {
     myProfile = null;
   }
   renderTopbar();
+  if (me && myProfile) refreshShopOwned();
   listenStage(); // everyone sees stage updates
   listenGlobalEvents();
   listenChat(); // chat visible to everyone, logged in or not
@@ -2875,9 +2892,73 @@ window.buyItem = async (itemId, cost) => {
     showToast('Purchased! 🎉');
     SFX.win();
     loadSettingsState();
+    refreshShopOwned();
   } catch(e) { showToast('Purchase failed.'); }
 };
 
+
+// ── SHOP OWNED STATE ──
+function refreshShopOwned() {
+  const owned = myProfile?.items || [];
+  document.querySelectorAll('.shop-item[data-item-id]').forEach(el => {
+    const id = el.dataset.itemId;
+    const priceEl = el.querySelector('.shop-price');
+    if (!priceEl) return;
+    if (owned.includes(id)) {
+      el.classList.add('owned');
+      priceEl.textContent = '✓ OWNED';
+      priceEl.classList.add('is-owned');
+    } else {
+      el.classList.remove('owned');
+      priceEl.classList.remove('is-owned');
+    }
+  });
+}
+
+// ── MENU LEADERBOARD ──
+let _menuLbTab = 'wins';
+window.switchMenuLb = (btn, tab) => {
+  document.querySelectorAll('.lb-tab-btn').forEach(b => {
+    b.style.borderBottomColor = 'transparent';
+    b.style.color = 'var(--muted)';
+  });
+  btn.style.borderBottomColor = 'var(--red-hot)';
+  btn.style.color = 'var(--text)';
+  _menuLbTab = tab;
+  loadMenuLb(tab);
+};
+
+async function loadMenuLb(tab) {
+  const list = document.getElementById('lbmenu-list');
+  if (!list) return;
+  list.innerHTML = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">Loading...</div>';
+  try {
+    const { collection, query, orderBy, limit, getDocs } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+    let field, label;
+    if (tab === 'wins')   { field = 'wins';       label = w => w + ' W'; }
+    if (tab === 'coins')  { field = 'coins';      label = w => '🪙 ' + w; }
+    if (tab === 'flappy') { field = 'flappyBest'; label = w => w + ' pipes'; }
+    const q = query(collection(db, 'users'), orderBy(field, 'desc'), limit(20));
+    const snap = await getDocs(q);
+    if (snap.empty) { list.innerHTML = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">No data yet.</div>'; return; }
+    list.innerHTML = '';
+    snap.docs.forEach((doc, i) => {
+      const d = doc.data();
+      const val = d[field] || 0;
+      if (!val && tab === 'flappy') return;
+      const rank = i + 1;
+      const rankColor = rank === 1 ? 'var(--gold)' : rank === 2 ? '#C0C0C0' : rank === 3 ? '#CD7F32' : 'var(--muted)';
+      const isSelf = me && doc.id === me.uid;
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border);' + (isSelf ? 'background:rgba(217,43,43,0.05);' : '');
+      row.innerHTML = `<span style="font-family:'Bebas Neue',sans-serif;font-size:1rem;color:${rankColor};width:22px;flex-shrink:0;">${rank}</span>`
+        + `<span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.88rem;flex:1;${isSelf?'color:var(--red-hot);':''}">` + escHtml(d.username || '?') + '</span>'
+        + `<span style="font-family:'Bebas Neue',sans-serif;font-size:0.95rem;color:var(--text);">${label(val)}</span>`;
+      list.appendChild(row);
+    });
+    if (!list.children.length) list.innerHTML = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">No scores yet — be the first!</div>';
+  } catch(e) { list.innerHTML = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">Could not load leaderboard.</div>'; }
+}
 
 window.applyTheme = val => {
   activeTheme = val;
@@ -3440,6 +3521,8 @@ const _origSwitchMenuTab = window.switchMenuTab;
 window.switchMenuTab = (btn, tab) => {
   _origSwitchMenuTab(btn, tab);
   if (tab === 'gamble') syncBjBalance();
+  if (tab === 'lb') loadMenuLb(_menuLbTab);
+  if (tab === 'shop') refreshShopOwned();
 };
 
 // ── AVATAR SYSTEM ──
@@ -4076,6 +4159,14 @@ window.faClaim = async () => {
     myProfile.coins = newCoins;
     try { await updateDoc(doc(db,'users',me.uid),{coins:newCoins}); } catch(e){}
     updateCoinDisplays(newCoins);
+  }
+  // Save flappy best score
+  if (me && myProfile && faPipes > 0) {
+    const best = myProfile.flappyBest || 0;
+    if (faPipes > best) {
+      myProfile.flappyBest = faPipes;
+      try { await updateDoc(doc(db,'users',me.uid),{flappyBest:faPipes}); } catch(e){}
+    }
   }
   // Always reset regardless of earn/error, no delay that can get stuck
   faResetToMenu();
