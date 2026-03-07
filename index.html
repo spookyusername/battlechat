@@ -2147,10 +2147,11 @@ function checkStageFull() {
       // Genuine new battle — write fresh epoch, wipe votes, start clean
       const epoch = Date.now();
       roundEpoch = epoch;
-      lastRoundIndex = -1;
+      lastRoundIndex = 0;
       set(ref(rtdb, 'battle/epoch'), epoch).catch(()=>{});
       remove(ref(rtdb, 'votes')).catch(()=>{});
       resetRound();
+      listenVotes(0);
       addSystemMsg('Both fighters ready — round starting!');
       SFX.newRound();
     } else {
