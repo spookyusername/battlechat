@@ -3864,7 +3864,7 @@ window.sfxHandleFile = async (input) => {
   const err = document.getElementById('sfx-err');
   err.textContent = '';
   const arrayBuf = await file.arrayBuffer();
-  const actx = new (window.AudioContext || window.webkitAudioContext)();
+  const actx = _getSfxActx();
   let decoded;
   try { decoded = await actx.decodeAudioData(arrayBuf); }
   catch(e) { err.textContent = 'Cannot decode audio file.'; return; }
@@ -3889,16 +3889,20 @@ function _sfxOpenTrimmer() {
   const panel = document.getElementById('sfx-trimmer-panel');
   panel.style.display = 'flex';
 
-  // Configure slider: max = duration - SFX_MAX_DUR (latest start point)
+  // Set canvas internal resolution to match its actual rendered size
+  const cv = document.getElementById('sfx-waveform');
+  cv.width  = cv.offsetWidth  || 360;
+  cv.height = cv.offsetHeight || 72;
+
   const slider = document.getElementById('sfx-trim-slider');
   const maxStart = Math.max(0, _sfxDuration - SFX_MAX_DUR);
-  slider.min = 0;
-  slider.max = maxStart;
-  slider.step = 0.01;
+  slider.min   = 0;
+  slider.max   = maxStart;
+  slider.step  = 0.01;
   slider.value = 0;
 
   _sfxTrimStart = 0;
-  _sfxTrimEnd = Math.min(_sfxDuration, SFX_MAX_DUR);
+  _sfxTrimEnd   = Math.min(_sfxDuration, SFX_MAX_DUR);
 
   _sfxDrawWaveform();
   _sfxUpdateTrimLabels();
@@ -3908,6 +3912,9 @@ function _sfxOpenTrimmer() {
 window.sfxSliderMove = (val) => {
   _sfxTrimStart = parseFloat(val);
   _sfxTrimEnd   = Math.min(_sfxDuration, _sfxTrimStart + SFX_MAX_DUR);
+  // Keep canvas internal size matched to rendered size
+  const cv = document.getElementById('sfx-waveform');
+  if (cv) { cv.width = cv.offsetWidth || cv.width; cv.height = cv.offsetHeight || cv.height; }
   _sfxDrawWaveform();
   _sfxUpdateTrimLabels();
 };
@@ -4023,13 +4030,22 @@ function _sfxShowReady(dur) {
   rp.style.display = 'flex';
 }
 
+// Single shared AudioContext for all SFX trimmer operations
+let _sfxActx = null;
+function _getSfxActx() {
+  if (!_sfxActx || _sfxActx.state === 'closed') {
+    _sfxActx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return _sfxActx;
+}
+
 // Slice an AudioBuffer between startSec and endSec, returns new AudioBuffer
 function _sfxSliceBuffer(buf, startSec, endSec) {
   const sr        = buf.sampleRate;
   const startSamp = Math.floor(startSec * sr);
   const endSamp   = Math.min(Math.ceil(endSec * sr), buf.length);
-  const len       = endSamp - startSamp;
-  const actx      = new (window.AudioContext || window.webkitAudioContext)();
+  const len       = Math.max(1, endSamp - startSamp);
+  const actx      = _getSfxActx();
   const out       = actx.createBuffer(buf.numberOfChannels, len, sr);
   for (let ch = 0; ch < buf.numberOfChannels; ch++) {
     out.getChannelData(ch).set(buf.getChannelData(ch).subarray(startSamp, endSamp));
