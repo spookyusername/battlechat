@@ -4518,7 +4518,6 @@ window.sendCustomSfx = async () => {
   }).catch(()=>{});
   closeModal('sfx-overlay');
   showToast('SFX played!');
-  _sfxPlayTrimmed(start, end, Math.min(1, volume));
 };
 
 
@@ -4536,7 +4535,6 @@ window.sendSfx = async (sound) => {
   }).catch(()=>{});
   closeModal('sfx-overlay');
   showToast('SFX played!');
-  playSfxSound(sound);
 };
 
 function playSfxSound(sound, audioData, trimStart, trimEnd, volume) {
