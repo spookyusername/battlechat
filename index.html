@@ -326,8 +326,9 @@
   .arena-next-btn:disabled { opacity: 0.35; cursor: default; }
   .queue-screen { text-align: center; padding: 8px 0; }
   /* ── QUEUE FLOATER (persistent after modal closed) ── */
-  .queue-floater { position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%) translateY(12px); background: rgba(10,10,12,0.92); border: 1px solid rgba(201,168,76,0.35); padding: 6px 10px 6px 12px; display: flex; align-items: center; gap: 10px; z-index: 300; opacity: 0; transition: transform 0.35s cubic-bezier(0.22,1,0.36,1), opacity 0.25s ease; pointer-events: none; box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,168,76,0.06); white-space: nowrap; backdrop-filter: blur(8px); }
+  .queue-floater { position: fixed; bottom: 60px; left: calc(50% - 140px); transform: translateX(-50%) translateY(12px); background: rgba(10,10,12,0.92); border: 1px solid rgba(201,168,76,0.35); padding: 6px 10px 6px 12px; display: flex; align-items: center; gap: 10px; z-index: 300; opacity: 0; transition: transform 0.35s cubic-bezier(0.22,1,0.36,1), opacity 0.25s ease, left 0.35s ease; pointer-events: none; box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,168,76,0.06); white-space: nowrap; backdrop-filter: blur(8px); }
   .queue-floater.visible { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: all; }
+  body.chat-hidden-logo .queue-floater { left: 50%; }
   .qf-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 7px var(--gold); animation: blink 1.2s infinite; flex-shrink: 0; }
   .qf-info { display: flex; flex-direction: column; gap: 1px; }
   .qf-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); line-height: 1; }
@@ -2604,6 +2605,7 @@ window.toggleChat = () => {
   const sub = document.getElementById('chat-subheader');
   if (sub) { sub.style.width = chatOpen ? '280px' : '0'; sub.style.opacity = chatOpen ? '1' : '0'; sub.style.padding = chatOpen ? '' : '0'; }
   document.querySelector('.topbar').classList.toggle('chat-hidden-logo', !chatOpen);
+  document.body.classList.toggle('chat-hidden-logo', !chatOpen);
 };
 
 // ── TABS ──
