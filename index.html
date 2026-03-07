@@ -2125,6 +2125,9 @@ let lastRoundIndex = -1;
 let stageFull = false;
 let roundEpoch = null; // when the current round actually started (set when stage becomes full)
 
+let _stageInitialized = false; // true after first listenStage snapshot processed
+let _battleEpochRef = null; // Firebase ref for current battle epoch
+
 function checkStageFull() {
   const wasFullBefore = stageFull;
   stageFull = !!(stageUids.left && stageUids.right);
@@ -2138,21 +2141,48 @@ function checkStageFull() {
   showBetPanels(stageFull);
 
   if (stageFull && !wasFullBefore) {
-    // Stage just became full — fresh battle start
     resetBetUI();
     lastRoundIndex = -1;
-    roundEpoch = Date.now();
-    remove(ref(rtdb, 'votes')).catch(()=>{});
-    resetRound();
-    addSystemMsg('Both fighters ready — round starting!');
-    SFX.newRound();
+
+    if (_stageInitialized) {
+      // Genuine new battle — write a fresh epoch to Firebase, wipe votes
+      const epoch = Date.now();
+      roundEpoch = epoch;
+      set(ref(rtdb, 'battle/epoch'), epoch).catch(()=>{});
+      remove(ref(rtdb, 'votes')).catch(()=>{});
+      resetRound();
+      addSystemMsg('Both fighters ready — round starting!');
+      SFX.newRound();
+    } else {
+      // Page loaded while battle already ongoing — read epoch from Firebase
+      get(ref(rtdb, 'battle/epoch')).then(snap => {
+        const epoch = snap.val();
+        if (epoch) {
+          roundEpoch = epoch;
+          const elapsed = Date.now() - epoch;
+          const currentRound = Math.max(0, Math.floor(elapsed / ROUND_DURATION_MS));
+          lastRoundIndex = currentRound;
+          resetRound();
+          listenVotes(currentRound); // subscribe without wiping
+        } else {
+          // No epoch yet — treat as fresh start
+          const newEpoch = Date.now();
+          roundEpoch = newEpoch;
+          set(ref(rtdb, 'battle/epoch'), newEpoch).catch(()=>{});
+          resetRound();
+          listenVotes(0);
+          lastRoundIndex = 0;
+        }
+      }).catch(()=>{});
+    }
   } else if (!stageFull && wasFullBefore) {
-    // Stage just became empty — battle ended
+    // Battle ended — clean up
     resetBetUI();
     roundEpoch = null;
     lastRoundIndex = -1;
     if (voteUnsub) { voteUnsub(); voteUnsub = null; }
     remove(ref(rtdb, 'votes')).catch(()=>{});
+    remove(ref(rtdb, 'battle/epoch')).catch(()=>{});
     resetRound();
     document.getElementById('timer-display').textContent = '2:00';
     document.getElementById('timer-display').style.color = 'var(--gold)';
@@ -2160,18 +2190,18 @@ function checkStageFull() {
     if (rb) { rb.style.width = '100%'; rb.style.background = ''; }
     if (rr) { rr.style.width = '100%'; rr.style.background = ''; }
   }
-  // If neither transition happened (e.g. solo fighter joined/left), do nothing to votes
+
+  _stageInitialized = true;
 }
 
 function startSyncedTick(epoch) {
   if (timerInterval) clearInterval(timerInterval);
   timerInterval = setInterval(() => {
-    // Only tick when both slots are full
     if (!stageFull || !roundEpoch) return;
 
     const now        = Date.now();
     const elapsed    = now - roundEpoch;
-    const roundIndex = Math.floor(elapsed / ROUND_DURATION_MS);
+    const roundIndex = Math.max(0, Math.floor(elapsed / ROUND_DURATION_MS));
     const roundStart = roundEpoch + roundIndex * ROUND_DURATION_MS;
     const remaining  = ROUND_DURATION_MS - (now - roundStart);
 
@@ -2180,28 +2210,23 @@ function startSyncedTick(epoch) {
     if (remSec <= 5 && remSec > 0 && remaining % 1000 < 500) SFX.tick();
 
     // Detect round boundary
-    if (roundIndex !== lastRoundIndex) {
-      if (lastRoundIndex !== -1) {
-        const finishedRound = lastRoundIndex;
-        lastRoundIndex = roundIndex;
-        // Stop listening to old votes immediately
-        if (voteUnsub) { voteUnsub(); voteUnsub = null; }
-        // Resolve outcomes (reads vote data), then wipe, then reset UI and listen fresh
-        Promise.all([
-          resolveRound(finishedRound).catch(()=>{}),
-          resolveRoundViewer(finishedRound).catch(()=>{})
-        ]).then(() => remove(ref(rtdb, 'votes')).catch(()=>{}))
-          .then(() => {
-            resetRound();
-            listenVotes(roundIndex);
-            SFX.newRound();
-            addSystemMsg('New round started!');
-          });
-      } else {
-        lastRoundIndex = roundIndex;
-        // First round — votes already wiped by checkStageFull, just subscribe
-        listenVotes(roundIndex);
-      }
+    if (roundIndex !== lastRoundIndex && lastRoundIndex !== -1) {
+      const finishedRound = lastRoundIndex;
+      lastRoundIndex = roundIndex;
+      if (voteUnsub) { voteUnsub(); voteUnsub = null; }
+      Promise.all([
+        resolveRound(finishedRound).catch(()=>{}),
+        resolveRoundViewer(finishedRound).catch(()=>{})
+      ]).then(() => remove(ref(rtdb, 'votes')).catch(()=>{}))
+        .then(() => {
+          resetRound();
+          listenVotes(roundIndex);
+          SFX.newRound();
+          addSystemMsg('New round started!');
+        });
+    } else if (lastRoundIndex === -1) {
+      lastRoundIndex = roundIndex;
+      listenVotes(roundIndex);
     }
   }, 500);
 }
