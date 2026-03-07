@@ -1537,7 +1537,9 @@ const pb = {
     return r.json();
   },
   async getUsers(field, dir = 'DESC', max = 20) {
-    const r = await fetch(`${PB_URL}/api/collections/users/records?sort=${dir==='DESC'?'-':''}${field}&perPage=${max}`);
+    const r = await fetch(`${PB_URL}/api/collections/users/records?sort=${dir==='DESC'?'-':''}${field}&perPage=${max}`, {
+      headers: this._token ? { 'Authorization': this._token } : {}
+    });
     if (!r.ok) return [];
     const d = await r.json();
     return d.items || [];
@@ -2075,6 +2077,8 @@ window.saveProfile = async () => {
 let _currentLbTab = 'wins';
 async function loadLeaderboard() {
   await _loadLbTab(_currentLbTab);
+  if (window._lbRefreshInterval) clearInterval(window._lbRefreshInterval);
+  window._lbRefreshInterval = setInterval(() => _loadLbTab(_currentLbTab), 5000);
 }
 
 async function _loadLbTab(tab) {
@@ -3035,7 +3039,11 @@ window.switchTab = (btn,tab) => {
   btn.classList.add('active');
   document.getElementById('chat-view').style.display = tab==='chat'?'flex':'none';
   document.getElementById('lb-view').style.display   = tab==='leaderboard'?'flex':'none';
-  if (tab==='leaderboard') loadLeaderboard();
+  if (tab==='leaderboard') {
+    loadLeaderboard();
+  } else {
+    if (window._lbRefreshInterval) { clearInterval(window._lbRefreshInterval); window._lbRefreshInterval = null; }
+  }
 };
 
 window.switchLbTab = (tab) => {
