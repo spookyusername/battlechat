@@ -1488,7 +1488,7 @@
 <script>
 // ── POCKETBASE CONFIG ──
 // Replace this with your DigitalOcean droplet URL (e.g. http://123.45.67.89:8090)
-const PB_URL = 'https://api.battlechat.lol';
+const PB_URL = 'http://YOUR_DROPLET_IP:8090';
 
 // ── POCKETBASE HELPER ──
 const pb = {
@@ -1665,12 +1665,6 @@ const pb = {
     if (this._subs[key]) { try { this._subs[key].close(); } catch(e){} delete this._subs[key]; }
   },
 };
-
-// ── LIVEKIT ──
-const LK_URL    = 'wss://battlechat-ef3iejkp.livekit.cloud';
-const TOKEN_URL = 'https://battlechat-tokens.realeazybot.workers.dev';
-const ROOM_NAME = 'battlechat-stage';
-const { Room, RoomEvent, Track } = LivekitClient;
 
 // ── LIVEKIT ──
 const LK_URL    = 'wss://battlechat-ef3iejkp.livekit.cloud';
