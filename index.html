@@ -51,9 +51,9 @@
   .cam-feed::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px); pointer-events: none; z-index: 3; }
   .cam-feed video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; background: #000; }
   .cam-feed video.mirror { transform: scaleX(-1); }
-  .cam-placeholder { display: flex; flex-direction: column; align-items: center; gap: 12px; opacity: 0.15; z-index: 2; position: relative; }
-  .cam-placeholder-icon { width: 72px; height: 72px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 2rem; }
-  .cam-placeholder-text { font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; letter-spacing: 3px; text-transform: uppercase; }
+  .cam-placeholder { display: flex; flex-direction: column; align-items: center; gap: 16px; opacity: 0.2; z-index: 2; position: relative; }
+  .cam-placeholder-icon { width: 80px; height: 80px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; line-height: 1; }
+  .cam-placeholder-text { font-family: 'Barlow Condensed', sans-serif; font-size: 0.95rem; letter-spacing: 3px; text-transform: uppercase; font-weight: 600; }
   .cam-nameplate { display: none !important; }
   .cam-nameplate:hover { border-color: rgba(255,255,255,0.2); }
   .cam-avatar-sm { width: 26px; height: 26px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-family:'Bebas Neue',sans-serif; font-weight:700; flex-shrink:0; overflow:hidden; }
@@ -602,7 +602,7 @@
       <span id="collapse-label">HIDE CHAT</span>
     </button>
     <div id="topbar-user-area"></div>
-    <button class="topbar-btn enter" id="enter-arena-btn">ENTER ARENA</button>
+    <button class="topbar-btn enter" id="enter-arena-btn">ENTER QUEUE</button>
     <button class="topbar-btn" id="leave-stage-btn" onclick="doLeaveStage()" style="display:none;background:#1a0505;border-color:var(--red);color:var(--red-hot);">LEAVE STAGE</button>
   </div>
 </div>
@@ -658,7 +658,7 @@
       <video id="vid-left" autoplay playsinline muted class="mirror" style="display:none;"></video>
       <div class="cam-placeholder" id="ph-left">
         <div class="cam-placeholder-icon">📷</div>
-        <div class="cam-placeholder-text">Waiting for fighter...</div>
+        <div class="cam-placeholder-text">Waiting for chatter...</div>
       </div>
     </div>
     <div class="cam-votebar"><div class="cam-votebar-fill" id="vbar-left" style="width:0%;margin-left:auto;"></div></div>
@@ -696,7 +696,7 @@
       <video id="vid-right" autoplay playsinline style="display:none;"></video>
       <div class="cam-placeholder" id="ph-right">
         <div class="cam-placeholder-icon">📷</div>
-        <div class="cam-placeholder-text">Waiting for fighter...</div>
+        <div class="cam-placeholder-text">Waiting for chatter...</div>
       </div>
     </div>
     <div class="cam-votebar"><div class="cam-votebar-fill" id="vbar-right" style="width:0%;"></div></div>
@@ -960,7 +960,6 @@
     <button class="modal-close" id="arena-modal-close" onclick="arenaModalClose()">✕</button>
     <div class="arena-modal-header">
       <div class="arena-modal-title"><span>BATTLE</span>CHAT ARENA</div>
-      <div class="arena-step-lbl" id="arena-step-lbl">STEP 1 OF 2</div>
     </div>
     <div class="step-dots">
       <div class="sdot active" id="sdot0"></div>
@@ -1986,7 +1985,7 @@ window.openArenaModal = () => {
   document.getElementById('arena-s2').style.display='none';
   document.getElementById('sdot0').className='sdot active';
   document.getElementById('sdot1').className='sdot';
-  document.getElementById('arena-step-lbl').textContent='STEP 1 OF 2';
+  
   openModal('arena-overlay');
   startCamPreview();
 };
@@ -2042,7 +2041,7 @@ window.goToQueue = () => {
   document.getElementById('arena-s2').style.display='block';
   document.getElementById('sdot0').className='sdot done';
   document.getElementById('sdot1').className='sdot active';
-  document.getElementById('arena-step-lbl').textContent='IN QUEUE';
+  
   enterQueue();
 };
 
@@ -2303,6 +2302,8 @@ window.castVote = async side => {
   if (hasVoted) return;
   if (!me){ showToast('Log in to vote!'); return; }
   if (currentRoundIndex < 0) return;
+  if (mySlot === side) { showToast("You can't vote for yourself!"); return; }
+  if (mySlot) { showToast("Fighters can't vote!"); return; }
   hasVoted = true;
   document.getElementById('vbtn-left').disabled  = true;
   document.getElementById('vbtn-right').disabled = true;
