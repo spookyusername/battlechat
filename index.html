@@ -103,11 +103,21 @@
   /* Single-fighter solo mode: left cam spans cols 1-3, right cam hidden */
   .main.solo-mode { grid-template-columns: 1fr 0px 0px 280px; }
   .main.solo-mode.chat-collapsed { grid-template-columns: 1fr 0px 0px 0px; }
-  .main.solo-mode #cam-left  { grid-column: 1 / 4; }
-  .main.solo-mode #center-col { display: none; }
-  .main.solo-mode #cam-right { display: none; }
+  /* left-only: left cam fullscreen */
+  .main.solo-mode.solo-left #cam-left  { grid-column: 1 / 4; }
+  .main.solo-mode.solo-left #center-col { display: none; }
+  .main.solo-mode.solo-left #cam-right { display: none; }
+  .main.solo-mode.solo-left .timer-bar-bottom #tbar-right { display: none; }
+  /* right-only: right cam fullscreen */
+  .main.solo-mode.solo-right #cam-right { grid-column: 1 / 4; grid-row: 1; }
+  .main.solo-mode.solo-right #cam-left  { display: none; }
+  .main.solo-mode.solo-right #center-col { display: none; }
+  .main.solo-mode.solo-right .timer-bar-bottom #tbar-left { display: none; }
+  /* fallback for solo-mode without side class */
+  .main.solo-mode:not(.solo-left):not(.solo-right) #cam-left { grid-column: 1 / 4; }
+  .main.solo-mode:not(.solo-left):not(.solo-right) #center-col { display: none; }
+  .main.solo-mode:not(.solo-left):not(.solo-right) #cam-right { display: none; }
   .main.solo-mode .timer-bar-bottom { grid-column: 1 / 4; }
-  .main.solo-mode .timer-bar-bottom #tbar-right { display: none; }
   /* Smooth transitions */
   .main { transition: grid-template-columns 0.35s ease; }
 
@@ -2058,6 +2068,7 @@ async function resolveRound(roundIndex) {
   const winnerSlot = loserSlot ? (loserSlot === 'left' ? 'right' : 'left') : null;
 
   if (loserSlot && stageUids[loserSlot] === me.uid) {
+    // I am the loser — leave stage
     SFX.lose(); animateLose(mySlot);
     addSystemMsg('Round over! You lost the vote and were eliminated.');
     showToast('You lost the round!');
@@ -2066,15 +2077,18 @@ async function resolveRound(roundIndex) {
       myProfile.losses = (myProfile.losses||0)+1;
     } catch(e){}
     setTimeout(async () => await leaveStage(), 1200);
-  } else if (loserSlot && stageUids[loserSlot] !== me.uid && mySlot) {
-    const winnerName = document.getElementById('un-'+winnerSlot).textContent;
+  } else if (winnerSlot && stageUids[winnerSlot] === me.uid) {
+    // I am the winner — stay on stage, just collect rewards
+    const winnerName = myProfile.username;
     SFX.win(); animateWin(winnerSlot); animateLose(loserSlot);
-    addSystemMsg(winnerName + ' wins the round!');
+    addSystemMsg(winnerName + ' wins the round! Waiting for next challenger...');
+    showToast('You won! Next challenger incoming...');
     try {
       await updateDoc(doc(db,'users',me.uid),{ wins: (myProfile.wins||0)+1 });
       myProfile.wins = (myProfile.wins||0)+1;
     } catch(e){}
     await grantRewards(50, 25, '🏆 Round Win!');
+    // Winner stays on stage — do NOT call leaveStage
   }
 
   // Resolve bets for all users (fighters too)
@@ -2155,9 +2169,13 @@ function checkStageFull() {
 
   const mainGrid = document.getElementById('main-grid');
   if (stageFull) {
-    mainGrid.classList.remove('solo-mode');
+    mainGrid.classList.remove('solo-mode','solo-left','solo-right');
   } else {
     mainGrid.classList.add('solo-mode');
+    // Apply correct side class based on who is present
+    mainGrid.classList.remove('solo-left','solo-right');
+    if (stageUids.left && !stageUids.right) mainGrid.classList.add('solo-left');
+    else if (stageUids.right && !stageUids.left) mainGrid.classList.add('solo-right');
   }
   showBetPanels(stageFull);
 
@@ -2173,7 +2191,9 @@ function checkStageFull() {
       remove(ref(rtdb, 'votes')).catch(()=>{});
       resetRound();
       listenVotes(0);
-      addSystemMsg('Both fighters ready — round starting!');
+      const leftName  = stageUids.left  ? (document.getElementById('un-left')?.textContent  || '') : '';
+      const rightName = stageUids.right ? (document.getElementById('un-right')?.textContent || '') : '';
+      addSystemMsg('⚔ ' + leftName + ' vs ' + rightName + ' — BATTLE STARTS!');
       SFX.newRound();
     } else {
       // Page loaded mid-battle — fetch the stored epoch, DON'T touch votes
@@ -2197,19 +2217,37 @@ function checkStageFull() {
       // Leave lastRoundIndex and roundEpoch alone until async resolves
     }
   } else if (!stageFull && wasFullBefore) {
-    resetBetUI();
-    roundEpoch = null;
-    lastRoundIndex = -1;
-    _battleEpochLoading = false;
-    if (voteUnsub) { voteUnsub(); voteUnsub = null; }
-    remove(ref(rtdb, 'votes')).catch(()=>{});
-    remove(ref(rtdb, 'battle/epoch')).catch(()=>{});
-    resetRound();
-    document.getElementById('timer-display').textContent = '2:00';
-    document.getElementById('timer-display').style.color = 'var(--gold)';
-    const rb = document.getElementById('rbar-left'), rr = document.getElementById('rbar-right');
-    if (rb) { rb.style.width = '100%'; rb.style.background = ''; }
-    if (rr) { rr.style.width = '100%'; rr.style.background = ''; }
+    // Someone left mid-battle — check if anyone is still on stage
+    const anyoneLeft = !!(stageUids.left || stageUids.right);
+    if (anyoneLeft) {
+      // One fighter remains — keep epoch/votes running, winner stays fullscreen
+      // The queue will fill the empty slot and a new battle begins naturally
+      resetBetUI();
+      if (voteUnsub) { voteUnsub(); voteUnsub = null; }
+      // Wipe votes for the interrupted round and reset so next pairing is fresh
+      remove(ref(rtdb, 'votes')).catch(()=>{});
+      resetRound();
+      // Update solo-mode to show correct side fullscreen
+      const occupiedSlot = stageUids.left ? 'left' : 'right';
+      mainGrid.classList.remove('solo-left','solo-right');
+      mainGrid.classList.add('solo-' + occupiedSlot);
+    } else {
+      // Stage fully empty — full reset
+      resetBetUI();
+      roundEpoch = null;
+      lastRoundIndex = -1;
+      _battleEpochLoading = false;
+      if (voteUnsub) { voteUnsub(); voteUnsub = null; }
+      remove(ref(rtdb, 'votes')).catch(()=>{});
+      remove(ref(rtdb, 'battle/epoch')).catch(()=>{});
+      resetRound();
+      document.getElementById('timer-display').textContent = '2:00';
+      document.getElementById('timer-display').style.color = 'var(--gold)';
+      const rb = document.getElementById('rbar-left'), rr = document.getElementById('rbar-right');
+      if (rb) { rb.style.width = '100%'; rb.style.background = ''; }
+      if (rr) { rr.style.width = '100%'; rr.style.background = ''; }
+      mainGrid.classList.remove('solo-left','solo-right');
+    }
   }
 
   _stageInitialized = true;
