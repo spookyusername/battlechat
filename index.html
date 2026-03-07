@@ -1955,14 +1955,18 @@ let voteUnsub = null;
 function listenVotes(roundIndex) {
   if (voteUnsub) { voteUnsub(); voteUnsub = null; }
   currentRoundIndex = roundIndex;
+  // Snapshot the round start time so we can ignore stale votes from a previous cycle
+  const roundStartedAt = Date.now();
 
   voteUnsub = onValue(ref(rtdb, 'votes/' + roundIndex), snap => {
-    const data    = snap.val() || {};
+    // If listenVotes was called again for a different round, this callback is stale — ignore
+    if (currentRoundIndex !== roundIndex) return;
+
+    const data       = snap.val() || {};
     const leftVotes  = data.left  ? Object.keys(data.left).length  : 0;
     const rightVotes = data.right ? Object.keys(data.right).length : 0;
-    const total   = leftVotes + rightVotes;
+    const total      = leftVotes + rightVotes;
 
-    // Percentages based on actual votes cast (0% each if nobody voted yet)
     const lp = total > 0 ? Math.round((leftVotes  / total) * 100) : 0;
     const rp = total > 0 ? Math.round((rightVotes / total) * 100) : 0;
 
@@ -1971,14 +1975,26 @@ function listenVotes(roundIndex) {
     document.getElementById('vbar-left').style.width  = lp + '%';
     document.getElementById('vbar-right').style.width = rp + '%';
 
-    // Check if current user already voted this round
-    if (me && ((data.left && data.left[me.uid]) || (data.right && data.right[me.uid]))) {
-      hasVoted = true;
-      const mySide = data.left && data.left[me.uid] ? 'left' : 'right';
-      document.getElementById('vbtn-left').disabled  = true;
-      document.getElementById('vbtn-right').disabled = true;
-      document.getElementById('vbtn-'+mySide).classList.add('voted-'+mySide);
-      document.getElementById('vbtn-'+mySide).textContent = 'VOTED';
+    // Only lock the vote buttons if the user genuinely voted THIS round.
+    // We guard with roundStartedAt: Firebase fires immediately on subscribe with
+    // whatever data is in the node — if the vote ts is older than when we started
+    // listening, it's leftover from a previous cycle of the same roundIndex.
+    if (me && !hasVoted) {
+      const myLeft  = data.left  && data.left[me.uid];
+      const myRight = data.right && data.right[me.uid];
+      if (myLeft || myRight) {
+        // Extra guard: only count it if the vote was written after this round started
+        const voteTs = (myLeft || myRight);
+        const isStale = typeof voteTs === 'object' && voteTs.ts && voteTs.ts < roundStartedAt;
+        if (!isStale) {
+          hasVoted = true;
+          const mySide = myLeft ? 'left' : 'right';
+          document.getElementById('vbtn-left').disabled  = true;
+          document.getElementById('vbtn-right').disabled = true;
+          document.getElementById('vbtn-'+mySide).classList.add('voted-'+mySide);
+          document.getElementById('vbtn-'+mySide).textContent = 'VOTED';
+        }
+      }
     }
   });
 }
@@ -1992,7 +2008,7 @@ window.castVote = async side => {
   document.getElementById('vbtn-right').disabled = true;
   document.getElementById('vbtn-'+side).classList.add('voted-'+side);
   document.getElementById('vbtn-'+side).textContent = 'VOTED';
-  await set(ref(rtdb, 'votes/' + currentRoundIndex + '/' + side + '/' + me.uid), true);
+  await set(ref(rtdb, 'votes/' + currentRoundIndex + '/' + side + '/' + me.uid), { ts: Date.now() });
   SFX.vote(); showToast('Vote locked in!');
 };
 
@@ -2148,8 +2164,9 @@ function startSyncedTick(epoch) {
     // Detect round boundary
     if (roundIndex !== lastRoundIndex) {
       if (lastRoundIndex !== -1) {
+        // Reset votes for everyone immediately
+        resetRound();
         resolveRound(lastRoundIndex).then(() => {
-          resetRound();
           listenVotes(roundIndex);
           SFX.newRound();
           addSystemMsg('New round started!');
