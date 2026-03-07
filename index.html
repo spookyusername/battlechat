@@ -119,7 +119,7 @@
 
   /* TIMER BAR */
   /* ── BATTLE STRIP (sits between topbar and arena) ── */
-  .battle-strip { display: flex; align-items: center; background: var(--dark2); border-bottom: 1px solid var(--border); height: 48px; padding: 0 16px; gap: 12px; flex-shrink: 0; overflow: hidden; width: 100%; }
+  .battle-strip { display: flex; align-items: center; background: var(--dark2); border-bottom: 1px solid var(--border); height: 48px; padding: 0 16px; gap: 12px; flex-shrink: 0; overflow: hidden; width: calc(100% - 280px); transition: width 0.35s ease; }
   .bstrip-left  { display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer; border-radius: 4px; padding: 4px 6px; transition: background 0.15s, opacity 0.3s; overflow: hidden; }
   .bstrip-right { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; cursor: pointer; border-radius: 4px; padding: 4px 10px 4px 6px; transition: background 0.15s, opacity 0.3s; overflow: hidden; }
   .bstrip-left:hover, .bstrip-right:hover { background: rgba(255,255,255,0.05); }
@@ -2387,7 +2387,8 @@ window.toggleChat = () => {
   document.getElementById('main-grid').classList.toggle('chat-collapsed',!chatOpen);
   document.getElementById('collapse-icon').textContent  = chatOpen?'▶▶':'◀◀';
   document.getElementById('collapse-label').textContent = chatOpen?'HIDE CHAT':'SHOW CHAT';
-  
+  const strip = document.getElementById('battle-strip');
+  if (strip) strip.style.width = chatOpen ? 'calc(100% - 280px)' : '100%';
 };
 
 // ── TABS ──
