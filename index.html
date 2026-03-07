@@ -1754,41 +1754,34 @@ function clearSlotUI(slot) {
   document.querySelectorAll('audio[data-slot="'+slot+'"]').forEach(x=>{ x.pause(); x.muted=true; x.remove(); });
 }
 
-// ── GO LIVE — atomically claim a slot using Firebase transaction ──
+// ── GO LIVE — try to claim a slot with a transaction ──
 async function goLive(slot) {
-  let claimed = false;
-  try {
-    const result = await runTransaction(ref(rtdb,'stage/'+slot), current => {
-      // Only claim if slot is empty
-      if (current !== null && current !== undefined) return; // abort
-      return { uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, wins:myProfile.wins||0, losses:myProfile.losses||0 };
-    });
-    claimed = result.committed;
-  } catch(e) { console.warn('Transaction error:', e); }
+  const slotData = { uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, wins:myProfile.wins||0, losses:myProfile.losses||0 };
 
-  if (!claimed) {
-    // Try the other slot
-    const other = slot === 'left' ? 'right' : 'left';
+  // Try preferred slot, then the other one
+  const slots = [slot, slot === 'left' ? 'right' : 'left'];
+  let claimedSlot = null;
+
+  for (const s of slots) {
     try {
-      const result2 = await runTransaction(ref(rtdb,'stage/'+other), current => {
-        if (current !== null && current !== undefined) return;
-        return { uid:me.uid, username:myProfile.username, avatar:myProfile.avatar, wins:myProfile.wins||0, losses:myProfile.losses||0 };
+      const result = await runTransaction(ref(rtdb,'stage/'+s), current => {
+        // Abort if already occupied
+        if (current !== null && current !== undefined) return undefined;
+        return slotData;
       });
-      if (result2.committed) { claimed = true; slot = other; }
-    } catch(e) { console.warn('Transaction error 2:', e); }
+      if (result && result.committed) { claimedSlot = s; break; }
+    } catch(e) { console.warn('goLive transaction error on', s, e); }
   }
 
-  if (!claimed) {
-    showToast('Both slots taken — waiting in queue');
-    return false;
+  if (!claimedSlot) {
+    return false; // caller handles retry
   }
 
-  mySlot = slot;
-  // Auto-remove from stage AND queue if user disconnects/refreshes
-  onDisconnect(ref(rtdb,'stage/'+slot)).remove().catch(()=>{});
+  mySlot = claimedSlot;
+  onDisconnect(ref(rtdb,'stage/'+claimedSlot)).remove().catch(()=>{});
   onDisconnect(ref(rtdb,'queue/'+me.uid)).remove().catch(()=>{});
   addSystemMsg(myProfile.username + ' entered the arena!');
-  await joinAsFighter(slot);
+  await joinAsFighter(claimedSlot);
   showToast('You are LIVE!');
   document.getElementById('enter-arena-btn').style.display = 'none';
   document.getElementById('leave-stage-btn').style.display = 'block';
@@ -1923,34 +1916,50 @@ async function enterQueue() {
 
     updateQueueUI(sorted, myPos);
 
-    // Any free slot available? Go immediately — no waiting for opponent
-    const freeSlot = !stage.left ? 'left' : !stage.right ? 'right' : null;
-
-    if (freeSlot) {
-      launched = true;
-      stopQueueListeners();
-      await remove(ref(rtdb,'queue/'+me.uid)).catch(()=>{});
-
-      document.getElementById('q-status').textContent = 'Going live!';
-      document.getElementById('q-pos').textContent    = 'GO!';
-      document.getElementById('q-pos').style.color    = '#4CAF50';
-
-      setTimeout(async () => {
-        closeModal('arena-overlay');
-        const success = await goLive(freeSlot);
-        if (!success) {
-          // Race — slot grabbed, retry
-          launched = false;
-          await set(ref(rtdb,'queue/'+me.uid), {
-            uid: me.uid, username: myProfile.username,
-            avatar: myProfile.avatar, ts: Date.now()
-          });
-          enterQueue();
-        }
-      }, 600);
-    } else {
-      // Both slots full — wait
+    // Count free slots and people ahead of me
+    const freeSlots = (!stage.left ? 1 : 0) + (!stage.right ? 1 : 0);
+    if (freeSlots === 0) {
       document.getElementById('q-status').textContent = 'Waiting for a slot...';
+      return;
+    }
+
+    // Only attempt if I'm within range of available slots
+    // e.g. 1 free slot → only position 1 should try; 2 free → positions 1 and 2
+    if (myPos === -1 || myPos >= freeSlots) {
+      document.getElementById('q-status').textContent = 'Waiting in line...';
+      return;
+    }
+
+    // I'm in range — try to claim
+    launched = true;
+    stopQueueListeners();
+
+    document.getElementById('q-status').textContent = 'Going live!';
+    document.getElementById('q-pos').textContent    = 'GO!';
+    document.getElementById('q-pos').style.color    = '#4CAF50';
+
+    const freeSlot = !stage.left ? 'left' : 'right';
+
+    // Small stagger based on position to reduce collisions
+    await new Promise(r => setTimeout(r, myPos * 300 + 200));
+
+    closeModal('arena-overlay');
+    const success = await goLive(freeSlot);
+    if (!success) {
+      // Lost the race — re-enter queue cleanly
+      launched = false;
+      await set(ref(rtdb,'queue/'+me.uid), {
+        uid: me.uid, username: myProfile.username,
+        avatar: myProfile.avatar, ts: Date.now()
+      }).catch(()=>{});
+      // Re-attach listeners without re-opening modal
+      queueUnsubStage = onValue(ref(rtdb,'stage'), () => checkAndClaim());
+      queueUnsubList  = onValue(ref(rtdb,'queue'), async snap => {
+        if (launched) return;
+        const qd = snap.val() || {};
+        const s2 = Object.values(qd).sort((a,b) => a.ts - b.ts);
+        updateQueueUI(s2, s2.findIndex(w => w.uid === me.uid));
+      });
     }
   }
 
