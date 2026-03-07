@@ -2049,9 +2049,6 @@ async function resolveRound(roundIndex) {
 
   // Resolve bets for all users (fighters too)
   if (winnerSlot) await resolveBets(winnerSlot);
-
-  // Clean up old votes
-  await remove(ref(rtdb, 'votes/' + (roundIndex - 2))).catch(()=>{});
 }
 
 // Viewers need their own round resolution for bets + voter rewards
@@ -2164,18 +2161,25 @@ function startSyncedTick(epoch) {
     // Detect round boundary
     if (roundIndex !== lastRoundIndex) {
       if (lastRoundIndex !== -1) {
-        // Reset votes for everyone immediately
+        const finishedRound = lastRoundIndex;
+        lastRoundIndex = roundIndex;
+        // Reset UI for everyone immediately
         resetRound();
-        resolveRound(lastRoundIndex).then(() => {
+        // Unsubscribe old vote listener before wiping data
+        if (voteUnsub) { voteUnsub(); voteUnsub = null; }
+        // Delete finished round's votes from Firebase so new listenVotes starts clean
+        remove(ref(rtdb, 'votes/' + finishedRound)).catch(()=>{});
+        // Resolve outcomes then start new round
+        resolveRound(finishedRound).then(() => {
           listenVotes(roundIndex);
           SFX.newRound();
           addSystemMsg('New round started!');
         });
-        resolveRoundViewer(lastRoundIndex).catch(()=>{});
+        resolveRoundViewer(finishedRound).catch(()=>{});
       } else {
+        lastRoundIndex = roundIndex;
         listenVotes(roundIndex);
       }
-      lastRoundIndex = roundIndex;
     }
   }, 500);
 }
