@@ -792,62 +792,6 @@
   .bj-result-amount { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 3px; text-align: center; margin-top: 10px; }
 
   @keyframes discordPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-
-  /* ── HAT OVERLAYS ── */
-  .avatar-wrap { position:relative; display:inline-flex; align-items:center; justify-content:center; width:100%; height:100%; }
-  .avatar-hat  { position:absolute; top:-9px; left:50%; transform:translateX(-50%); font-size:1em; line-height:1; pointer-events:none; z-index:5; filter:drop-shadow(0 1px 3px rgba(0,0,0,0.9)); }
-  .topbar-avatar .avatar-hat { font-size:0.85em; top:-7px; }
-  .cam-avatar-sm .avatar-hat { font-size:0.8em;  top:-6px; }
-
-  /* ── PROFILE BORDERS ── */
-  .border-fire    { box-shadow:0 0 0 2px #ff4400, 0 0 8px #ff4400 !important; }
-  .border-ice     { box-shadow:0 0 0 2px #00d4ff, 0 0 8px #00d4ff !important; }
-  .border-gold    { box-shadow:0 0 0 2px #C9A84C, 0 0 8px #C9A84C !important; }
-  .border-toxic   { box-shadow:0 0 0 2px #39ff14, 0 0 8px #39ff14 !important; }
-  .border-violet  { box-shadow:0 0 0 2px #b45aff, 0 0 8px #b45aff !important; }
-  .border-rainbow { animation:rainbowBorder 3s linear infinite !important; }
-  @keyframes rainbowBorder {
-    0%  { box-shadow:0 0 0 2px #ff0000,0 0 8px #ff0000; }
-    17% { box-shadow:0 0 0 2px #ff8800,0 0 8px #ff8800; }
-    33% { box-shadow:0 0 0 2px #ffff00,0 0 8px #ffff00; }
-    50% { box-shadow:0 0 0 2px #00ff00,0 0 8px #00ff00; }
-    67% { box-shadow:0 0 0 2px #0088ff,0 0 8px #0088ff; }
-    83% { box-shadow:0 0 0 2px #8800ff,0 0 8px #8800ff; }
-    100%{ box-shadow:0 0 0 2px #ff0000,0 0 8px #ff0000; }
-  }
-
-  /* ── CHAT TEXT COLORS ── */
-  .msg-text-fire   { color:#ff6622 !important; }
-  .msg-text-ice    { color:#00d4ff !important; }
-  .msg-text-toxic  { color:#39ff14 !important; }
-  .msg-text-violet { color:#c97aff !important; }
-  .msg-text-gold   { color:#ffd700 !important; }
-  .msg-text-crimson{ color:#ff3b3b !important; }
-
-  /* ── INVENTORY TAB ── */
-  .inv-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:4px; }
-  .inv-item {
-    background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);
-    padding:12px 10px 10px; text-align:center; position:relative;
-    transition:border-color 0.15s, background 0.15s;
-  }
-  .inv-item.equipped { border-color:var(--red-hot) !important; background:rgba(255,59,59,0.07) !important; }
-  .inv-item.equipped::after { content:'EQUIPPED'; position:absolute; top:5px; right:6px; font-family:'Bebas Neue',sans-serif; font-size:0.48rem; letter-spacing:2px; color:var(--red-hot); }
-  .inv-preview { font-size:1.9rem; margin-bottom:6px; line-height:1; min-height:1.9rem; display:flex; align-items:center; justify-content:center; }
-  .inv-item-name { font-family:'Barlow Condensed',sans-serif; font-size:0.68rem; letter-spacing:1.5px; color:var(--text); margin-bottom:8px; text-transform:uppercase; line-height:1.3; }
-  .inv-btn {
-    width:100%; padding:5px 0; border:none; color:white;
-    font-family:'Bebas Neue',sans-serif; font-size:0.75rem; letter-spacing:2px; cursor:pointer;
-    transition:background 0.15s;
-  }
-  .inv-btn.equip   { background:var(--red); }
-  .inv-btn.equip:hover { background:var(--red-hot); }
-  .inv-btn.unequip { background:rgba(255,255,255,0.1); color:var(--muted); }
-  .inv-btn.unequip:hover { background:rgba(255,255,255,0.18); color:var(--text); }
-  #inv-empty { text-align:center; padding:40px 16px; }
-  #inv-empty .inv-empty-icon { font-size:2.8rem; margin-bottom:12px; }
-  #inv-empty .inv-empty-title { font-family:'Bebas Neue',sans-serif; font-size:1.1rem; letter-spacing:3px; }
-  #inv-empty .inv-empty-sub { font-family:'Barlow Condensed',sans-serif; font-size:0.68rem; letter-spacing:2px; color:var(--muted); margin-top:6px; text-transform:uppercase; }
 </style>
 </head>
 <body>
@@ -1345,10 +1289,6 @@
       <span class="mrb-icon">🏆</span>
       <span class="mrb-label">Ranks</span>
     </button>
-    <button class="menu-rail-btn" id="mrb-inv" onclick="switchMenuTab(this,'inv')" data-tab="inv">
-      <span class="mrb-icon">🎒</span>
-      <span class="mrb-label">Items</span>
-    </button>
     <button class="menu-rail-btn" id="mrb-settings" onclick="switchMenuTab(this,'settings')" data-tab="settings">
       <span class="mrb-icon">⚙️</span>
       <span class="mrb-label">Config</span>
@@ -1372,61 +1312,71 @@
       <span class="shop-coins-num" id="shop-coins">🪙 0</span>
     </div>
     <button class="daily-btn" id="daily-reward-btn" onclick="claimDailyReward()">🎁 CLAIM DAILY REWARD — 100🪙</button>
-
-    <div class="menu-section-title">Hats</div>
+    <div class="menu-section-title">Name Colors</div>
     <div class="shop-grid">
-      <div class="shop-item" data-item-id="hat_party"    onclick="buyItem('hat_party',300)">   <div class="shop-preview">🎉</div><div class="shop-item-name">Party Hat</div>     <div class="shop-price" id="sp-hat_party">🪙 300</div></div>
-      <div class="shop-item" data-item-id="hat_cowboy"   onclick="buyItem('hat_cowboy',400)">  <div class="shop-preview">🤠</div><div class="shop-item-name">Cowboy Hat</div>    <div class="shop-price" id="sp-hat_cowboy">🪙 400</div></div>
-      <div class="shop-item" data-item-id="hat_mushroom" onclick="buyItem('hat_mushroom',500)"><div class="shop-preview">🍄</div><div class="shop-item-name">Mushroom Cap</div>  <div class="shop-price" id="sp-hat_mushroom">🪙 500</div></div>
-      <div class="shop-item" data-item-id="hat_dunce"    onclick="buyItem('hat_dunce',200)">   <div class="shop-preview">🎓</div><div class="shop-item-name">Dunce Cap</div>     <div class="shop-price" id="sp-hat_dunce">🪙 200</div></div>
-      <div class="shop-item" data-item-id="hat_snapback" onclick="buyItem('hat_snapback',400)"><div class="shop-preview">🧢</div><div class="shop-item-name">Snapback</div>      <div class="shop-price" id="sp-hat_snapback">🪙 400</div></div>
-      <div class="shop-item" data-item-id="hat_hardhat"  onclick="buyItem('hat_hardhat',350)"> <div class="shop-preview">⛑️</div><div class="shop-item-name">Hard Hat</div>     <div class="shop-price" id="sp-hat_hardhat">🪙 350</div></div>
-      <div class="shop-item" data-item-id="hat_flower"   onclick="buyItem('hat_flower',600)">  <div class="shop-preview">🌸</div><div class="shop-item-name">Flower Crown</div>  <div class="shop-price" id="sp-hat_flower">🪙 600</div></div>
-      <div class="shop-item" data-item-id="hat_helmet"   onclick="buyItem('hat_helmet',700)">  <div class="shop-preview">🪖</div><div class="shop-item-name">Battle Helmet</div> <div class="shop-price" id="sp-hat_helmet">🪙 700</div></div>
-      <div class="shop-item" data-item-id="hat_tophat"   onclick="buyItem('hat_tophat',800)">  <div class="shop-preview">🎩</div><div class="shop-item-name">Top Hat</div>       <div class="shop-price" id="sp-hat_tophat">🪙 800</div></div>
-      <div class="shop-item" data-item-id="hat_devil"    onclick="buyItem('hat_devil',1000)">  <div class="shop-preview">😈</div><div class="shop-item-name">Devil Horns</div>   <div class="shop-price" id="sp-hat_devil">🪙 1000</div></div>
-      <div class="shop-item" data-item-id="hat_wizard"   onclick="buyItem('hat_wizard',1200)"> <div class="shop-preview">🧙</div><div class="shop-item-name">Wizard Hat</div>    <div class="shop-price" id="sp-hat_wizard">🪙 1200</div></div>
-      <div class="shop-item" data-item-id="hat_crown"    onclick="buyItem('hat_crown',1500)">  <div class="shop-preview">👑</div><div class="shop-item-name">Crown</div>         <div class="shop-price" id="sp-hat_crown">🪙 1500</div></div>
+      <div class="shop-item" data-item-id="color_crimson" onclick="buyItem('color_crimson',300)">
+        <div class="shop-preview" style="color:#FF3B3B;">PERIOD</div>
+        <div class="shop-item-name">Period Blood Red</div>
+        <div class="shop-price" id="sp-color_crimson">🪙 300</div>
+      </div>
+      <div class="shop-item" data-item-id="color_toxic" onclick="buyItem('color_toxic',450)">
+        <div class="shop-preview" style="color:#39ff14;">VOMIT</div>
+        <div class="shop-item-name">Vomit Green</div>
+        <div class="shop-price" id="sp-color_toxic">🪙 450</div>
+      </div>
+      <div class="shop-item" data-item-id="color_gold" onclick="buyItem('color_gold',600)">
+        <div class="shop-preview" style="color:#C9A84C;">PISS</div>
+        <div class="shop-item-name">Piss Yellow</div>
+        <div class="shop-price" id="sp-color_gold">🪙 600</div>
+      </div>
+      <div class="shop-item" data-item-id="color_cyan" onclick="buyItem('color_cyan',750)">
+        <div class="shop-preview" style="color:#00e5ff;">BONNIE</div>
+        <div class="shop-item-name">Bonnie Blue</div>
+        <div class="shop-price" id="sp-color_cyan">🪙 750</div>
+      </div>
+      <div class="shop-item" data-item-id="color_violet" onclick="buyItem('color_violet',900)">
+        <div class="shop-preview" style="color:#b45aff;">GRAPE BRUISE</div>
+        <div class="shop-item-name">Purple Bruise</div>
+        <div class="shop-price" id="sp-color_violet">🪙 900</div>
+      </div>
+      <div class="shop-item" data-item-id="color_white" onclick="buyItem('color_white',1100)">
+        <div class="shop-preview" style="color:#ffffff;">CUM</div>
+        <div class="shop-item-name">Cum White</div>
+        <div class="shop-price" id="sp-color_white">🪙 1100</div>
+      </div>
     </div>
-
-    <div class="menu-section-title" style="margin-top:18px;">Profile Borders</div>
-    <div class="shop-grid">
-      <div class="shop-item" data-item-id="border_fire"    onclick="buyItem('border_fire',700)">   <div class="shop-preview" style="color:#ff4400;">🔥</div><div class="shop-item-name">Fire Border</div>    <div class="shop-price" id="sp-border_fire">🪙 700</div></div>
-      <div class="shop-item" data-item-id="border_ice"     onclick="buyItem('border_ice',700)">    <div class="shop-preview" style="color:#00d4ff;">❄️</div><div class="shop-item-name">Ice Border</div>     <div class="shop-price" id="sp-border_ice">🪙 700</div></div>
-      <div class="shop-item" data-item-id="border_gold"    onclick="buyItem('border_gold',900)">   <div class="shop-preview" style="color:#C9A84C;">✨</div><div class="shop-item-name">Gold Border</div>    <div class="shop-price" id="sp-border_gold">🪙 900</div></div>
-      <div class="shop-item" data-item-id="border_toxic"   onclick="buyItem('border_toxic',900)">  <div class="shop-preview" style="color:#39ff14;">☢️</div><div class="shop-item-name">Toxic Border</div>   <div class="shop-price" id="sp-border_toxic">🪙 900</div></div>
-      <div class="shop-item" data-item-id="border_violet"  onclick="buyItem('border_violet',1000)"><div class="shop-preview" style="color:#b45aff;">🔮</div><div class="shop-item-name">Violet Border</div>  <div class="shop-price" id="sp-border_violet">🪙 1000</div></div>
-      <div class="shop-item" data-item-id="border_rainbow" onclick="buyItem('border_rainbow',2500)"><div class="shop-preview">🌈</div><div class="shop-item-name">Rainbow Border</div><div class="shop-price" id="sp-border_rainbow">🪙 2500</div></div>
-    </div>
-
-    <div class="menu-section-title" style="margin-top:18px;">Chat Text Colors</div>
-    <div class="shop-grid">
-      <div class="shop-item" data-item-id="txt_fire"    onclick="buyItem('txt_fire',500)">   <div class="shop-preview" style="color:#ff6622;font-weight:bold;">Abc</div><div class="shop-item-name">Fire Orange</div>   <div class="shop-price" id="sp-txt_fire">🪙 500</div></div>
-      <div class="shop-item" data-item-id="txt_ice"     onclick="buyItem('txt_ice',500)">    <div class="shop-preview" style="color:#00d4ff;font-weight:bold;">Abc</div><div class="shop-item-name">Ice Blue</div>      <div class="shop-price" id="sp-txt_ice">🪙 500</div></div>
-      <div class="shop-item" data-item-id="txt_toxic"   onclick="buyItem('txt_toxic',600)">  <div class="shop-preview" style="color:#39ff14;font-weight:bold;">Abc</div><div class="shop-item-name">Toxic Green</div>   <div class="shop-price" id="sp-txt_toxic">🪙 600</div></div>
-      <div class="shop-item" data-item-id="txt_violet"  onclick="buyItem('txt_violet',600)"> <div class="shop-preview" style="color:#c97aff;font-weight:bold;">Abc</div><div class="shop-item-name">Mystic Violet</div> <div class="shop-price" id="sp-txt_violet">🪙 600</div></div>
-      <div class="shop-item" data-item-id="txt_gold"    onclick="buyItem('txt_gold',800)">   <div class="shop-preview" style="color:#ffd700;font-weight:bold;">Abc</div><div class="shop-item-name">Gold Text</div>     <div class="shop-price" id="sp-txt_gold">🪙 800</div></div>
-      <div class="shop-item" data-item-id="txt_crimson" onclick="buyItem('txt_crimson',800)"><div class="shop-preview" style="color:#ff3b3b;font-weight:bold;">Abc</div><div class="shop-item-name">Blood Red Text</div><div class="shop-price" id="sp-txt_crimson">🪙 800</div></div>
-    </div>
-
-    <div class="menu-section-title" style="margin-top:18px;">Name Colors</div>
-    <div class="shop-grid">
-      <div class="shop-item" data-item-id="color_crimson" onclick="buyItem('color_crimson',300)"><div class="shop-preview" style="color:#FF3B3B;">PERIOD</div><div class="shop-item-name">Period Blood Red</div><div class="shop-price" id="sp-color_crimson">🪙 300</div></div>
-      <div class="shop-item" data-item-id="color_toxic"   onclick="buyItem('color_toxic',450)"> <div class="shop-preview" style="color:#39ff14;">VOMIT</div> <div class="shop-item-name">Vomit Green</div>      <div class="shop-price" id="sp-color_toxic">🪙 450</div></div>
-      <div class="shop-item" data-item-id="color_gold"    onclick="buyItem('color_gold',600)">  <div class="shop-preview" style="color:#C9A84C;">PISS</div>   <div class="shop-item-name">Piss Yellow</div>      <div class="shop-price" id="sp-color_gold">🪙 600</div></div>
-      <div class="shop-item" data-item-id="color_cyan"    onclick="buyItem('color_cyan',750)">  <div class="shop-preview" style="color:#00e5ff;">BONNIE</div> <div class="shop-item-name">Bonnie Blue</div>      <div class="shop-price" id="sp-color_cyan">🪙 750</div></div>
-      <div class="shop-item" data-item-id="color_violet"  onclick="buyItem('color_violet',900)"><div class="shop-preview" style="color:#b45aff;">GRAPE</div>  <div class="shop-item-name">Purple Bruise</div>    <div class="shop-price" id="sp-color_violet">🪙 900</div></div>
-      <div class="shop-item" data-item-id="color_white"   onclick="buyItem('color_white',1100)"><div class="shop-preview" style="color:#ffffff;">CUM</div>    <div class="shop-item-name">Cum White</div>        <div class="shop-price" id="sp-color_white">🪙 1100</div></div>
-    </div>
-
     <div class="menu-section-title" style="margin-top:18px;">Site Themes</div>
     <div class="shop-grid">
-      <div class="shop-item" data-item-id="theme_rash"  onclick="buyItem('theme_rash',1000)"> <div class="shop-preview" style="color:#cc2200;">RASH</div>    <div class="shop-item-name">Red Rash</div>       <div class="shop-price" id="sp-theme_rash">🪙 1000</div></div>
-      <div class="shop-item" data-item-id="theme_void"  onclick="buyItem('theme_void',1200)"> <div class="shop-preview" style="color:#6b3a1f;">SKIDMARK</div><div class="shop-item-name">Brown Skidmark</div><div class="shop-price" id="sp-theme_void">🪙 1200</div></div>
-      <div class="shop-item" data-item-id="theme_gold"  onclick="buyItem('theme_gold',1400)"> <div class="shop-preview" style="color:#C9A84C;">EARWAX</div>  <div class="shop-item-name">Yellow Earwax</div>  <div class="shop-price" id="sp-theme_gold">🪙 1400</div></div>
-      <div class="shop-item" data-item-id="theme_toxic" onclick="buyItem('theme_toxic',1600)"><div class="shop-preview" style="color:#39ff14;">SEPTIC</div>  <div class="shop-item-name">Green Septic</div>   <div class="shop-price" id="sp-theme_toxic">🪙 1600</div></div>
-      <div class="shop-item" data-item-id="theme_ice"   onclick="buyItem('theme_ice',1800)">  <div class="shop-preview" style="color:#00bbff;">BLUEBALLS</div><div class="shop-item-name">Blue Balls</div>    <div class="shop-price" id="sp-theme_ice">🪙 1800</div></div>
-      <div class="shop-item" data-item-id="theme_coal"  onclick="buyItem('theme_coal',2200)"> <div class="shop-preview" style="color:#555;text-shadow:0 0 6px rgba(255,255,255,0.2);">MOLD</div><div class="shop-item-name">Black Mold</div><div class="shop-price" id="sp-theme_coal">🪙 2200</div></div>
+      <div class="shop-item" data-item-id="theme_rash" onclick="buyItem('theme_rash',1000)">
+        <div class="shop-preview" style="color:#cc2200;">RASH</div>
+        <div class="shop-item-name">Red Rash</div>
+        <div class="shop-price" id="sp-theme_rash">🪙 1000</div>
+      </div>
+      <div class="shop-item" data-item-id="theme_void" onclick="buyItem('theme_void',1200)">
+        <div class="shop-preview" style="color:#6b3a1f;">SKIDMARK</div>
+        <div class="shop-item-name">Brown Skidmark</div>
+        <div class="shop-price" id="sp-theme_void">🪙 1200</div>
+      </div>
+      <div class="shop-item" data-item-id="theme_gold" onclick="buyItem('theme_gold',1400)">
+        <div class="shop-preview" style="color:#C9A84C;">EARWAX</div>
+        <div class="shop-item-name">Yellow Earwax</div>
+        <div class="shop-price" id="sp-theme_gold">🪙 1400</div>
+      </div>
+      <div class="shop-item" data-item-id="theme_toxic" onclick="buyItem('theme_toxic',1600)">
+        <div class="shop-preview" style="color:#39ff14;">SEPTIC</div>
+        <div class="shop-item-name">Green Septic</div>
+        <div class="shop-price" id="sp-theme_toxic">🪙 1600</div>
+      </div>
+      <div class="shop-item" data-item-id="theme_ice" onclick="buyItem('theme_ice',1800)">
+        <div class="shop-preview" style="color:#00bbff;">BLUEBALLS</div>
+        <div class="shop-item-name">Blue Balls</div>
+        <div class="shop-price" id="sp-theme_ice">🪙 1800</div>
+      </div>
+      <div class="shop-item" data-item-id="theme_coal" onclick="buyItem('theme_coal',2200)">
+        <div class="shop-preview" style="color:#555;text-shadow:0 0 6px rgba(255,255,255,0.2);">MOLD</div>
+        <div class="shop-item-name">Black Mold</div>
+        <div class="shop-price" id="sp-theme_coal">🪙 2200</div>
+      </div>
     </div>
   </div>
 
@@ -1563,22 +1513,6 @@
   </div>
 
   <!-- SETTINGS TAB -->
-  <!-- INVENTORY TAB -->
-  <div class="menu-tab" id="mtab-inv" style="display:none;">
-    <div id="inv-empty" style="display:none;">
-      <div class="inv-empty-icon">🎒</div>
-      <div class="inv-empty-title">Nothing Yet</div>
-      <div class="inv-empty-sub">Buy items in the shop to see them here</div>
-    </div>
-    <div id="inv-content">
-      <div id="inv-sec-hats"      style="display:none;"><div class="menu-section-title" style="margin-top:0;">Hats</div>           <div class="inv-grid" id="inv-hats"></div></div>
-      <div id="inv-sec-borders"   style="display:none;"><div class="menu-section-title">Profile Borders</div>                     <div class="inv-grid" id="inv-borders"></div></div>
-      <div id="inv-sec-textcolors"style="display:none;"><div class="menu-section-title">Chat Text Colors</div>                    <div class="inv-grid" id="inv-textcolors"></div></div>
-      <div id="inv-sec-namecolors"style="display:none;"><div class="menu-section-title">Name Colors</div>                        <div class="inv-grid" id="inv-namecolors"></div></div>
-      <div id="inv-sec-themes"    style="display:none;"><div class="menu-section-title">Site Themes</div>                        <div class="inv-grid" id="inv-themes"></div></div>
-    </div>
-  </div>
-
   <div class="menu-tab" id="mtab-settings" style="display:none;">
     <div class="menu-section-title">Account</div>
     <div class="settings-group">
@@ -1918,9 +1852,6 @@ function _mapUserRecord(rec) {
     nameColor:      rec.nameColor || 'default',
     lastDaily:      rec.lastDaily || 0,
     flappyBest:     rec.flappyBest || 0,
-    activeHat:      rec.activeHat      || null,
-    activeBorder:   rec.activeBorder   || null,
-    activeTextColor:rec.activeTextColor || null,
     _pbId:          rec.id,
   };
 }
@@ -2153,7 +2084,7 @@ window.addEventListener('beforeunload', async () => {
 function renderTopbar() {
   const a = document.getElementById('topbar-user-area');
   a.innerHTML = me && myProfile
-    ? `<div class="topbar-user" onclick="openOwnProfile()"><div class="topbar-avatar" id="topbar-avatar-el">${avatarInner(myProfile.avatar, myProfile.displayName, activeHat)}</div><span class="topbar-username">${myProfile.displayName}</span></div>`
+    ? `<div class="topbar-user" onclick="openOwnProfile()"><div class="topbar-avatar">${avatarInner(myProfile.avatar, myProfile.displayName)}</div><span class="topbar-username">${myProfile.displayName}</span></div>`
     : `<button class="topbar-btn" onclick="openModal('auth-overlay')">LOG IN</button>`;
 }
 window.openOwnProfile = () => me && openProfileByUid(me.uid);
@@ -2406,7 +2337,7 @@ window.sendMessage = async () => {
 
   const xp = myProfile.xp || 0;
   const lvl = calcLevel(xp).level;
-  const chatRecord = {uid:me.uid,displayName:myProfile.displayName,avatar:myProfile.avatar,text,level:lvl,nameColor:activeNameColor,textColor:activeTextColor||null,ts:Date.now()};
+  const chatRecord = {uid:me.uid,displayName:myProfile.displayName,avatar:myProfile.avatar,text,level:lvl,nameColor:activeNameColor,ts:Date.now()};
   addChatBubble(chatRecord); // show immediately, don't wait for SSE
   input.value='';
   await pb.createRecord('chat', chatRecord).catch(()=>{});
@@ -2418,13 +2349,12 @@ function addChatBubble(msg) {
   const color=me&&msg.uid===me.uid?'me':'other';
   const lvlBadge = msg.level ? `<span class="msg-lvl-badge">${msg.level}</span>` : '';
   const nc = msg.nameColor ? NAME_COLORS[msg.nameColor] : null;
-  const tcClass = msg.textColor ? 'msg-text-' + msg.textColor.replace('txt_','') : '';
   const nameStyle = nc ? `style="color:${nc};"` : '';
   const avHtml = msg.avatar
     ? `<img src="${msg.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
     : `<span>${(msg.displayName||'?')[0].toUpperCase()}</span>`;
   const tsStr = msg.ts ? (() => { const d=new Date(msg.ts); const h=d.getHours()%12||12; const m=String(d.getMinutes()).padStart(2,'0'); const ap=d.getHours()>=12?'pm':'am'; return h+':'+m+ap; })() : '';
-  div.innerHTML=`<div class="msg-avatar" onclick="openProfileByUid('${msg.uid}')"><div class="msg-avatar-inner">${avHtml}</div>${lvlBadge}</div><div class="msg-body"><span class="msg-name ${color}" ${nameStyle} onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.displayName)}</span><span class="msg-text">${`<span class="${tcClass}">${escHtml(msg.text)}</span>`}</span><span class="msg-ts">${tsStr}</span></div>`;
+  div.innerHTML=`<div class="msg-avatar" onclick="openProfileByUid('${msg.uid}')"><div class="msg-avatar-inner">${avHtml}</div>${lvlBadge}</div><div class="msg-body"><span class="msg-name ${color}" ${nameStyle} onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.displayName)}</span><span class="msg-text">${escHtml(msg.text)}</span><span class="msg-ts">${tsStr}</span></div>`;
   view.appendChild(div); view.scrollTop=view.scrollHeight;
   while(view.children.length>100) view.removeChild(view.firstChild);
 }
@@ -3516,145 +3446,6 @@ let userCoins = 0;
 let ownedItems = [];
 let activeTheme = 'default';
 let activeNameColor = 'default';
-let activeHat = null;
-let activeBorder = null;
-let activeTextColor = null;
-
-const HAT_EMOJIS = {
-  hat_party:'🎉', hat_cowboy:'🤠', hat_mushroom:'🍄', hat_dunce:'🎓',
-  hat_crown:'👑', hat_tophat:'🎩', hat_wizard:'🧙', hat_devil:'😈',
-  hat_flower:'🌸', hat_helmet:'🪖', hat_snapback:'🧢', hat_hardhat:'⛑️',
-};
-
-const BORDER_CLASSES = ['border-fire','border-ice','border-gold','border-toxic','border-violet','border-rainbow'];
-
-function _applyBorderToTopbar() {
-  // Run after renderTopbar so the element exists
-  requestAnimationFrame(() => {
-    const el = document.getElementById('topbar-avatar-el') || document.querySelector('.topbar-avatar');
-    if (!el) return;
-    BORDER_CLASSES.forEach(c => el.classList.remove(c));
-    if (activeBorder) el.classList.add('border-' + activeBorder.replace('border_',''));
-  });
-}
-
-// ── INVENTORY ──
-const INV_CATALOG = {
-  hats: [
-    {id:'hat_party',   name:'Party Hat',     emoji:'🎉'},
-    {id:'hat_cowboy',  name:'Cowboy Hat',    emoji:'🤠'},
-    {id:'hat_mushroom',name:'Mushroom Cap',  emoji:'🍄'},
-    {id:'hat_dunce',   name:'Dunce Cap',     emoji:'🎓'},
-    {id:'hat_snapback',name:'Snapback',      emoji:'🧢'},
-    {id:'hat_hardhat', name:'Hard Hat',      emoji:'⛑️'},
-    {id:'hat_flower',  name:'Flower Crown',  emoji:'🌸'},
-    {id:'hat_helmet',  name:'Battle Helmet', emoji:'🪖'},
-    {id:'hat_tophat',  name:'Top Hat',       emoji:'🎩'},
-    {id:'hat_devil',   name:'Devil Horns',   emoji:'😈'},
-    {id:'hat_wizard',  name:'Wizard Hat',    emoji:'🧙'},
-    {id:'hat_crown',   name:'Crown',         emoji:'👑'},
-  ],
-  borders: [
-    {id:'border_fire',   name:'Fire Border',    preview:'🔥', style:'color:#ff4400'},
-    {id:'border_ice',    name:'Ice Border',     preview:'❄️', style:'color:#00d4ff'},
-    {id:'border_gold',   name:'Gold Border',    preview:'✨', style:'color:#C9A84C'},
-    {id:'border_toxic',  name:'Toxic Border',   preview:'☢️', style:'color:#39ff14'},
-    {id:'border_violet', name:'Violet Border',  preview:'🔮', style:'color:#b45aff'},
-    {id:'border_rainbow',name:'Rainbow Border', preview:'🌈', style:''},
-  ],
-  textcolors: [
-    {id:'txt_fire',   name:'Fire Orange',   preview:'Abc', style:'color:#ff6622;font-weight:700;font-size:1.3rem;font-family:Barlow,sans-serif;'},
-    {id:'txt_ice',    name:'Ice Blue',      preview:'Abc', style:'color:#00d4ff;font-weight:700;font-size:1.3rem;font-family:Barlow,sans-serif;'},
-    {id:'txt_toxic',  name:'Toxic Green',   preview:'Abc', style:'color:#39ff14;font-weight:700;font-size:1.3rem;font-family:Barlow,sans-serif;'},
-    {id:'txt_violet', name:'Mystic Violet', preview:'Abc', style:'color:#c97aff;font-weight:700;font-size:1.3rem;font-family:Barlow,sans-serif;'},
-    {id:'txt_gold',   name:'Gold',          preview:'Abc', style:'color:#ffd700;font-weight:700;font-size:1.3rem;font-family:Barlow,sans-serif;'},
-    {id:'txt_crimson',name:'Blood Red',     preview:'Abc', style:'color:#ff3b3b;font-weight:700;font-size:1.3rem;font-family:Barlow,sans-serif;'},
-  ],
-  namecolors: [
-    {id:'color_crimson',name:'Period Blood Red',preview:'NAME',style:"color:#FF3B3B;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;"},
-    {id:'color_toxic',  name:'Vomit Green',     preview:'NAME',style:"color:#39ff14;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;"},
-    {id:'color_gold',   name:'Piss Yellow',     preview:'NAME',style:"color:#C9A84C;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;"},
-    {id:'color_cyan',   name:'Bonnie Blue',     preview:'NAME',style:"color:#00e5ff;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;"},
-    {id:'color_violet', name:'Purple Bruise',   preview:'NAME',style:"color:#b45aff;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;"},
-    {id:'color_white',  name:'Cum White',       preview:'NAME',style:"color:#ffffff;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;"},
-  ],
-  themes: [
-    {id:'theme_rash', name:'Red Rash',       preview:'🔴', style:'color:#cc2200'},
-    {id:'theme_void', name:'Brown Skidmark', preview:'💩', style:'color:#6b3a1f'},
-    {id:'theme_gold', name:'Yellow Earwax',  preview:'🟡', style:'color:#C9A84C'},
-    {id:'theme_toxic',name:'Green Septic',   preview:'🟢', style:'color:#39ff14'},
-    {id:'theme_ice',  name:'Blue Balls',     preview:'🔵', style:'color:#00bbff'},
-    {id:'theme_coal', name:'Black Mold',     preview:'⚫', style:'color:#555'},
-  ],
-};
-
-function _isEquipped(cat, id) {
-  if (cat === 'hats')       return activeHat === id;
-  if (cat === 'borders')    return activeBorder === id;
-  if (cat === 'textcolors') return activeTextColor === id;
-  if (cat === 'namecolors') return activeNameColor === id;
-  if (cat === 'themes')     return activeTheme === id.replace('theme_','');
-  return false;
-}
-
-function renderInventory() {
-  if (!myProfile) return;
-  const owned = myProfile.items || [];
-  let total = 0;
-
-  Object.entries(INV_CATALOG).forEach(([cat, items]) => {
-    const ownedInCat = items.filter(i => owned.includes(i.id));
-    const sec = document.getElementById('inv-sec-' + cat);
-    const grid = document.getElementById('inv-' + cat);
-    if (!sec || !grid) return;
-    if (ownedInCat.length === 0) { sec.style.display = 'none'; return; }
-    sec.style.display = '';
-    total += ownedInCat.length;
-    grid.innerHTML = '';
-    ownedInCat.forEach(item => {
-      const equipped = _isEquipped(cat, item.id);
-      const div = document.createElement('div');
-      div.className = 'inv-item' + (equipped ? ' equipped' : '');
-      const previewContent = item.emoji
-        ? '<span style="font-size:1.9rem;">' + item.emoji + '</span>'
-        : '<span style="' + (item.style||'') + '">' + item.preview + '</span>';
-      div.innerHTML =
-        '<div class="inv-preview">' + previewContent + '</div>' +
-        '<div class="inv-item-name">' + item.name + '</div>' +
-        '<button class="inv-btn ' + (equipped ? 'unequip' : 'equip') + '" ' +
-        'onclick="invEquip('' + cat + '','' + item.id + '')">' +
-        (equipped ? 'UNEQUIP' : 'EQUIP') + '</button>';
-      grid.appendChild(div);
-    });
-  });
-
-  document.getElementById('inv-empty').style.display   = total === 0 ? '' : 'none';
-  document.getElementById('inv-content').style.display = total === 0 ? 'none' : '';
-}
-
-window.invEquip = async (cat, id) => {
-  if (!me) return;
-  const already = _isEquipped(cat, id);
-  if (cat === 'hats') {
-    activeHat = already ? null : id;
-    await pb.updateUser(me.uid, {activeHat: activeHat}).catch(()=>{});
-    renderTopbar();
-    _applyBorderToTopbar();
-  } else if (cat === 'borders') {
-    activeBorder = already ? null : id;
-    await pb.updateUser(me.uid, {activeBorder: activeBorder}).catch(()=>{});
-    _applyBorderToTopbar();
-  } else if (cat === 'textcolors') {
-    activeTextColor = already ? null : id;
-    await pb.updateUser(me.uid, {activeTextColor: activeTextColor}).catch(()=>{});
-  } else if (cat === 'namecolors') {
-    window.applyNameColor(already ? 'default' : id);
-  } else if (cat === 'themes') {
-    window.applyTheme(already ? 'default' : id.replace('theme_',''));
-  }
-  showToast(already ? 'Unequipped!' : 'Equipped! ✓');
-  renderInventory();
-};
 
 function _updatePipDual() {
   // Show second cam slot only when there's someone in queue or both stage slots filled
@@ -3696,14 +3487,13 @@ window.switchMenuTab = (btn, tab) => {
   void el.offsetWidth; // reflow to restart animation
   el.style.animation='tabFadeIn 0.2s ease';
   // Update content header
-  const titles = { shop:'SHOP', gamble:'GAMBLE', lb:'LEADERBOARDS', inv:'INVENTORY', settings:'SETTINGS' };
-  const subs   = { shop:'SPEND YOUR COINS', gamble:'RISK IT ALL', lb:'TOP PLAYERS', inv:'EQUIP YOUR ITEMS', settings:'CONFIGURE' };
+  const titles = { shop:'SHOP', gamble:'GAMBLE', lb:'LEADERBOARDS', settings:'SETTINGS' };
+  const subs   = { shop:'SPEND YOUR COINS', gamble:'RISK IT ALL', lb:'TOP PLAYERS', settings:'CONFIGURE' };
   const titleEl = document.getElementById('menu-content-title');
   const subEl   = document.getElementById('menu-content-sub');
   if (titleEl) titleEl.textContent = titles[tab] || tab.toUpperCase();
   if (subEl)   subEl.textContent   = subs[tab]   || '';
   if (tab==='settings') loadSettingsState();
-  if (tab==='inv') renderInventory();
 };
 
 function refreshMenuCoins() {
@@ -3881,16 +3671,6 @@ function applyUserPrefs(profile) {
     activeNameColor = profile.nameColor;
     const ns = document.getElementById('namecolor-select');
     if (ns) ns.value = profile.nameColor;
-  }
-  if (profile.activeHat !== undefined) {
-    activeHat = profile.activeHat || null;
-  }
-  if (profile.activeBorder !== undefined) {
-    activeBorder = profile.activeBorder || null;
-    _applyBorderToTopbar();
-  }
-  if (profile.activeTextColor !== undefined) {
-    activeTextColor = profile.activeTextColor || null;
   }
   if (profile.coins !== undefined) {
     const c = profile.coins || 0;
@@ -4373,13 +4153,11 @@ function getInitial(username) {
 }
 
 // Returns HTML to set inside an avatar element
-function avatarInner(avatar, username, hat) {
-  const img = (avatar && avatar.startsWith('data:'))
-    ? `<img src="${avatar}" alt="${getInitial(username)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
-    : `<span>${getInitial(username)}</span>`;
-  if (!hat) return img;
-  const hatEmoji = HAT_EMOJIS[hat] || '';
-  return hatEmoji ? `<div class="avatar-wrap">${img}<span class="avatar-hat">${hatEmoji}</span></div>` : img;
+function avatarInner(avatar, username) {
+  if (avatar && avatar.startsWith('data:')) {
+    return `<img src="${avatar}" alt="${getInitial(username)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  }
+  return `<span>${getInitial(username)}</span>`;
 }
 
 // Set any avatar element (by id or DOM el)
