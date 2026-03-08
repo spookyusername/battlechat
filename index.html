@@ -1577,169 +1577,203 @@
   <!-- SHOP TAB -->
 <script>
 // ── POCKETBASE CONFIG ──
-// Replace this with your DigitalOcean droplet URL (e.g. http://123.45.67.89:8090)
-const PB_URL = 'https://api.battlechat.lol';
+// ── SUPABASE CONFIG ──
+// Replace these with your Supabase project URL and anon key
+const SB_URL  = 'https://kemuawsiordnqjkvlhec.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtlbXVhd3Npb3JkbnFqa3ZsaGVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5MjQzMDYsImV4cCI6MjA4ODUwMDMwNn0.cXgaTg47mXUlRDTJcXiRAbkQvRptEylSLRfwKQEdkig';
 
-// ── POCKETBASE HELPER ──
+// ── SUPABASE HELPER (drop-in replacement for pb) ──
 const pb = {
-  _token: null,
+  _token: null,   // JWT from Supabase auth
   _userId: null,
+  _subs: {},
 
-  // Auth
+  _h(extra = {}) {
+    const h = { 'Content-Type': 'application/json', 'apikey': SB_ANON, 'Prefer': 'return=representation' };
+    if (this._token) h['Authorization'] = `Bearer ${this._token}`;
+    return { ...h, ...extra };
+  },
+
+  // ── AUTH ──
   async authWithPassword(email, password) {
-    const r = await fetch(`${PB_URL}/api/collections/users/auth-with-password`, {
+    const r = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ identity: email, password })
+      headers: { 'Content-Type': 'application/json', 'apikey': SB_ANON },
+      body: JSON.stringify({ email, password })
     });
-    if (!r.ok) { const e = await r.json(); throw new Error(e.message || 'Login failed'); }
+    if (!r.ok) { const e = await r.json(); throw new Error(e.error_description || e.msg || 'Login failed'); }
     const d = await r.json();
-    this._token  = d.token;
-    this._userId = d.record.id;
-    return d;
+    this._token  = d.access_token;
+    this._userId = d.user.id;
+    return { token: d.access_token, record: { id: d.user.id, email: d.user.email } };
   },
   async createUser(email, password, data) {
-    const r = await fetch(`${PB_URL}/api/collections/users/records`, {
+    // Sign up via Supabase Auth
+    const r = await fetch(`${SB_URL}/auth/v1/signup`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, passwordConfirm: password, emailVisibility: true, ...data })
+      headers: { 'Content-Type': 'application/json', 'apikey': SB_ANON },
+      body: JSON.stringify({ email, password })
     });
-    if (!r.ok) { const e = await r.json(); throw new Error(e?.data?.email?.message || e?.data?.displayName?.message || e.message || "Failed to create record"); }
-    return r.json();
+    if (!r.ok) { const e = await r.json(); throw new Error(e.msg || e.error_description || 'Signup failed'); }
+    const d = await r.json();
+    const uid = d.user?.id || d.id;
+    // Create profile row in profiles table
+    const r2 = await fetch(`${SB_URL}/rest/v1/profiles`, {
+      method: 'POST',
+      headers: this._h(),
+      body: JSON.stringify({ id: uid, ...data })
+    });
+    if (!r2.ok) { const e = await r2.json(); throw new Error(e.message || 'Failed to create profile'); }
+    return { id: uid };
   },
   logout() { this._token = null; this._userId = null; },
 
-  // Users collection (Firestore-style)
+  // ── USERS / PROFILES ──
   async getUser(uid) {
-    const r = await fetch(`${PB_URL}/api/collections/users/records/${uid}`, {
-      headers: this._token ? { 'Authorization': this._token } : {}
-    });
+    const r = await fetch(`${SB_URL}/rest/v1/profiles?id=eq.${uid}&limit=1`, { headers: this._h() });
     if (!r.ok) return null;
-    return r.json();
+    const d = await r.json();
+    const row = d[0];
+    if (!row) return null;
+    return { ...row, id: row.id };
   },
   async updateUser(uid, data) {
-    const r = await fetch(`${PB_URL}/api/collections/users/records/${uid}`, {
+    const r = await fetch(`${SB_URL}/rest/v1/profiles?id=eq.${uid}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Authorization': this._token || '' },
+      headers: this._h(),
       body: JSON.stringify(data)
     });
     if (!r.ok) throw new Error('Update failed');
-    return r.json();
+    const d = await r.json();
+    return d[0] || data;
   },
   async getUsers(field, dir = 'DESC', max = 20) {
-    const r = await fetch(`${PB_URL}/api/collections/users/records?sort=${dir==='DESC'?'-':''}${field}&perPage=${max}`, {
-      headers: this._token ? { 'Authorization': this._token } : {}
-    });
+    const order = `${field}.${dir.toLowerCase()}`;
+    const r = await fetch(`${SB_URL}/rest/v1/profiles?order=${order}&limit=${max}`, { headers: this._h() });
     if (!r.ok) return [];
-    const d = await r.json();
-    return d.items || [];
+    return await r.json();
   },
   async findUserByUsername(username) {
-    const r = await fetch(`${PB_URL}/api/collections/users/records?filter=(displayName='${encodeURIComponent(username)}')`);
+    const r = await fetch(`${SB_URL}/rest/v1/profiles?displayName=eq.${encodeURIComponent(username)}&limit=1`, { headers: this._h() });
     if (!r.ok) return null;
     const d = await r.json();
-    return d.items?.[0] || null;
+    return d[0] || null;
   },
   async changePassword(newPassword) {
-    const r = await fetch(`${PB_URL}/api/collections/users/records/${this._userId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Authorization': this._token || '' },
-      body: JSON.stringify({ password: newPassword, passwordConfirm: newPassword, oldPassword: '_force_' })
+    const r = await fetch(`${SB_URL}/auth/v1/user`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'apikey': SB_ANON, 'Authorization': `Bearer ${this._token}` },
+      body: JSON.stringify({ password: newPassword })
     });
-    if (!r.ok) { const e = await r.json(); throw new Error(e.message || 'Password change failed'); }
+    if (!r.ok) { const e = await r.json(); throw new Error(e.msg || 'Password change failed'); }
   },
 
-  // ── REALTIME COLLECTIONS (queue, stage, votes, chat, bets, events, battle) ──
-  _subs: {}, // key → EventSource
-
-  async createRecord(collection, data) {
-    const r = await fetch(`${PB_URL}/api/collections/${collection}/records`, {
+  // ── GENERIC TABLE CRUD ──
+  async createRecord(table, data) {
+    const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': this._token || '' },
+      headers: this._h(),
       body: JSON.stringify(data)
     });
-    if (!r.ok) throw new Error('Create failed');
-    return r.json();
+    if (!r.ok) { const e = await r.json(); throw new Error(e.message || 'Create failed'); }
+    const d = await r.json();
+    return Array.isArray(d) ? d[0] : d;
   },
-  async upsertRecord(collection, filter, data) {
-    // Get existing or create new
-    const existing = await this.getRecordByFilter(collection, filter);
-    if (existing) {
-      return this.patchRecord(collection, existing.id, data);
-    }
-    return this.createRecord(collection, data);
+  async upsertRecord(table, filter, data) {
+    const existing = await this.getRecordByFilter(table, filter);
+    if (existing) return this.patchRecord(table, existing.id, data);
+    return this.createRecord(table, data);
   },
-  async patchRecord(collection, id, data) {
-    const r = await fetch(`${PB_URL}/api/collections/${collection}/records/${id}`, {
+  async patchRecord(table, id, data) {
+    const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Authorization': this._token || '' },
+      headers: this._h(),
       body: JSON.stringify(data)
     });
     if (!r.ok) throw new Error('Patch failed');
-    return r.json();
+    const d = await r.json();
+    return Array.isArray(d) ? d[0] : d;
   },
-  async deleteRecord(collection, id) {
+  async deleteRecord(table, id) {
     if (!id) return;
-    await fetch(`${PB_URL}/api/collections/${collection}/records/${id}`, {
+    await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
       method: 'DELETE',
-      headers: { 'Authorization': this._token || '' }
+      headers: this._h()
     });
   },
-  async deleteRecordsByFilter(collection, filter) {
-    const items = await this.listRecords(collection, filter);
-    await Promise.all(items.map(i => this.deleteRecord(collection, i.id)));
+  async deleteRecordsByFilter(table, filter) {
+    if (!filter) {
+      // Delete all rows
+      await fetch(`${SB_URL}/rest/v1/${table}?id=neq.00000000-0000-0000-0000-000000000000`, {
+        method: 'DELETE', headers: this._h()
+      });
+      return;
+    }
+    const items = await this.listRecords(table, filter);
+    await Promise.all(items.map(i => this.deleteRecord(table, i.id)));
   },
-  async getRecordByFilter(collection, filter) {
-    const r = await fetch(`${PB_URL}/api/collections/${collection}/records?filter=(${encodeURIComponent(filter)})&perPage=1`);
-    if (!r.ok) return null;
-    const d = await r.json();
-    return d.items?.[0] || null;
+  async getRecordByFilter(table, filter) {
+    const items = await this.listRecords(table, filter, '', 1);
+    return items[0] || null;
   },
-  async listRecords(collection, filter = '', sort = '', max = 200) {
-    let url = `${PB_URL}/api/collections/${collection}/records?perPage=${max}`;
-    if (filter) url += `&filter=(${encodeURIComponent(filter)})`;
-    if (sort)   url += `&sort=${sort}`;
-    const r = await fetch(url, { headers: this._token ? { 'Authorization': this._token } : {} });
+  async listRecords(table, filter = '', sort = '', max = 200) {
+    let url = `${SB_URL}/rest/v1/${table}?limit=${max}`;
+    if (filter) {
+      // Convert simple key='val' filters to Supabase PostgREST format
+      const parts = filter.split('=');
+      if (parts.length >= 2) {
+        const key = parts[0].trim();
+        const val = parts.slice(1).join('=').trim().replace(/^'|'$/g, '');
+        url += `&${key}=eq.${encodeURIComponent(val)}`;
+      }
+    }
+    if (sort) {
+      // Convert +ts → ts.asc, -ts → ts.desc
+      const s = sort.trim();
+      const dir = s.startsWith('-') ? 'desc' : 'asc';
+      const field = s.replace(/^[+-]/, '');
+      url += `&order=${field}.${dir}`;
+    }
+    const r = await fetch(url, { headers: this._h() });
     if (!r.ok) return [];
-    const d = await r.json();
-    return d.items || [];
+    return await r.json();
   },
 
-  // Polling-based realtime (SSE replaced with reliable polling)
-  subscribe(collection, filter, callback) {
-    const key = collection + ':' + (filter || '*');
-    if (this._subs[key]) { clearInterval(this._subs[key]); }
-
-    let lastTs = Date.now();
+  // ── POLLING REALTIME ──
+  subscribe(table, filter, callback) {
+    const key = table + ':' + (filter || '*');
+    if (this._subs[key]) clearInterval(this._subs[key]);
+    const startTs = Date.now();
     const seen = new Set();
-
     const poll = async () => {
       try {
-        let url = `${PB_URL}/api/collections/${collection}/records?sort=-created&perPage=20`;
-        if (filter) url += `&filter=(${encodeURIComponent(filter)})`;
-        const r = await fetch(url, { headers: this._token ? { 'Authorization': this._token } : {} });
+        let url = `${SB_URL}/rest/v1/${table}?order=created_at.desc&limit=20`;
+        if (filter) {
+          const parts = filter.split('=');
+          if (parts.length >= 2) {
+            const key2 = parts[0].trim();
+            const val = parts.slice(1).join('=').trim().replace(/^'|'$/g, '');
+            url += `&${key2}=eq.${encodeURIComponent(val)}`;
+          }
+        }
+        const r = await fetch(url, { headers: this._h() });
         if (!r.ok) return;
-        const d = await r.json();
-        const items = (d.items || []).reverse();
+        const items = (await r.json()).reverse();
         for (const record of items) {
           if (seen.has(record.id)) continue;
-          // Only fire for records created after subscription started
-          const recTs = new Date(record.created).getTime();
-          if (recTs < lastTs - 1000) { seen.add(record.id); continue; }
+          const recTs = new Date(record.created_at).getTime();
+          if (recTs < startTs - 1000) { seen.add(record.id); continue; }
           seen.add(record.id);
           callback({ action: 'create', record });
         }
       } catch(e) {}
     };
-
-    // Poll every 1.5 seconds
     const interval = setInterval(poll, 1500);
     this._subs[key] = interval;
     return () => { clearInterval(interval); delete this._subs[key]; };
   },
-
-  unsubscribe(collection, filter) {
-    const key = collection + ':' + (filter || '*');
+  unsubscribe(table, filter) {
+    const key = table + ':' + (filter || '*');
     if (this._subs[key]) { clearInterval(this._subs[key]); delete this._subs[key]; }
   },
 };
@@ -1997,17 +2031,17 @@ window.addEventListener('beforeunload', async () => {
   if (mySlot) {
     const recId = _stageRecordIds[mySlot];
     if (recId) {
-      fetch(`${PB_URL}/api/collections/stage/records/${recId}`, {
+      fetch(`${SB_URL}/rest/v1/stage?id=eq.${recId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': pb._token || '' },
+        headers: { 'apikey': SB_ANON, 'Authorization': `Bearer ${pb._token||''}` },
         keepalive: true
       }).catch(()=>{});
     }
   }
   if (_queueRecordId) {
-    fetch(`${PB_URL}/api/collections/queue/records/${_queueRecordId}`, {
+    fetch(`${SB_URL}/rest/v1/queue?id=eq.${_queueRecordId}`, {
       method: 'DELETE',
-      headers: { 'Authorization': pb._token || '' },
+      headers: { 'apikey': SB_ANON, 'Authorization': `Bearer ${pb._token||''}` },
       keepalive: true
     }).catch(()=>{});
   }
@@ -2749,7 +2783,7 @@ function listenVotes(roundIndex) {
   _votesCache[roundIndex] = { left: new Set(), right: new Set() };
 
   // Load existing votes
-  pb.listRecords('votes', `roundIndex=${roundIndex}`).then(items => {
+  pb.listRecords('votes', `roundIndex='${roundIndex}'`).then(items => {
     items.forEach(r => { if (r.side && r.uid) _votesCache[roundIndex][r.side]?.add(r.uid); });
     _renderVotes(roundIndex);
   }).catch(()=>{});
@@ -2757,7 +2791,7 @@ function listenVotes(roundIndex) {
   // Poll votes every 2s
   async function refreshVotes() {
     try {
-      const items = await pb.listRecords('votes', `roundIndex=${roundIndex}`);
+      const items = await pb.listRecords('votes', `roundIndex='${roundIndex}'`);
       const cache = { left: new Set(), right: new Set() };
       items.forEach(r => { if (r.side && r.uid) cache[r.side]?.add(r.uid); });
       _votesCache[roundIndex] = cache;
@@ -5103,22 +5137,39 @@ function applyTtsVoice(utt, voice) {
 
 // Listen for TTS/SFX events from other users
 function listenGlobalEvents() {
-  const now = Date.now();
-  pb.subscribe('events', '', evt => {
-    const d = evt.record;
-    if (!d || d.ts < now - 2000) return;
-    if (d.type === 'tts') {
-      if ('speechSynthesis' in window) {
-        const utt = new SpeechSynthesisUtterance(d.displayName + ' says: ' + d.text);
-        applyTtsVoice(utt, d.voice || 'default');
-        window.speechSynthesis.speak(utt);
+  const startTs = Date.now();
+  const seenEvents = new Set();
+
+  async function pollEvents() {
+    try {
+      // Only fetch lightweight fields, exclude audioData in listing
+      const r = await fetch(`${SB_URL}/rest/v1/events?order=created_at.desc&limit=5`, {
+        headers: pb._h()
+      });
+      if (!r.ok) return;
+      const d = await r.json();
+      for (const rec of (Array.isArray(d) ? d : [])) {
+        if (seenEvents.has(rec.id)) continue;
+        const recTs = new Date(rec.created_at || rec.created).getTime();
+        if (recTs < startTs - 2000) { seenEvents.add(rec.id); continue; }
+        seenEvents.add(rec.id);
+        if (rec.type === 'tts') {
+          if ('speechSynthesis' in window) {
+            const utt = new SpeechSynthesisUtterance(rec.displayName + ' says: ' + rec.text);
+            applyTtsVoice(utt, rec.voice || 'default');
+            window.speechSynthesis.speak(utt);
+          }
+          addSystemMsg('🔊 TTS from ' + rec.displayName + ': ' + rec.text);
+        } else if (rec.type === 'sfx') {
+          playSfxSound(rec.sound, rec.audioData, rec.trimStart, rec.trimEnd, rec.volume);
+          addSystemMsg('🎵 ' + rec.displayName + ' played a sound');
+        }
       }
-      addSystemMsg('🔊 TTS from ' + d.displayName + ': ' + d.text);
-    } else if (d.type === 'sfx') {
-      playSfxSound(d.sound, d.audioData, d.trimStart, d.trimEnd, d.volume);
-      addSystemMsg('🎵 ' + d.displayName + ' played a sound');
-    }
-  });
+    } catch(e) {}
+  }
+
+  if (window._eventsPollInterval) clearInterval(window._eventsPollInterval);
+  window._eventsPollInterval = setInterval(pollEvents, 5000); // slower poll - events are rare
 }
 
 // ── BETTING SYSTEM ──
