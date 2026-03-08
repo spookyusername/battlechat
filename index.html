@@ -792,6 +792,84 @@
   .bj-result-amount { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 3px; text-align: center; margin-top: 10px; }
 
   @keyframes discordPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  /* ── HAT OVERLAYS ── */
+  .avatar-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+  .avatar-hat { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-size: 1.1em; line-height: 1; pointer-events: none; z-index: 5; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.9)); }
+  .topbar-avatar .avatar-hat { font-size: 0.9em; top: -7px; }
+  .cam-avatar-sm .avatar-hat { font-size: 0.85em; top: -6px; }
+
+  /* ── PROFILE BORDERS ── */
+  .border-fire   { box-shadow: 0 0 0 2px #ff4400, 0 0 8px #ff4400 !important; border-color: #ff4400 !important; }
+  .border-ice    { box-shadow: 0 0 0 2px #00d4ff, 0 0 8px #00d4ff !important; border-color: #00d4ff !important; }
+  .border-gold   { box-shadow: 0 0 0 2px #C9A84C, 0 0 8px #C9A84C !important; border-color: #C9A84C !important; }
+  .border-toxic  { box-shadow: 0 0 0 2px #39ff14, 0 0 8px #39ff14 !important; border-color: #39ff14 !important; }
+  .border-violet { box-shadow: 0 0 0 2px #b45aff, 0 0 8px #b45aff !important; border-color: #b45aff !important; }
+  .border-rainbow { animation: rainbowBorder 3s linear infinite !important; }
+  @keyframes rainbowBorder {
+    0%   { box-shadow: 0 0 0 2px #ff0000, 0 0 8px #ff0000; }
+    17%  { box-shadow: 0 0 0 2px #ff8800, 0 0 8px #ff8800; }
+    33%  { box-shadow: 0 0 0 2px #ffff00, 0 0 8px #ffff00; }
+    50%  { box-shadow: 0 0 0 2px #00ff00, 0 0 8px #00ff00; }
+    67%  { box-shadow: 0 0 0 2px #0088ff, 0 0 8px #0088ff; }
+    83%  { box-shadow: 0 0 0 2px #8800ff, 0 0 8px #8800ff; }
+    100% { box-shadow: 0 0 0 2px #ff0000, 0 0 8px #ff0000; }
+  }
+
+  /* ── CHAT TEXT COLORS ── */
+  .msg-text-fire   { color: #ff6622 !important; }
+  .msg-text-ice    { color: #00d4ff !important; }
+  .msg-text-toxic  { color: #39ff14 !important; }
+  .msg-text-violet { color: #c97aff !important; }
+  .msg-text-gold   { color: #ffd700 !important; }
+  .msg-text-crimson{ color: #ff3b3b !important; }
+
+  /* ── CASE SYSTEM ── */
+  .cases-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px; }
+  .case-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 18px 14px; cursor: pointer; text-align: center; transition: border-color 0.2s, background 0.2s, transform 0.15s; position: relative; overflow: hidden; }
+  .case-card:hover { background: rgba(255,255,255,0.055); transform: translateY(-2px); }
+  .case-card.case-locked { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+  .case-icon { font-size: 2.4rem; margin-bottom: 8px; display: block; }
+  .case-name { font-family: 'Bebas Neue', sans-serif; font-size: 1.05rem; letter-spacing: 3px; color: var(--text); }
+  .case-desc { font-family: 'Barlow Condensed', sans-serif; font-size: 0.62rem; letter-spacing: 1.5px; color: var(--muted); margin: 4px 0 8px; text-transform: uppercase; line-height: 1.4; }
+  .case-cost { font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 2px; color: var(--gold); }
+  .case-card.standard { border-color: rgba(120,120,120,0.3); }
+  .case-card.standard:hover { border-color: rgba(180,180,180,0.5); }
+  .case-card.battle   { border-color: rgba(217,43,43,0.35); }
+  .case-card.battle:hover   { border-color: rgba(255,59,59,0.65); }
+  .case-card.daily    { border-color: rgba(201,168,76,0.35); }
+  .case-card.daily:hover    { border-color: rgba(201,168,76,0.7); }
+  .case-card.streak   { border-color: rgba(96,165,250,0.35); }
+  .case-card.streak:hover   { border-color: rgba(96,165,250,0.7); }
+  .case-card::before { content:''; position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent); transition:left 0.5s ease; }
+  .case-card:hover::before { left:150%; }
+
+  /* Opening reel */
+  .case-open-reel-wrap { overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); position: relative; margin: 18px 0; }
+  .case-open-reel { display: flex; gap: 6px; padding: 12px 6px; will-change: transform; }
+  .case-track-center { position:absolute; top:0; bottom:0; left:50%; width:2px; background:var(--red-hot); z-index:3; transform:translateX(-50%); box-shadow:0 0 10px var(--red-hot); pointer-events:none; }
+  .case-open-reel-wrap::before, .case-open-reel-wrap::after { content:''; position:absolute; top:0; bottom:0; width:90px; z-index:2; pointer-events:none; }
+  .case-open-reel-wrap::before { left:0; background:linear-gradient(to right, rgba(0,0,0,0.95), transparent); }
+  .case-open-reel-wrap::after  { right:0; background:linear-gradient(to left, rgba(0,0,0,0.95), transparent); }
+  .reel-item { flex-shrink:0; width:86px; height:86px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); }
+  .reel-item.rarity-common    { border-color:rgba(160,160,160,0.3); }
+  .reel-item.rarity-rare      { border-color:rgba(96,165,250,0.5); background:rgba(96,165,250,0.06); }
+  .reel-item.rarity-epic      { border-color:rgba(180,90,255,0.5); background:rgba(180,90,255,0.06); }
+  .reel-item.rarity-legendary { border-color:rgba(201,168,76,0.7); background:rgba(201,168,76,0.09); box-shadow:0 0 12px rgba(201,168,76,0.25); }
+  .reel-emoji { font-size: 2rem; line-height:1; }
+  .reel-label { font-family:'Barlow Condensed',sans-serif; font-size:0.48rem; letter-spacing:1px; color:var(--muted); text-align:center; padding:0 4px; }
+  .case-result-reveal { text-align:center; padding:16px 0 8px; animation:caseReveal 0.45s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes caseReveal { from{transform:scale(0.4);opacity:0} to{transform:scale(1);opacity:1} }
+  .case-result-emoji { font-size:3.5rem; display:block; margin-bottom:10px; }
+  .case-result-name { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; letter-spacing:5px; }
+  .case-result-rarity { font-family:'Barlow Condensed',sans-serif; font-size:0.7rem; letter-spacing:3px; text-transform:uppercase; margin-top:6px; opacity:0.8; }
+  .rarity-common    .case-result-rarity { color:#aaa; }
+  .rarity-rare      .case-result-rarity { color:#60a5fa; }
+  .rarity-epic      .case-result-rarity { color:#b45aff; }
+  .rarity-legendary .case-result-rarity { color:var(--gold); }
+  .case-open-btn { width:100%; margin-top:12px; font-family:'Bebas Neue',sans-serif; font-size:1.1rem; letter-spacing:4px; padding:14px; background:var(--red); border:none; color:white; cursor:pointer; transition:background 0.2s; }
+  .case-open-btn:hover { background:var(--red-hot); }
+  .case-open-btn:disabled { background:rgba(255,255,255,0.1); color:var(--muted); cursor:not-allowed; }
 </style>
 </head>
 <body>
@@ -1312,70 +1390,262 @@
       <span class="shop-coins-num" id="shop-coins">🪙 0</span>
     </div>
     <button class="daily-btn" id="daily-reward-btn" onclick="claimDailyReward()">🎁 CLAIM DAILY REWARD — 100🪙</button>
-    <div class="menu-section-title">Name Colors</div>
-    <div class="shop-grid">
-      <div class="shop-item" data-item-id="color_crimson" onclick="buyItem('color_crimson',300)">
-        <div class="shop-preview" style="color:#FF3B3B;">PERIOD</div>
-        <div class="shop-item-name">Period Blood Red</div>
-        <div class="shop-price" id="sp-color_crimson">🪙 300</div>
+
+    <!-- SHOP SUB-TABS -->
+    <div style="display:flex;gap:0;margin-bottom:18px;border-bottom:1px solid rgba(255,255,255,0.07);">
+      <button class="shop-sub-btn active" id="ssb-items" onclick="switchShopSub('items',this)" style="flex:1;padding:8px 0;background:none;border:none;border-bottom:2px solid var(--red-hot);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.72rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;">ITEMS</button>
+      <button class="shop-sub-btn" id="ssb-cases" onclick="switchShopSub('cases',this)" style="flex:1;padding:8px 0;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.72rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;">CASES</button>
+    </div>
+
+    <!-- ITEMS SUB-TAB -->
+    <div id="shop-sub-items">
+      <div class="menu-section-title">Name Colors</div>
+      <div class="shop-grid">
+        <div class="shop-item" data-item-id="color_crimson" onclick="buyItem('color_crimson',300)">
+          <div class="shop-preview" style="color:#FF3B3B;">PERIOD</div>
+          <div class="shop-item-name">Period Blood Red</div>
+          <div class="shop-price" id="sp-color_crimson">🪙 300</div>
+        </div>
+        <div class="shop-item" data-item-id="color_toxic" onclick="buyItem('color_toxic',450)">
+          <div class="shop-preview" style="color:#39ff14;">VOMIT</div>
+          <div class="shop-item-name">Vomit Green</div>
+          <div class="shop-price" id="sp-color_toxic">🪙 450</div>
+        </div>
+        <div class="shop-item" data-item-id="color_gold" onclick="buyItem('color_gold',600)">
+          <div class="shop-preview" style="color:#C9A84C;">PISS</div>
+          <div class="shop-item-name">Piss Yellow</div>
+          <div class="shop-price" id="sp-color_gold">🪙 600</div>
+        </div>
+        <div class="shop-item" data-item-id="color_cyan" onclick="buyItem('color_cyan',750)">
+          <div class="shop-preview" style="color:#00e5ff;">BONNIE</div>
+          <div class="shop-item-name">Bonnie Blue</div>
+          <div class="shop-price" id="sp-color_cyan">🪙 750</div>
+        </div>
+        <div class="shop-item" data-item-id="color_violet" onclick="buyItem('color_violet',900)">
+          <div class="shop-preview" style="color:#b45aff;">GRAPE BRUISE</div>
+          <div class="shop-item-name">Purple Bruise</div>
+          <div class="shop-price" id="sp-color_violet">🪙 900</div>
+        </div>
+        <div class="shop-item" data-item-id="color_white" onclick="buyItem('color_white',1100)">
+          <div class="shop-preview" style="color:#ffffff;">CUM</div>
+          <div class="shop-item-name">Cum White</div>
+          <div class="shop-price" id="sp-color_white">🪙 1100</div>
+        </div>
       </div>
-      <div class="shop-item" data-item-id="color_toxic" onclick="buyItem('color_toxic',450)">
-        <div class="shop-preview" style="color:#39ff14;">VOMIT</div>
-        <div class="shop-item-name">Vomit Green</div>
-        <div class="shop-price" id="sp-color_toxic">🪙 450</div>
+
+      <div class="menu-section-title" style="margin-top:18px;">Chat Text Colors</div>
+      <div class="shop-grid">
+        <div class="shop-item" data-item-id="txt_fire" onclick="buyItem('txt_fire',500)">
+          <div class="shop-preview" style="color:#ff6622;">🔥 FIRE</div>
+          <div class="shop-item-name">Fire Orange</div>
+          <div class="shop-price" id="sp-txt_fire">🪙 500</div>
+        </div>
+        <div class="shop-item" data-item-id="txt_ice" onclick="buyItem('txt_ice',500)">
+          <div class="shop-preview" style="color:#00d4ff;">❄️ ICE</div>
+          <div class="shop-item-name">Ice Blue</div>
+          <div class="shop-price" id="sp-txt_ice">🪙 500</div>
+        </div>
+        <div class="shop-item" data-item-id="txt_toxic" onclick="buyItem('txt_toxic',600)">
+          <div class="shop-preview" style="color:#39ff14;">☢️ TOXIC</div>
+          <div class="shop-item-name">Toxic Green</div>
+          <div class="shop-price" id="sp-txt_toxic">🪙 600</div>
+        </div>
+        <div class="shop-item" data-item-id="txt_violet" onclick="buyItem('txt_violet',600)">
+          <div class="shop-preview" style="color:#c97aff;">🔮 MYSTIC</div>
+          <div class="shop-item-name">Mystic Violet</div>
+          <div class="shop-price" id="sp-txt_violet">🪙 600</div>
+        </div>
+        <div class="shop-item" data-item-id="txt_gold" onclick="buyItem('txt_gold',800)">
+          <div class="shop-preview" style="color:#ffd700;">✨ GOLD</div>
+          <div class="shop-item-name">Gold Text</div>
+          <div class="shop-price" id="sp-txt_gold">🪙 800</div>
+        </div>
+        <div class="shop-item" data-item-id="txt_crimson" onclick="buyItem('txt_crimson',800)">
+          <div class="shop-preview" style="color:#ff3b3b;">💀 BLOOD</div>
+          <div class="shop-item-name">Blood Red Text</div>
+          <div class="shop-price" id="sp-txt_crimson">🪙 800</div>
+        </div>
       </div>
-      <div class="shop-item" data-item-id="color_gold" onclick="buyItem('color_gold',600)">
-        <div class="shop-preview" style="color:#C9A84C;">PISS</div>
-        <div class="shop-item-name">Piss Yellow</div>
-        <div class="shop-price" id="sp-color_gold">🪙 600</div>
+
+      <div class="menu-section-title" style="margin-top:18px;">Profile Borders</div>
+      <div class="shop-grid">
+        <div class="shop-item" data-item-id="border_fire" onclick="buyItem('border_fire',700)">
+          <div class="shop-preview" style="color:#ff4400;">🔥 FIRE</div>
+          <div class="shop-item-name">Fire Border</div>
+          <div class="shop-price" id="sp-border_fire">🪙 700</div>
+        </div>
+        <div class="shop-item" data-item-id="border_ice" onclick="buyItem('border_ice',700)">
+          <div class="shop-preview" style="color:#00d4ff;">❄️ ICE</div>
+          <div class="shop-item-name">Ice Border</div>
+          <div class="shop-price" id="sp-border_ice">🪙 700</div>
+        </div>
+        <div class="shop-item" data-item-id="border_gold" onclick="buyItem('border_gold',900)">
+          <div class="shop-preview" style="color:#C9A84C;">✨ GOLD</div>
+          <div class="shop-item-name">Gold Border</div>
+          <div class="shop-price" id="sp-border_gold">🪙 900</div>
+        </div>
+        <div class="shop-item" data-item-id="border_toxic" onclick="buyItem('border_toxic',900)">
+          <div class="shop-preview" style="color:#39ff14;">☢️ TOXIC</div>
+          <div class="shop-item-name">Toxic Border</div>
+          <div class="shop-price" id="sp-border_toxic">🪙 900</div>
+        </div>
+        <div class="shop-item" data-item-id="border_violet" onclick="buyItem('border_violet',1000)">
+          <div class="shop-preview" style="color:#b45aff;">🔮 VIOLET</div>
+          <div class="shop-item-name">Violet Border</div>
+          <div class="shop-price" id="sp-border_violet">🪙 1000</div>
+        </div>
+        <div class="shop-item" data-item-id="border_rainbow" onclick="buyItem('border_rainbow',2500)">
+          <div class="shop-preview" style="background:linear-gradient(90deg,#f00,#f80,#ff0,#0f0,#00f,#80f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">🌈 RAINBOW</div>
+          <div class="shop-item-name">Rainbow Border</div>
+          <div class="shop-price" id="sp-border_rainbow">🪙 2500</div>
+        </div>
       </div>
-      <div class="shop-item" data-item-id="color_cyan" onclick="buyItem('color_cyan',750)">
-        <div class="shop-preview" style="color:#00e5ff;">BONNIE</div>
-        <div class="shop-item-name">Bonnie Blue</div>
-        <div class="shop-price" id="sp-color_cyan">🪙 750</div>
+
+      <div class="menu-section-title" style="margin-top:18px;">Hats</div>
+      <div class="shop-grid">
+        <div class="shop-item" data-item-id="hat_party" onclick="buyItem('hat_party',300)">
+          <div class="shop-preview">🎉</div>
+          <div class="shop-item-name">Party Hat</div>
+          <div class="shop-price" id="sp-hat_party">🪙 300</div>
+        </div>
+        <div class="shop-item" data-item-id="hat_cowboy" onclick="buyItem('hat_cowboy',400)">
+          <div class="shop-preview">🤠</div>
+          <div class="shop-item-name">Cowboy Hat</div>
+          <div class="shop-price" id="sp-hat_cowboy">🪙 400</div>
+        </div>
+        <div class="shop-item" data-item-id="hat_mushroom" onclick="buyItem('hat_mushroom',500)">
+          <div class="shop-preview">🍄</div>
+          <div class="shop-item-name">Mushroom Cap</div>
+          <div class="shop-price" id="sp-hat_mushroom">🪙 500</div>
+        </div>
+        <div class="shop-item" data-item-id="hat_dunce" onclick="buyItem('hat_dunce',200)">
+          <div class="shop-preview">🎓</div>
+          <div class="shop-item-name">Dunce Cap</div>
+          <div class="shop-price" id="sp-hat_dunce">🪙 200</div>
+        </div>
+        <div class="shop-item" data-item-id="hat_crown" onclick="buyItem('hat_crown',1500)">
+          <div class="shop-preview">👑</div>
+          <div class="shop-item-name">Crown</div>
+          <div class="shop-price" id="sp-hat_crown">🪙 1500</div>
+        </div>
+        <div class="shop-item" data-item-id="hat_tophat" onclick="buyItem('hat_tophat',800)">
+          <div class="shop-preview">🎩</div>
+          <div class="shop-item-name">Top Hat</div>
+          <div class="shop-price" id="sp-hat_tophat">🪙 800</div>
+        </div>
+        <div class="shop-item" data-item-id="hat_wizard" onclick="buyItem('hat_wizard',1200)">
+          <div class="shop-preview">🧙</div>
+          <div class="shop-item-name">Wizard Hat</div>
+          <div class="shop-price" id="sp-hat_wizard">🪙 1200</div>
+        </div>
+        <div class="shop-item" data-item-id="hat_devil" onclick="buyItem('hat_devil',1000)">
+          <div class="shop-preview">😈</div>
+          <div class="shop-item-name">Devil Horns</div>
+          <div class="shop-price" id="sp-hat_devil">🪙 1000</div>
+        </div>
+        <div class="shop-item" data-item-id="hat_flower" onclick="buyItem('hat_flower',600)">
+          <div class="shop-preview">🌸</div>
+          <div class="shop-item-name">Flower Crown</div>
+          <div class="shop-price" id="sp-hat_flower">🪙 600</div>
+        </div>
+        <div class="shop-item" data-item-id="hat_helmet" onclick="buyItem('hat_helmet',700)">
+          <div class="shop-preview">🪖</div>
+          <div class="shop-item-name">Battle Helmet</div>
+          <div class="shop-price" id="sp-hat_helmet">🪙 700</div>
+        </div>
+        <div class="shop-item" data-item-id="hat_snapback" onclick="buyItem('hat_snapback',400)">
+          <div class="shop-preview">🧢</div>
+          <div class="shop-item-name">Snapback</div>
+          <div class="shop-price" id="sp-hat_snapback">🪙 400</div>
+        </div>
+        <div class="shop-item" data-item-id="hat_hardhat" onclick="buyItem('hat_hardhat',350)">
+          <div class="shop-preview">⛑️</div>
+          <div class="shop-item-name">Hard Hat</div>
+          <div class="shop-price" id="sp-hat_hardhat">🪙 350</div>
+        </div>
       </div>
-      <div class="shop-item" data-item-id="color_violet" onclick="buyItem('color_violet',900)">
-        <div class="shop-preview" style="color:#b45aff;">GRAPE BRUISE</div>
-        <div class="shop-item-name">Purple Bruise</div>
-        <div class="shop-price" id="sp-color_violet">🪙 900</div>
-      </div>
-      <div class="shop-item" data-item-id="color_white" onclick="buyItem('color_white',1100)">
-        <div class="shop-preview" style="color:#ffffff;">CUM</div>
-        <div class="shop-item-name">Cum White</div>
-        <div class="shop-price" id="sp-color_white">🪙 1100</div>
+
+      <div class="menu-section-title" style="margin-top:18px;">Site Themes</div>
+      <div class="shop-grid">
+        <div class="shop-item" data-item-id="theme_rash" onclick="buyItem('theme_rash',1000)">
+          <div class="shop-preview" style="color:#cc2200;">RASH</div>
+          <div class="shop-item-name">Red Rash</div>
+          <div class="shop-price" id="sp-theme_rash">🪙 1000</div>
+        </div>
+        <div class="shop-item" data-item-id="theme_void" onclick="buyItem('theme_void',1200)">
+          <div class="shop-preview" style="color:#6b3a1f;">SKIDMARK</div>
+          <div class="shop-item-name">Brown Skidmark</div>
+          <div class="shop-price" id="sp-theme_void">🪙 1200</div>
+        </div>
+        <div class="shop-item" data-item-id="theme_gold" onclick="buyItem('theme_gold',1400)">
+          <div class="shop-preview" style="color:#C9A84C;">EARWAX</div>
+          <div class="shop-item-name">Yellow Earwax</div>
+          <div class="shop-price" id="sp-theme_gold">🪙 1400</div>
+        </div>
+        <div class="shop-item" data-item-id="theme_toxic" onclick="buyItem('theme_toxic',1600)">
+          <div class="shop-preview" style="color:#39ff14;">SEPTIC</div>
+          <div class="shop-item-name">Green Septic</div>
+          <div class="shop-price" id="sp-theme_toxic">🪙 1600</div>
+        </div>
+        <div class="shop-item" data-item-id="theme_ice" onclick="buyItem('theme_ice',1800)">
+          <div class="shop-preview" style="color:#00bbff;">BLUEBALLS</div>
+          <div class="shop-item-name">Blue Balls</div>
+          <div class="shop-price" id="sp-theme_ice">🪙 1800</div>
+        </div>
+        <div class="shop-item" data-item-id="theme_coal" onclick="buyItem('theme_coal',2200)">
+          <div class="shop-preview" style="color:#555;text-shadow:0 0 6px rgba(255,255,255,0.2);">MOLD</div>
+          <div class="shop-item-name">Black Mold</div>
+          <div class="shop-price" id="sp-theme_coal">🪙 2200</div>
+        </div>
       </div>
     </div>
-    <div class="menu-section-title" style="margin-top:18px;">Site Themes</div>
-    <div class="shop-grid">
-      <div class="shop-item" data-item-id="theme_rash" onclick="buyItem('theme_rash',1000)">
-        <div class="shop-preview" style="color:#cc2200;">RASH</div>
-        <div class="shop-item-name">Red Rash</div>
-        <div class="shop-price" id="sp-theme_rash">🪙 1000</div>
+
+    <!-- CASES SUB-TAB -->
+    <div id="shop-sub-cases" style="display:none;">
+      <div class="cases-grid">
+        <div class="case-card standard" onclick="openCase('standard')">
+          <span class="case-icon">📦</span>
+          <div class="case-name">Standard Case</div>
+          <div class="case-desc">Hats, name colors, borders & text colors</div>
+          <div class="case-cost">🪙 400</div>
+        </div>
+        <div class="case-card daily" id="case-daily-card" onclick="openCase('daily')">
+          <span class="case-icon">🎁</span>
+          <div class="case-name">Daily Case</div>
+          <div class="case-desc">Free once per day — small rewards</div>
+          <div class="case-cost" id="case-daily-cost">FREE</div>
+        </div>
+        <div class="case-card battle" id="case-battle-card" onclick="openCase('battle')">
+          <span class="case-icon">⚔️</span>
+          <div class="case-name">Battle Case</div>
+          <div class="case-desc">Earned by winning battles — exclusive items</div>
+          <div class="case-cost" id="case-battle-cost">🏆 WINS REQUIRED</div>
+        </div>
+        <div class="case-card streak" id="case-streak-card" onclick="openCase('streak')">
+          <span class="case-icon">🔥</span>
+          <div class="case-name">Streak Case</div>
+          <div class="case-desc">Unlocked at 3-win streak — rare drops</div>
+          <div class="case-cost" id="case-streak-cost">🔥 STREAK REQUIRED</div>
+        </div>
       </div>
-      <div class="shop-item" data-item-id="theme_void" onclick="buyItem('theme_void',1200)">
-        <div class="shop-preview" style="color:#6b3a1f;">SKIDMARK</div>
-        <div class="shop-item-name">Brown Skidmark</div>
-        <div class="shop-price" id="sp-theme_void">🪙 1200</div>
+      <div id="case-lock-msg" style="font-family:'Barlow Condensed',sans-serif;font-size:0.7rem;letter-spacing:2px;color:var(--muted);text-align:center;margin-top:14px;text-transform:uppercase;"></div>
+    </div>
+  </div>
+
+  <!-- CASE OPENING MODAL -->
+  <div class="modal-overlay" id="case-overlay" style="display:none;" onclick="if(event.target===this&&!window._caseSpinning)closeModal('case-overlay')">
+    <div class="modal-box" style="max-width:520px;width:90%;">
+      <div class="modal-header">
+        <span class="modal-title" id="case-modal-title">OPENING CASE</span>
+        <button class="modal-close" onclick="if(!window._caseSpinning)closeModal('case-overlay')">✕</button>
       </div>
-      <div class="shop-item" data-item-id="theme_gold" onclick="buyItem('theme_gold',1400)">
-        <div class="shop-preview" style="color:#C9A84C;">EARWAX</div>
-        <div class="shop-item-name">Yellow Earwax</div>
-        <div class="shop-price" id="sp-theme_gold">🪙 1400</div>
-      </div>
-      <div class="shop-item" data-item-id="theme_toxic" onclick="buyItem('theme_toxic',1600)">
-        <div class="shop-preview" style="color:#39ff14;">SEPTIC</div>
-        <div class="shop-item-name">Green Septic</div>
-        <div class="shop-price" id="sp-theme_toxic">🪙 1600</div>
-      </div>
-      <div class="shop-item" data-item-id="theme_ice" onclick="buyItem('theme_ice',1800)">
-        <div class="shop-preview" style="color:#00bbff;">BLUEBALLS</div>
-        <div class="shop-item-name">Blue Balls</div>
-        <div class="shop-price" id="sp-theme_ice">🪙 1800</div>
-      </div>
-      <div class="shop-item" data-item-id="theme_coal" onclick="buyItem('theme_coal',2200)">
-        <div class="shop-preview" style="color:#555;text-shadow:0 0 6px rgba(255,255,255,0.2);">MOLD</div>
-        <div class="shop-item-name">Black Mold</div>
-        <div class="shop-price" id="sp-theme_coal">🪙 2200</div>
+      <div id="case-modal-body" style="padding:20px;">
+        <div class="case-open-reel-wrap" id="case-reel-wrap">
+          <div class="case-open-reel" id="case-reel"></div>
+          <div class="case-track-center"></div>
+        </div>
+        <div id="case-result-area" style="display:none;"></div>
+        <button class="case-open-btn" id="case-open-btn" onclick="spinCase()">OPEN CASE</button>
       </div>
     </div>
   </div>
@@ -1852,6 +2122,7 @@ function _mapUserRecord(rec) {
     nameColor:      rec.nameColor || 'default',
     lastDaily:      rec.lastDaily || 0,
     flappyBest:     rec.flappyBest || 0,
+    lastCaseDaily:  rec.lastCaseDaily || 0,
     _pbId:          rec.id,
   };
 }
@@ -2018,6 +2289,7 @@ async function restoreSession() {
       const rec = await pb.getUser(s.userId);
       if (rec) {
         myProfile = _mapUserRecord(rec);
+        if (typeof applyActiveCosmetics === 'function') applyActiveCosmetics(myProfile);
       } else {
         // Token expired
         pb.logout();
@@ -2084,7 +2356,7 @@ window.addEventListener('beforeunload', async () => {
 function renderTopbar() {
   const a = document.getElementById('topbar-user-area');
   a.innerHTML = me && myProfile
-    ? `<div class="topbar-user" onclick="openOwnProfile()"><div class="topbar-avatar">${avatarInner(myProfile.avatar, myProfile.displayName)}</div><span class="topbar-username">${myProfile.displayName}</span></div>`
+    ? `<div class="topbar-user" onclick="openOwnProfile()"><div class="topbar-avatar ${activeBorder ? 'border-'+activeBorder.replace('border_','') : ''}">${avatarInner(myProfile.avatar, myProfile.displayName, activeHat)}</div><span class="topbar-username">${myProfile.displayName}</span></div>`
     : `<button class="topbar-btn" onclick="openModal('auth-overlay')">LOG IN</button>`;
 }
 window.openOwnProfile = () => me && openProfileByUid(me.uid);
@@ -2113,6 +2385,7 @@ window.doLogin = async () => {
     const rec = await pb.getUser(d.record.id);
     me = { uid: d.record.id, email: d.record.email };
     myProfile = _mapUserRecord(rec || d.record);
+    if (typeof applyActiveCosmetics === 'function') applyActiveCosmetics(myProfile);
     localStorage.setItem('bc_session', JSON.stringify({ token: pb._token, userId: me.uid, email: me.email }));
     renderTopbar();
     if (myProfile) { refreshShopOwned(); applyUserPrefs(myProfile); }
@@ -2337,7 +2610,7 @@ window.sendMessage = async () => {
 
   const xp = myProfile.xp || 0;
   const lvl = calcLevel(xp).level;
-  const chatRecord = {uid:me.uid,displayName:myProfile.displayName,avatar:myProfile.avatar,text,level:lvl,nameColor:activeNameColor,ts:Date.now()};
+  const chatRecord = {uid:me.uid,displayName:myProfile.displayName,avatar:myProfile.avatar,text,level:lvl,nameColor:activeNameColor,textColor:activeTextColor||null,ts:Date.now()};
   addChatBubble(chatRecord); // show immediately, don't wait for SSE
   input.value='';
   await pb.createRecord('chat', chatRecord).catch(()=>{});
@@ -2349,6 +2622,7 @@ function addChatBubble(msg) {
   const color=me&&msg.uid===me.uid?'me':'other';
   const lvlBadge = msg.level ? `<span class="msg-lvl-badge">${msg.level}</span>` : '';
   const nc = msg.nameColor ? NAME_COLORS[msg.nameColor] : null;
+  const txtColorClass = msg.textColor ? 'msg-text-' + msg.textColor.replace('txt_','') : '';
   const nameStyle = nc ? `style="color:${nc};"` : '';
   const avHtml = msg.avatar
     ? `<img src="${msg.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
@@ -3523,6 +3797,299 @@ window.buyItem = async (itemId, cost) => {
 };
 
 
+// ── HATS / BORDERS / TEXT COLORS ──
+const HAT_EMOJIS = {
+  hat_party:'🎉', hat_cowboy:'🤠', hat_mushroom:'🍄', hat_dunce:'🎓',
+  hat_crown:'👑', hat_tophat:'🎩', hat_wizard:'🧙', hat_devil:'😈',
+  hat_flower:'🌸', hat_helmet:'🪖', hat_snapback:'🧢', hat_hardhat:'⛑️'
+};
+const BORDER_CLASSES = ['border-fire','border-ice','border-gold','border-toxic','border-violet','border-rainbow'];
+const TEXT_COLOR_CLASSES = ['msg-text-fire','msg-text-ice','msg-text-toxic','msg-text-violet','msg-text-gold','msg-text-crimson'];
+
+let activeHat = null;
+let activeBorder = null;
+let activeTextColor = null;
+
+function avatarInnerWithHat(avatar, username, hat, border) {
+  const img = avatar && avatar.startsWith('data:')
+    ? `<img src="${avatar}" alt="${getInitial(username)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+    : `<span>${getInitial(username)}</span>`;
+  const hatHtml = hat && HAT_EMOJIS[hat] ? `<span class="avatar-hat">${HAT_EMOJIS[hat]}</span>` : '';
+  return `<div class="avatar-wrap">${img}${hatHtml}</div>`;
+}
+
+function applyBorderToEl(el, border) {
+  if (!el) return;
+  BORDER_CLASSES.forEach(c => el.classList.remove(c));
+  if (border && border !== 'none') el.classList.add('border-' + border.replace('border_',''));
+}
+
+function applyActiveCosmetics(profile) {
+  if (!profile) return;
+  const owned = profile.items || [];
+  // Hat: use last owned hat or stored activeHat
+  activeHat = owned.filter(i => i.startsWith('hat_')).slice(-1)[0] || null;
+  // Border
+  activeBorder = owned.filter(i => i.startsWith('border_')).slice(-1)[0] || null;
+  // Text color  
+  activeTextColor = owned.filter(i => i.startsWith('txt_')).slice(-1)[0] || null;
+  // Apply border to topbar avatar
+  const tbAv = document.querySelector('.topbar-avatar');
+  if (tbAv) applyBorderToEl(tbAv, activeBorder);
+}
+
+// ── SHOP SUB-TAB SWITCH ──
+window.switchShopSub = (sub, btn) => {
+  document.querySelectorAll('.shop-sub-btn').forEach(b => {
+    b.style.borderBottomColor = 'transparent';
+    b.style.color = 'var(--muted)';
+  });
+  btn.style.borderBottomColor = 'var(--red-hot)';
+  btn.style.color = 'var(--text)';
+  document.getElementById('shop-sub-items').style.display = sub === 'items' ? '' : 'none';
+  document.getElementById('shop-sub-cases').style.display = sub === 'cases' ? '' : 'none';
+  if (sub === 'cases') refreshCaseCards();
+};
+
+// ── CASE DEFINITIONS ──
+const CASE_POOLS = {
+  standard: [
+    { id:'hat_party',    name:'Party Hat',     emoji:'🎉', rarity:'common' },
+    { id:'hat_dunce',    name:'Dunce Cap',      emoji:'🎓', rarity:'common' },
+    { id:'hat_snapback', name:'Snapback',       emoji:'🧢', rarity:'common' },
+    { id:'hat_hardhat',  name:'Hard Hat',       emoji:'⛑️', rarity:'common' },
+    { id:'color_crimson',name:'Period Red',     emoji:'🔴', rarity:'common' },
+    { id:'color_toxic',  name:'Vomit Green',    emoji:'🟢', rarity:'common' },
+    { id:'hat_cowboy',   name:'Cowboy Hat',     emoji:'🤠', rarity:'rare' },
+    { id:'hat_flower',   name:'Flower Crown',   emoji:'🌸', rarity:'rare' },
+    { id:'hat_helmet',   name:'Battle Helmet',  emoji:'🪖', rarity:'rare' },
+    { id:'color_cyan',   name:'Bonnie Blue',    emoji:'🔵', rarity:'rare' },
+    { id:'txt_fire',     name:'Fire Text',      emoji:'🔥', rarity:'rare' },
+    { id:'txt_ice',      name:'Ice Text',       emoji:'❄️', rarity:'rare' },
+    { id:'border_fire',  name:'Fire Border',    emoji:'🔴', rarity:'epic' },
+    { id:'border_ice',   name:'Ice Border',     emoji:'🔵', rarity:'epic' },
+    { id:'hat_tophat',   name:'Top Hat',        emoji:'🎩', rarity:'epic' },
+    { id:'color_violet', name:'Grape Bruise',   emoji:'🟣', rarity:'epic' },
+    { id:'hat_crown',    name:'Crown',          emoji:'👑', rarity:'legendary' },
+    { id:'border_rainbow',name:'Rainbow Border',emoji:'🌈', rarity:'legendary' },
+  ],
+  daily: [
+    { id:'hat_party',    name:'Party Hat',      emoji:'🎉', rarity:'common' },
+    { id:'hat_dunce',    name:'Dunce Cap',       emoji:'🎓', rarity:'common' },
+    { id:'color_crimson',name:'Period Red',      emoji:'🔴', rarity:'common' },
+    { id:'hat_snapback', name:'Snapback',        emoji:'🧢', rarity:'common' },
+    { id:'color_gold',   name:'Piss Yellow',     emoji:'🟡', rarity:'rare' },
+    { id:'txt_fire',     name:'Fire Text',       emoji:'🔥', rarity:'rare' },
+    { id:'hat_flower',   name:'Flower Crown',    emoji:'🌸', rarity:'rare' },
+    { id:'border_toxic', name:'Toxic Border',    emoji:'☢️', rarity:'epic' },
+    { id:'hat_wizard',   name:'Wizard Hat',      emoji:'🧙', rarity:'epic' },
+  ],
+  battle: [
+    { id:'hat_devil',    name:'Devil Horns',     emoji:'😈', rarity:'rare' },
+    { id:'txt_crimson',  name:'Blood Text',      emoji:'💀', rarity:'rare' },
+    { id:'border_gold',  name:'Gold Border',     emoji:'✨', rarity:'epic' },
+    { id:'hat_wizard',   name:'Wizard Hat',      emoji:'🧙', rarity:'epic' },
+    { id:'txt_gold',     name:'Gold Text',       emoji:'✨', rarity:'epic' },
+    { id:'border_violet',name:'Violet Border',   emoji:'🔮', rarity:'epic' },
+    { id:'hat_crown',    name:'Crown',           emoji:'👑', rarity:'legendary' },
+    { id:'color_white',  name:'Cum White',       emoji:'⬜', rarity:'legendary' },
+    { id:'border_rainbow',name:'Rainbow Border', emoji:'🌈', rarity:'legendary' },
+  ],
+  streak: [
+    { id:'hat_helmet',   name:'Battle Helmet',   emoji:'🪖', rarity:'rare' },
+    { id:'border_fire',  name:'Fire Border',     emoji:'🔥', rarity:'rare' },
+    { id:'txt_toxic',    name:'Toxic Text',      emoji:'☢️', rarity:'rare' },
+    { id:'hat_tophat',   name:'Top Hat',         emoji:'🎩', rarity:'epic' },
+    { id:'txt_violet',   name:'Mystic Text',     emoji:'🔮', rarity:'epic' },
+    { id:'border_violet',name:'Violet Border',   emoji:'🔮', rarity:'epic' },
+    { id:'hat_crown',    name:'Crown',           emoji:'👑', rarity:'legendary' },
+    { id:'border_rainbow',name:'Rainbow Border', emoji:'🌈', rarity:'legendary' },
+    { id:'theme_ice',    name:'Blueballs Theme', emoji:'❄️', rarity:'legendary' },
+  ],
+};
+
+const RARITY_WEIGHTS = { common: 55, rare: 28, epic: 13, legendary: 4 };
+
+function weightedPick(pool) {
+  const weighted = [];
+  pool.forEach(item => {
+    const w = RARITY_WEIGHTS[item.rarity] || 10;
+    for (let i = 0; i < w; i++) weighted.push(item);
+  });
+  return weighted[Math.floor(Math.random() * weighted.length)];
+}
+
+let _currentCaseType = null;
+let _caseSpinning = false;
+window._caseSpinning = false;
+
+function refreshCaseCards() {
+  if (!myProfile) return;
+  const wins = myProfile.wins || 0;
+  const streak = myProfile.currentStreak || 0;
+  const lastDaily = myProfile.lastCaseDaily || 0;
+  const now = Date.now();
+  const dailyReady = now - lastDaily > 86400000;
+
+  // Daily
+  const dailyCost = document.getElementById('case-daily-cost');
+  const dailyCard = document.getElementById('case-daily-card');
+  if (dailyCard) {
+    if (dailyReady) {
+      dailyCost.textContent = 'FREE';
+      dailyCard.classList.remove('case-locked');
+    } else {
+      const h = Math.ceil((86400000 - (now - lastDaily)) / 3600000);
+      dailyCost.textContent = `${h}H REMAINING`;
+      dailyCard.classList.add('case-locked');
+    }
+  }
+  // Battle (need 1+ win)
+  const battleCard = document.getElementById('case-battle-card');
+  const battleCost = document.getElementById('case-battle-cost');
+  if (battleCard) {
+    if (wins >= 1) { battleCard.classList.remove('case-locked'); battleCost.textContent = '🏆 ' + wins + ' WINS'; }
+    else { battleCard.classList.add('case-locked'); battleCost.textContent = 'WIN A BATTLE FIRST'; }
+  }
+  // Streak (need 3+)
+  const streakCard = document.getElementById('case-streak-card');
+  const streakCost = document.getElementById('case-streak-cost');
+  if (streakCard) {
+    if (streak >= 3) { streakCard.classList.remove('case-locked'); streakCost.textContent = '🔥 ' + streak + ' STREAK'; }
+    else { streakCard.classList.add('case-locked'); streakCost.textContent = `NEED 3 STREAK (${streak}/3)`; }
+  }
+}
+
+window.openCase = (type) => {
+  if (!me) { showToast('Log in first!'); return; }
+  const costs = { standard: 400, daily: 0, battle: 0, streak: 0 };
+  const coins = myProfile.coins || 0;
+  if (type === 'standard' && coins < 400) { showToast('Need 🪙 400 to open!'); return; }
+
+  _currentCaseType = type;
+  _caseSpinning = false;
+  window._caseSpinning = false;
+
+  const titles = { standard:'STANDARD CASE', daily:'DAILY CASE', battle:'BATTLE CASE', streak:'STREAK CASE' };
+  document.getElementById('case-modal-title').textContent = titles[type] || 'CASE';
+  document.getElementById('case-result-area').style.display = 'none';
+  document.getElementById('case-result-area').innerHTML = '';
+  document.getElementById('case-reel-wrap').style.display = '';
+  document.getElementById('case-open-btn').disabled = false;
+  document.getElementById('case-open-btn').textContent = type === 'standard' ? 'OPEN — 🪙 400' : 'OPEN CASE';
+
+  // Populate reel with random items
+  buildReel(type);
+  openModal('case-overlay');
+};
+
+function buildReel(type) {
+  const pool = CASE_POOLS[type] || CASE_POOLS.standard;
+  const reel = document.getElementById('case-reel');
+  reel.innerHTML = '';
+  reel.style.transform = 'translateX(0)';
+  for (let i = 0; i < 40; i++) {
+    const item = pool[Math.floor(Math.random() * pool.length)];
+    const div = document.createElement('div');
+    div.className = `reel-item rarity-${item.rarity}`;
+    div.innerHTML = `<span class="reel-emoji">${item.emoji}</span><span class="reel-label">${item.name}</span>`;
+    reel.appendChild(div);
+  }
+}
+
+window.spinCase = async () => {
+  if (_caseSpinning) return;
+  if (!me) return;
+  const type = _currentCaseType;
+  const pool = CASE_POOLS[type] || CASE_POOLS.standard;
+
+  // Deduct cost / validate
+  if (type === 'standard') {
+    if ((myProfile.coins || 0) < 400) { showToast('Not enough coins!'); return; }
+  } else if (type === 'daily') {
+    const now = Date.now();
+    if (now - (myProfile.lastCaseDaily || 0) < 86400000) { showToast('Daily case not ready!'); return; }
+    await pb.updateUser(me.uid, { lastCaseDaily: now }).catch(()=>{});
+    myProfile.lastCaseDaily = now;
+  }
+
+  _caseSpinning = true;
+  window._caseSpinning = true;
+  document.getElementById('case-open-btn').disabled = true;
+  document.getElementById('case-open-btn').textContent = 'SPINNING...';
+
+  // Pick the winning item
+  const winner = weightedPick(pool);
+
+  // Place winner at position 30
+  const reel = document.getElementById('case-reel');
+  const items = reel.children;
+  const ITEM_W = 92; // 86 + 6 gap
+  const targetIdx = 30;
+  const winnerEl = items[targetIdx];
+  winnerEl.className = `reel-item rarity-${winner.rarity}`;
+  winnerEl.innerHTML = `<span class="reel-emoji">${winner.emoji}</span><span class="reel-label">${winner.name}</span>`;
+
+  // Calculate scroll: center item at index 30 under the marker
+  const reelWrap = document.getElementById('case-reel-wrap');
+  const centerX = reelWrap.offsetWidth / 2;
+  const targetX = targetIdx * ITEM_W + ITEM_W / 2;
+  const scrollTo = -(targetX - centerX) + (Math.random() * 40 - 20); // slight random offset
+
+  // Animate
+  reel.style.transition = 'transform 4s cubic-bezier(0.12, 0.8, 0.2, 1)';
+  reel.style.transform = `translateX(${scrollTo}px)`;
+
+  setTimeout(async () => {
+    // Show result
+    SFX.win && SFX.win();
+    document.getElementById('case-reel-wrap').style.display = 'none';
+
+    const resultArea = document.getElementById('case-result-area');
+    resultArea.style.display = 'block';
+    resultArea.innerHTML = `
+      <div class="case-result-reveal rarity-${winner.rarity}">
+        <span class="case-result-emoji">${winner.emoji}</span>
+        <div class="case-result-name">${winner.name}</div>
+        <div class="case-result-rarity">${winner.rarity.toUpperCase()}</div>
+      </div>`;
+
+    // Deduct cost and grant item
+    const owned = myProfile.items || [];
+    const alreadyOwn = owned.includes(winner.id);
+    let coinsRefund = 0;
+
+    if (type === 'standard') {
+      const newCoins = (myProfile.coins || 0) - 400 + (alreadyOwn ? 150 : 0);
+      myProfile.coins = newCoins;
+      await pb.updateUser(me.uid, { coins: newCoins, items: alreadyOwn ? owned : [...owned, winner.id] }).catch(()=>{});
+      updateCoinDisplays(newCoins);
+      if (alreadyOwn) resultArea.innerHTML += `<div style="font-family:'Barlow Condensed',sans-serif;font-size:0.7rem;letter-spacing:2px;color:var(--muted);text-align:center;margin-top:8px;">DUPLICATE — CONVERTED TO 🪙 150</div>`;
+    } else {
+      if (!alreadyOwn) {
+        myProfile.items = [...owned, winner.id];
+        await pb.updateUser(me.uid, { items: myProfile.items }).catch(()=>{});
+      } else {
+        const refund = type === 'battle' ? 300 : type === 'streak' ? 250 : 100;
+        myProfile.coins = (myProfile.coins || 0) + refund;
+        await pb.updateUser(me.uid, { coins: myProfile.coins }).catch(()=>{});
+        updateCoinDisplays(myProfile.coins);
+        resultArea.innerHTML += `<div style="font-family:'Barlow Condensed',sans-serif;font-size:0.7rem;letter-spacing:2px;color:var(--muted);text-align:center;margin-top:8px;">DUPLICATE — CONVERTED TO 🪙 ${refund}</div>`;
+      }
+    }
+
+    document.getElementById('case-open-btn').textContent = 'OPEN AGAIN';
+    document.getElementById('case-open-btn').disabled = false;
+    _caseSpinning = false;
+    window._caseSpinning = false;
+
+    refreshShopOwned();
+    applyActiveCosmetics(myProfile);
+    refreshMenuCoins();
+    refreshCaseCards();
+  }, 4200);
+};
+
 // ── SHOP OWNED STATE ──
 function refreshShopOwned() {
   const owned = myProfile?.items || [];
@@ -4153,18 +4720,20 @@ function getInitial(username) {
 }
 
 // Returns HTML to set inside an avatar element
-function avatarInner(avatar, username) {
-  if (avatar && avatar.startsWith('data:')) {
-    return `<img src="${avatar}" alt="${getInitial(username)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-  }
-  return `<span>${getInitial(username)}</span>`;
+function avatarInner(avatar, username, hat, border) {
+  const img = (avatar && avatar.startsWith('data:'))
+    ? `<img src="${avatar}" alt="${getInitial(username)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+    : `<span>${getInitial(username)}</span>`;
+  const h = hat && HAT_EMOJIS && HAT_EMOJIS[hat] ? `<span class="avatar-hat">${HAT_EMOJIS[hat]}</span>` : '';
+  return h ? `<div class="avatar-wrap">${img}${h}</div>` : img;
 }
 
 // Set any avatar element (by id or DOM el)
-function setAvatar(elOrId, avatar, username) {
+function setAvatar(elOrId, avatar, username, hat, border) {
   const el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
   if (!el) return;
-  el.innerHTML = avatarInner(avatar, username);
+  el.innerHTML = avatarInner(avatar, username, hat, border);
+  if (border) applyBorderToEl(el, border);
 }
 
 // Resize image to max 200px and compress to JPEG base64 (~20-40kb)
