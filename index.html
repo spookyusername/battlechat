@@ -1784,23 +1784,78 @@
 
   <!-- SETTINGS TAB -->
   <div class="menu-tab" id="mtab-settings" style="display:none;">
-    <div class="menu-section-title">Account</div>
+
+    <div class="menu-section-title">Equipped Cosmetics</div>
     <div class="settings-group">
-      <div class="settings-row" onclick="openChangePassword()">
+
+      <!-- HAT -->
+      <div class="settings-row" id="settings-hat-row">
         <div class="settings-row-left">
-          <div class="settings-row-icon">🔑</div>
+          <div class="settings-row-icon" id="hat-preview-icon">🎩</div>
           <div>
-            <div class="settings-row-title">Change Password</div>
-            <div class="settings-row-desc">Update your account password</div>
+            <div class="settings-row-title">Hat</div>
+            <div class="settings-row-desc" id="hat-label">None equipped</div>
           </div>
         </div>
-        <span class="settings-arrow">›</span>
+        <select class="settings-select" id="hat-select" onchange="applyHat(this.value)">
+          <option value="none">None</option>
+        </select>
       </div>
+
+      <!-- PROFILE BORDER -->
+      <div class="settings-row" id="settings-border-row">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">🔲</div>
+          <div>
+            <div class="settings-row-title">Profile Border</div>
+            <div class="settings-row-desc" id="border-label">None equipped</div>
+          </div>
+        </div>
+        <select class="settings-select" id="border-select" onchange="applyBorder(this.value)">
+          <option value="none">None</option>
+        </select>
+      </div>
+
+      <!-- CHAT TEXT COLOR -->
+      <div class="settings-row" id="settings-txtcolor-row">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">💬</div>
+          <div>
+            <div class="settings-row-title">Chat Text Color</div>
+            <div class="settings-row-desc" id="txtcolor-label">Default</div>
+          </div>
+        </div>
+        <select class="settings-select" id="txtcolor-select" onchange="applyTextColor(this.value)">
+          <option value="none">Default</option>
+        </select>
+      </div>
+
+      <!-- NAME COLOR -->
+      <div class="settings-row" id="settings-namecolor-row">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">🖊️</div>
+          <div>
+            <div class="settings-row-title">Name Color</div>
+            <div class="settings-row-desc">Your display name color</div>
+          </div>
+        </div>
+        <select class="settings-select" id="namecolor-select" onchange="applyNameColor(this.value)">
+          <option value="default">Default</option>
+          <option value="color_crimson">Period Blood</option>
+          <option value="color_gold">Piss Yellow</option>
+          <option value="color_cyan">Bonnie Blue</option>
+          <option value="color_violet">Purple Bruise</option>
+          <option value="color_toxic">Vomit Green</option>
+          <option value="color_white">Cum White</option>
+        </select>
+      </div>
+
+      <!-- THEME -->
       <div class="settings-row" id="settings-theme-row">
         <div class="settings-row-left">
           <div class="settings-row-icon">🎨</div>
           <div>
-            <div class="settings-row-title">Active Theme</div>
+            <div class="settings-row-title">Site Theme</div>
             <div class="settings-row-desc" id="active-theme-label">Default</div>
           </div>
         </div>
@@ -1814,23 +1869,20 @@
           <option value="rash">Red Rash</option>
         </select>
       </div>
-      <div class="settings-row" id="settings-namecolor-row">
+
+    </div>
+
+    <div class="menu-section-title" style="margin-top:18px;">Account</div>
+    <div class="settings-group">
+      <div class="settings-row" onclick="openChangePassword()">
         <div class="settings-row-left">
-          <div class="settings-row-icon">🖊️</div>
+          <div class="settings-row-icon">🔑</div>
           <div>
-            <div class="settings-row-title">Name Color</div>
-            <div class="settings-row-desc">Change your chat name color</div>
+            <div class="settings-row-title">Change Password</div>
+            <div class="settings-row-desc">Update your account password</div>
           </div>
         </div>
-        <select class="settings-select" id="namecolor-select" onchange="applyNameColor(this.value)">
-          <option value="default">Default</option>
-          <option value="color_crimson">Period Blood</option>
-          <option value="color_gold">Piss Yellow</option>
-          <option value="color_cyan">Bonnie Blue</option>
-          <option value="color_violet">Purple Bruise</option>
-          <option value="color_toxic">Vomit Green</option>
-          <option value="color_white">Cum White</option>
-        </select>
+        <span class="settings-arrow">›</span>
       </div>
       <div class="settings-row">
         <div class="settings-row-left">
@@ -1846,6 +1898,7 @@
         </label>
       </div>
     </div>
+
     <div id="pw-change-form" style="display:none;margin-top:16px;">
       <div class="menu-section-title">Change Password</div>
       <div class="settings-group">
@@ -2123,6 +2176,9 @@ function _mapUserRecord(rec) {
     lastDaily:      rec.lastDaily || 0,
     flappyBest:     rec.flappyBest || 0,
     lastCaseDaily:  rec.lastCaseDaily || 0,
+    activeHat:      rec.activeHat || null,
+    activeBorder:   rec.activeBorder || null,
+    activeTextColor:rec.activeTextColor || null,
     _pbId:          rec.id,
   };
 }
@@ -3774,6 +3830,9 @@ function refreshMenuCoins() {
   if (!me || !myProfile) return;
   userCoins = myProfile.coins || 0;
   document.getElementById('shop-coins').textContent = '🪙 ' + userCoins;
+  // Refresh settings equip dropdowns if settings tab is visible
+  const settingsTab = document.getElementById('mtab-settings');
+  if (settingsTab && settingsTab.style.display !== 'none') loadSettingsState();
 }
 
 window.buyItem = async (itemId, cost) => {
@@ -3789,11 +3848,29 @@ window.buyItem = async (itemId, cost) => {
     myProfile.coins = newCoins; myProfile.items = newItems;
     userCoins = newCoins;
     document.getElementById('shop-coins').textContent = '🪙 ' + newCoins;
-    showToast('Purchased! 🎉');
-    SFX.win();
+    SFX.win && SFX.win();
     loadSettingsState();
     refreshShopOwned();
+    showEquipToast(itemId);
   } catch(e) { showToast('Purchase failed.'); }
+};
+
+function showEquipToast(itemId) {
+  // Remove old equip toast if present
+  document.getElementById('equip-toast')?.remove();
+  const t = document.createElement('div');
+  t.id = 'equip-toast';
+  const isEquippable = itemId.startsWith('hat_') || itemId.startsWith('border_') || itemId.startsWith('txt_') || itemId.startsWith('color_') || itemId.startsWith('theme_');
+  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1c1c1c;border:1px solid rgba(255,255,255,0.15);padding:12px 18px;display:flex;align-items:center;gap:12px;z-index:9999;font-family:"Barlow Condensed",sans-serif;font-size:0.85rem;letter-spacing:1px;color:#e8e8e8;white-space:nowrap;animation:toastIn 0.3s ease;';
+  t.innerHTML = '🎉 Purchased! &nbsp;' + (isEquippable ? '<button onclick="goEquip()" style="background:var(--red);border:none;color:white;padding:5px 14px;font-family:'Bebas Neue',sans-serif;font-size:0.85rem;letter-spacing:2px;cursor:pointer;">EQUIP NOW</button>' : '') + '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0 0 0 4px;">✕</button>';
+  document.body.appendChild(t);
+  setTimeout(() => t?.remove(), 6000);
+}
+
+window.goEquip = () => {
+  document.getElementById('equip-toast')?.remove();
+  const settingsBtn = document.getElementById('mrb-settings');
+  if (settingsBtn) settingsBtn.click();
 };
 
 
@@ -3827,15 +3904,16 @@ function applyBorderToEl(el, border) {
 function applyActiveCosmetics(profile) {
   if (!profile) return;
   const owned = profile.items || [];
-  // Hat: use last owned hat or stored activeHat
-  activeHat = owned.filter(i => i.startsWith('hat_')).slice(-1)[0] || null;
-  // Border
-  activeBorder = owned.filter(i => i.startsWith('border_')).slice(-1)[0] || null;
-  // Text color  
-  activeTextColor = owned.filter(i => i.startsWith('txt_')).slice(-1)[0] || null;
+  // Use saved equipped values, fall back to none
+  activeHat = (profile.activeHat && owned.includes(profile.activeHat)) ? profile.activeHat : null;
+  activeBorder = (profile.activeBorder && owned.includes(profile.activeBorder)) ? profile.activeBorder : null;
+  activeTextColor = (profile.activeTextColor && owned.includes(profile.activeTextColor)) ? profile.activeTextColor : null;
   // Apply border to topbar avatar
   const tbAv = document.querySelector('.topbar-avatar');
-  if (tbAv) applyBorderToEl(tbAv, activeBorder);
+  if (tbAv) {
+    BORDER_CLASSES.forEach(c => tbAv.classList.remove(c));
+    if (activeBorder) tbAv.classList.add('border-' + activeBorder.replace('border_',''));
+  }
 }
 
 // ── SHOP SUB-TAB SWITCH ──
@@ -4097,9 +4175,14 @@ function refreshShopOwned() {
     const id = el.dataset.itemId;
     const priceEl = el.querySelector('.shop-price');
     if (!priceEl) return;
+    const isEquippable = id.startsWith('hat_') || id.startsWith('border_') || id.startsWith('txt_');
     if (owned.includes(id)) {
       el.classList.add('owned');
-      priceEl.textContent = '✓ OWNED';
+      if (isEquippable) {
+        priceEl.innerHTML = '<span style="color:rgba(100,200,100,0.9);font-size:0.75rem;display:block;">✓ OWNED</span><span onclick="event.stopPropagation();goEquip()" style="background:var(--red);color:white;padding:2px 10px;font-size:0.65rem;letter-spacing:1.5px;cursor:pointer;display:inline-block;margin-top:3px;">EQUIP</span>';
+      } else {
+        priceEl.textContent = '✓ OWNED';
+      }
       priceEl.classList.add('is-owned');
     } else {
       el.classList.remove('owned');
@@ -4150,6 +4233,50 @@ async function loadMenuLb(tab) {
   } catch(e) { console.error('LB error:', e); list.innerHTML = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">Could not load leaderboard.</div>'; }
 }
 
+// ── HAT / BORDER / TEXT COLOR EQUIP ──
+const HAT_NAMES = {
+  none:'None', hat_party:'Party Hat', hat_cowboy:'Cowboy Hat', hat_mushroom:'Mushroom Cap',
+  hat_dunce:'Dunce Cap', hat_crown:'Crown', hat_tophat:'Top Hat', hat_wizard:'Wizard Hat',
+  hat_devil:'Devil Horns', hat_flower:'Flower Crown', hat_helmet:'Battle Helmet',
+  hat_snapback:'Snapback', hat_hardhat:'Hard Hat'
+};
+const BORDER_NAMES = {
+  none:'None', border_fire:'Fire', border_ice:'Ice', border_gold:'Gold',
+  border_toxic:'Toxic', border_violet:'Violet', border_rainbow:'Rainbow'
+};
+const TEXT_COLOR_NAMES = {
+  none:'Default', txt_fire:'Fire Orange', txt_ice:'Ice Blue', txt_toxic:'Toxic Green',
+  txt_violet:'Mystic Violet', txt_gold:'Gold', txt_crimson:'Blood Red'
+};
+
+window.applyHat = val => {
+  activeHat = val === 'none' ? null : val;
+  if (me) pb.updateUser(me.uid, { activeHat: activeHat }).catch(()=>{});
+  const lbl = document.getElementById('hat-label');
+  const icon = document.getElementById('hat-preview-icon');
+  if (lbl) lbl.textContent = HAT_NAMES[val] || 'None';
+  if (icon) icon.textContent = (val !== 'none' && HAT_EMOJIS[val]) ? HAT_EMOJIS[val] : '🎩';
+  renderTopbar();
+};
+
+window.applyBorder = val => {
+  activeBorder = val === 'none' ? null : val;
+  if (me) pb.updateUser(me.uid, { activeBorder: activeBorder }).catch(()=>{});
+  const lbl = document.getElementById('border-label');
+  if (lbl) lbl.textContent = BORDER_NAMES[val] || 'None';
+  const tbAv = document.querySelector('.topbar-avatar');
+  BORDER_CLASSES.forEach(c => tbAv?.classList.remove(c));
+  if (activeBorder) tbAv?.classList.add('border-' + activeBorder.replace('border_',''));
+  renderTopbar();
+};
+
+window.applyTextColor = val => {
+  activeTextColor = val === 'none' ? null : val;
+  if (me) pb.updateUser(me.uid, { activeTextColor: activeTextColor }).catch(()=>{});
+  const lbl = document.getElementById('txtcolor-label');
+  if (lbl) lbl.textContent = TEXT_COLOR_NAMES[val] || 'Default';
+};
+
 window.applyTheme = val => {
   activeTheme = val;
   const t = THEMES[val] || THEMES.default;
@@ -4180,7 +4307,61 @@ function maybeSfx(fn) { return (...args) => { if (sfxEnabled) fn(...args); }; }
 
 function loadSettingsState() {
   const owned = myProfile?.items || [];
-  // Theme select — only show owned themes
+
+  // ── HAT select: only owned hats ──
+  const hs = document.getElementById('hat-select');
+  if (hs) {
+    hs.innerHTML = '<option value="none">None</option>';
+    Object.entries(HAT_NAMES).forEach(([id, name]) => {
+      if (id === 'none') return;
+      if (owned.includes(id)) {
+        const o = document.createElement('option');
+        o.value = id; o.textContent = (HAT_EMOJIS[id]||'') + ' ' + name;
+        hs.appendChild(o);
+      }
+    });
+    hs.value = activeHat || 'none';
+    const hatLbl = document.getElementById('hat-label');
+    const hatIcon = document.getElementById('hat-preview-icon');
+    if (hatLbl) hatLbl.textContent = activeHat ? (HAT_NAMES[activeHat]||'None') : 'None';
+    if (hatIcon) hatIcon.textContent = activeHat && HAT_EMOJIS[activeHat] ? HAT_EMOJIS[activeHat] : '🎩';
+  }
+
+  // ── BORDER select: only owned borders ──
+  const bs = document.getElementById('border-select');
+  if (bs) {
+    bs.innerHTML = '<option value="none">None</option>';
+    Object.entries(BORDER_NAMES).forEach(([id, name]) => {
+      if (id === 'none') return;
+      if (owned.includes(id)) {
+        const o = document.createElement('option');
+        o.value = id; o.textContent = name;
+        bs.appendChild(o);
+      }
+    });
+    bs.value = activeBorder || 'none';
+    const bLbl = document.getElementById('border-label');
+    if (bLbl) bLbl.textContent = activeBorder ? (BORDER_NAMES[activeBorder]||'None') : 'None';
+  }
+
+  // ── TEXT COLOR select: only owned ──
+  const tcs = document.getElementById('txtcolor-select');
+  if (tcs) {
+    tcs.innerHTML = '<option value="none">Default</option>';
+    Object.entries(TEXT_COLOR_NAMES).forEach(([id, name]) => {
+      if (id === 'none') return;
+      if (owned.includes(id)) {
+        const o = document.createElement('option');
+        o.value = id; o.textContent = name;
+        tcs.appendChild(o);
+      }
+    });
+    tcs.value = activeTextColor || 'none';
+    const tcLbl = document.getElementById('txtcolor-label');
+    if (tcLbl) tcLbl.textContent = activeTextColor ? (TEXT_COLOR_NAMES[activeTextColor]||'Default') : 'Default';
+  }
+
+  // ── THEME select ──
   const ts = document.getElementById('theme-select');
   if (ts) {
     Array.from(ts.options).forEach(o => {
@@ -4190,7 +4371,8 @@ function loadSettingsState() {
     });
     ts.value = myProfile?.activeTheme || 'default';
   }
-  // Name color select
+
+  // ── NAME COLOR select ──
   const ns = document.getElementById('namecolor-select');
   if (ns) {
     Array.from(ns.options).forEach(o => {
@@ -4200,6 +4382,7 @@ function loadSettingsState() {
     });
     ns.value = myProfile?.nameColor || 'default';
   }
+
   document.getElementById('sfx-toggle').checked = sfxEnabled;
   refreshMenuCoins();
 }
