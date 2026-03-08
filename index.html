@@ -1789,7 +1789,7 @@ const pb = {
         }
       } catch(e) {}
     };
-    const interval = setInterval(poll, 1500);
+    const interval = setInterval(poll, 4000);
     this._subs[key] = interval;
     return () => { clearInterval(interval); delete this._subs[key]; };
   },
@@ -1798,6 +1798,18 @@ const pb = {
     if (this._subs[key]) { clearInterval(this._subs[key]); delete this._subs[key]; }
   },
 };
+
+// ── VISIBILITY OPTIMIZATION — pause polls when tab hidden ──
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    // Tab hidden — pause all non-critical intervals
+    if (window._stagePollInterval) { clearInterval(window._stagePollInterval); window._stagePollInterval = null; }
+    if (window._votePollInterval)  { clearInterval(window._votePollInterval);  window._votePollInterval  = null; }
+  } else {
+    // Tab visible again — restart stage poll if we're live
+    if (typeof listenStage === 'function' && !window._stagePollInterval) listenStage();
+  }
+});
 
 // ── LIVEKIT ──
 const LK_URL    = 'wss://battlechat-ef3iejkp.livekit.cloud';
@@ -2223,7 +2235,7 @@ let _currentLbTab = 'wins';
 async function loadLeaderboard() {
   await _loadLbTab(_currentLbTab);
   if (window._lbRefreshInterval) clearInterval(window._lbRefreshInterval);
-  window._lbRefreshInterval = setInterval(() => _loadLbTab(_currentLbTab), 5000);
+  window._lbRefreshInterval = setInterval(() => _loadLbTab(_currentLbTab), 15000);
 }
 
 async function _loadLbTab(tab) {
@@ -2360,7 +2372,6 @@ let _lastStageUids = { left: null, right: null };
 let _stageRecordIds = { left: null, right: null };
 
 function listenStage() {
-  // Poll stage every 2s for full refresh
   async function refreshStage() {
     try {
       const items = await pb.listRecords('stage');
@@ -2371,7 +2382,7 @@ function listenStage() {
   }
   refreshStage();
   if (window._stagePollInterval) clearInterval(window._stagePollInterval);
-  window._stagePollInterval = setInterval(refreshStage, 2000);
+  window._stagePollInterval = setInterval(refreshStage, 5000);
 }
 
 function _handleStageUpdate(d) {
@@ -2736,7 +2747,7 @@ function _attachQueueListeners(fn) {
   queueUnsubStage = pb.subscribe('stage', '', fn);
   queueUnsubList  = pb.subscribe('queue', '', fn);
   // Also poll every 2s to keep position fresh regardless of SSE/polling events
-  queueUnsubInterval = setInterval(fn, 2000);
+  queueUnsubInterval = setInterval(fn, 4000);
 }
 
 function updateQueueUI(sorted, myPos) {
@@ -2843,8 +2854,9 @@ function listenVotes(roundIndex) {
       _renderVotes(roundIndex);
     } catch(e) {}
   }
+  refreshVotes(); // immediate first fetch
   if (window._votePollInterval) clearInterval(window._votePollInterval);
-  window._votePollInterval = setInterval(refreshVotes, 2000);
+  window._votePollInterval = setInterval(refreshVotes, 5000);
   voteUnsub = () => { clearInterval(window._votePollInterval); window._votePollInterval = null; };
 }
 
@@ -5356,9 +5368,9 @@ function listenBetTotals(roundIndex) {
   }
 
   refreshTotals();
-  _betTotalsUnsub = pb.subscribe('bets', '', evt => {
-    if (evt.record?.roundIndex === roundIndex) refreshTotals();
-  });
+  // Use a direct interval instead of subscribe — 8s is fine for bet totals
+  const _betInterval = setInterval(refreshTotals, 8000);
+  _betTotalsUnsub = () => clearInterval(_betInterval);
 }
 function hideBetTotals() {
   ['left','right'].forEach(s => {
