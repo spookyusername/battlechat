@@ -31,8 +31,8 @@
   .collapse-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
   .topbar-user { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 10px 4px 4px; border: 1px solid var(--border); transition: border-color 0.2s; }
   .topbar-user:hover { border-color: rgba(255,255,255,0.15); }
-  .topbar-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-family:'Bebas Neue',sans-serif; font-weight:700; overflow:hidden; flex-shrink:0; }
-  .topbar-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+  .topbar-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-family:'Bebas Neue',sans-serif; font-weight:700; overflow:visible; flex-shrink:0; position:relative; }
+  .topbar-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; } .topbar-avatar > img { border-radius:50%; }
   .topbar-username { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; }
 
   /* MAIN GRID */
@@ -61,7 +61,7 @@
   .p-level-label { font-family: 'Barlow Condensed', sans-serif; font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); text-align: center; margin-bottom: 16px; }
   .cam-nameplate { display: none !important; }
   .cam-nameplate:hover { border-color: rgba(255,255,255,0.2); }
-  .cam-avatar-sm { width: 26px; height: 26px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-family:'Bebas Neue',sans-serif; font-weight:700; flex-shrink:0; overflow:hidden; }
+  .cam-avatar-sm { width: 26px; height: 26px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-family:'Bebas Neue',sans-serif; font-weight:700; flex-shrink:0; overflow:visible; position:relative; }
   .cam-avatar-sm img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
   .cam-username { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.95rem; letter-spacing: 1px; }
   .cam-stats { display: flex; gap: 8px; margin-left: 4px; }
@@ -193,7 +193,7 @@
   .chat-msg { padding: 5px 12px; display: flex; gap: 9px; align-items: flex-start; }
   .chat-msg:hover { background: rgba(255,255,255,0.02); }
   .chat-msg.system { display: block; }
-  .msg-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue',sans-serif; font-size: 0.8rem; font-weight:700; flex-shrink: 0; overflow: visible; margin-top: 1px; cursor: pointer; position: relative; }
+  .msg-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue',sans-serif; font-size: 0.8rem; font-weight:700; flex-shrink: 0; overflow: visible; margin-top: 10px; cursor: pointer; position: relative; }
   .msg-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
   .msg-avatar-inner { width:100%; height:100%; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; }
   .msg-lvl-badge { position:absolute; top:-4px; left:-4px; background:var(--dark); border:1px solid rgba(201,168,76,0.6); color:var(--gold); font-family:'Bebas Neue',sans-serif; font-size:0.6rem; font-weight:700; line-height:1; padding:1px 3px; border-radius:3px; pointer-events:none; }
@@ -272,7 +272,7 @@
   .profile-banner::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg,rgba(217,43,43,0.15),transparent); }
   .profile-banner-accent { position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: linear-gradient(to right,var(--red),transparent); }
   .profile-avatar-wrap { display: flex; justify-content: center; padding-top: 20px; }
-  .profile-avatar-lg { width: 108px; height: 108px; border-radius: 50%; background: var(--dark3); border: 3px solid var(--red); display: flex; align-items: center; justify-content: center; font-size: 2.4rem; font-family:'Bebas Neue',sans-serif; font-weight:700; box-shadow: 0 0 24px rgba(217,43,43,0.3); overflow:hidden; cursor:pointer; position:relative; }
+  .profile-avatar-lg { width: 108px; height: 108px; border-radius: 50%; background: var(--dark3); border: 3px solid var(--red); display: flex; align-items: center; justify-content: center; font-size: 2.4rem; font-family:'Bebas Neue',sans-serif; font-weight:700; box-shadow: 0 0 24px rgba(217,43,43,0.3); overflow:visible; cursor:pointer; position:relative; }
   .profile-avatar-lg img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
   .profile-avatar-lg:hover .av-change-hint { opacity:1; }
   .p-avatar-level-badge { position:absolute; bottom:4px; right:4px; background:var(--gold); color:#000; font-family:'Bebas Neue',sans-serif; font-size:0.72rem; font-weight:700; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; border:2px solid var(--dark); z-index:5; pointer-events:none; line-height:1; }
@@ -794,7 +794,9 @@
   @keyframes discordPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
 
   /* ── HAT OVERLAYS ── */
-  .avatar-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+  .avatar-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; }
+  .avatar-wrap img, .avatar-wrap span:first-child { border-radius: 50%; overflow: hidden; }
+  .avatar-wrap .avatar-hat { overflow: visible; }
   .avatar-hat { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-size: 1.1em; line-height: 1; pointer-events: none; z-index: 5; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.9)); }
   .topbar-avatar .avatar-hat { font-size: 0.9em; top: -7px; }
   .cam-avatar-sm .avatar-hat { font-size: 0.85em; top: -6px; }
@@ -2533,10 +2535,11 @@ window.openProfileByUid = async uid => {
   const profAvEl = document.getElementById('p-avatar');
   const profInitEl = document.getElementById('p-avatar-initials');
   if (profAvEl) {
+    const profHat = p.activeHat && HAT_EMOJIS[p.activeHat] ? `<span class="avatar-hat" style="font-size:2rem;top:-20px;">${HAT_EMOJIS[p.activeHat]}</span>` : '';
     if (p.avatar && p.avatar.startsWith('data:')) {
-      profAvEl.innerHTML = `<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"><div class="av-change-hint">CHANGE PHOTO</div><div class="p-avatar-level-badge" id="p-avatar-level">1</div>`;
+      profAvEl.innerHTML = `<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">${profHat}<div class="av-change-hint">CHANGE PHOTO</div><div class="p-avatar-level-badge" id="p-avatar-level">1</div>`;
     } else {
-      profAvEl.innerHTML = `<span id="p-avatar-initials">${getInitial(p.displayName)}</span><div class="av-change-hint">CHANGE PHOTO</div><div class="p-avatar-level-badge" id="p-avatar-level">1</div>`;
+      profAvEl.innerHTML = `<span id="p-avatar-initials">${getInitial(p.displayName)}</span>${profHat}<div class="av-change-hint">CHANGE PHOTO</div><div class="p-avatar-level-badge" id="p-avatar-level">1</div>`;
     }
   }
   document.getElementById('p-username').textContent=p.displayName;
@@ -2697,7 +2700,7 @@ window.sendMessage = async () => {
 
   const xp = myProfile.xp || 0;
   const lvl = calcLevel(xp).level;
-  const chatRecord = {uid:me.uid,displayName:myProfile.displayName,avatar:myProfile.avatar,text,level:lvl,nameColor:activeNameColor,textColor:activeTextColor||null,ts:Date.now()};
+  const chatRecord = {uid:me.uid,displayName:myProfile.displayName,avatar:myProfile.avatar,text,level:lvl,nameColor:activeNameColor,textColor:activeTextColor||null,hat:activeHat||null,ts:Date.now()};
   addChatBubble(chatRecord); // show immediately, don't wait for SSE
   input.value='';
   await pb.createRecord('chat', chatRecord).catch(()=>{});
@@ -2711,11 +2714,15 @@ function addChatBubble(msg) {
   const nc = msg.nameColor ? NAME_COLORS[msg.nameColor] : null;
   const txtColorClass = msg.textColor ? 'msg-text-' + msg.textColor.replace('txt_','') : '';
   const nameStyle = nc ? `style="color:${nc};"` : '';
-  const avHtml = msg.avatar
+  const avImg = msg.avatar
     ? `<img src="${msg.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
     : `<span>${(msg.displayName||'?')[0].toUpperCase()}</span>`;
+  const msgHat = msg.hat && HAT_EMOJIS && HAT_EMOJIS[msg.hat] ? `<span class="avatar-hat">${HAT_EMOJIS[msg.hat]}</span>` : '';
+  const avHtml = msgHat
+    ? `<div class="avatar-wrap">${avImg}${msgHat}</div>`
+    : avImg;
   const tsStr = msg.ts ? (() => { const d=new Date(msg.ts); const h=d.getHours()%12||12; const m=String(d.getMinutes()).padStart(2,'0'); const ap=d.getHours()>=12?'pm':'am'; return h+':'+m+ap; })() : '';
-  div.innerHTML=`<div class="msg-avatar" onclick="openProfileByUid('${msg.uid}')"><div class="msg-avatar-inner">${avHtml}</div>${lvlBadge}</div><div class="msg-body"><span class="msg-name ${color}" ${nameStyle} onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.displayName)}</span><span class="msg-text">${escHtml(msg.text)}</span><span class="msg-ts">${tsStr}</span></div>`;
+  div.innerHTML=`<div class="msg-avatar" onclick="openProfileByUid('${msg.uid}')">${avHtml}${lvlBadge}</div><div class="msg-body"><span class="msg-name ${color}" ${nameStyle} onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.displayName)}</span><span class="msg-text ${txtColorClass}">${escHtml(msg.text)}</span><span class="msg-ts">${tsStr}</span></div>`;
   view.appendChild(div); view.scrollTop=view.scrollHeight;
   while(view.children.length>100) view.removeChild(view.firstChild);
 }
