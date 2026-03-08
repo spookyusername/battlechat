@@ -191,6 +191,7 @@
   .chat-messages::-webkit-scrollbar { width: 3px; }
   .chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
   .chat-msg { padding: 5px 12px; display: flex; gap: 9px; align-items: flex-start; }
+  .chat-msg.has-hat { padding-top: 22px; }
   .chat-msg:hover { background: rgba(255,255,255,0.02); }
   .chat-msg.system { display: block; }
   .msg-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue',sans-serif; font-size: 0.8rem; font-weight:700; flex-shrink: 0; overflow: visible; margin-top: 10px; cursor: pointer; position: relative; }
@@ -800,13 +801,13 @@
   .avatar-img-clip { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
   .avatar-img-clip img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
   /* hat floats above the circle, never clipped */
-  .avatar-hat { position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; z-index: 20; overflow: visible !important; display: block; }
-  .avatar-hat img { display: block; }
-  /* size + position per context */
-  .topbar-avatar .avatar-hat  { width: 34px;  top: -16px; margin-left: -17px; }
-  .cam-avatar-sm .avatar-hat  { width: 32px;  top: -15px; margin-left: -16px; }
-  .msg-avatar    .avatar-hat  { width: 40px;  top: -19px; margin-left: -20px; }
-  .profile-avatar-lg .avatar-hat { width: 120px; top: -55px; margin-left: -60px; }
+  .avatar-hat { position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; z-index: 20; overflow: visible !important; display: block; line-height: 0; }
+  .avatar-hat img { display: block; width: 100%; height: auto; }
+  /* size per context — centered via left:50% + translateX(-50%) only */
+  .topbar-avatar .avatar-hat  { width: 36px;  top: -17px; }
+  .cam-avatar-sm .avatar-hat  { width: 34px;  top: -16px; }
+  .msg-avatar    .avatar-hat  { width: 42px;  top: -20px; }
+  .profile-avatar-lg .avatar-hat { width: 130px; top: -58px; }
 
   /* ── PROFILE BORDERS ── */
   .border-fire   { box-shadow: 0 0 0 2px #ff4400, 0 0 8px #ff4400 !important; border-color: #ff4400 !important; }
@@ -2715,7 +2716,9 @@ window.sendMessage = async () => {
 };
 function addChatBubble(msg) {
   const view=document.getElementById('chat-view');
-  const div=document.createElement('div'); div.className='chat-msg';
+  const div=document.createElement('div');
+  div.className='chat-msg' + (msg.hat && HAT_SVGS && HAT_SVGS[msg.hat] ? ' has-hat' : '');
+  div.dataset.uid = msg.uid || '';
   const color=me&&msg.uid===me.uid?'me':'other';
   const lvlBadge = msg.level ? `<span class="msg-lvl-badge">${msg.level}</span>` : '';
   const nc = msg.nameColor ? NAME_COLORS[msg.nameColor] : null;
@@ -2729,7 +2732,7 @@ function addChatBubble(msg) {
     ? `<div class="avatar-wrap"><div class="avatar-img-clip">${avImg}</div>${msgHat}</div>`
     : avImg;
   const tsStr = msg.ts ? (() => { const d=new Date(msg.ts); const h=d.getHours()%12||12; const m=String(d.getMinutes()).padStart(2,'0'); const ap=d.getHours()>=12?'pm':'am'; return h+':'+m+ap; })() : '';
-  div.innerHTML=`<div class="msg-avatar" onclick="openProfileByUid('${msg.uid}')">${avHtml}${lvlBadge}</div><div class="msg-body"><span class="msg-name ${color}" ${nameStyle} onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.displayName)}</span><span class="msg-text ${txtColorClass}">${escHtml(msg.text)}</span><span class="msg-ts">${tsStr}</span></div>`;
+  div.innerHTML=`<div class="msg-avatar" data-uid="${msg.uid}" onclick="openProfileByUid('${msg.uid}')">${avHtml}${lvlBadge}</div><div class="msg-body"><span class="msg-name ${color}" ${nameStyle} onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.displayName)}</span><span class="msg-text ${txtColorClass}">${escHtml(msg.text)}</span><span class="msg-ts">${tsStr}</span></div>`;
   view.appendChild(div); view.scrollTop=view.scrollHeight;
   while(view.children.length>100) view.removeChild(view.firstChild);
 }
@@ -5077,14 +5080,17 @@ function refreshAllAvatars() {
   const un = myProfile.displayName;
   // Topbar
   const tbAv = document.querySelector('.topbar-avatar');
-  if (tbAv) tbAv.innerHTML = avatarInner(av, un);
+  if (tbAv) {
+    tbAv.innerHTML = avatarInner(av, un, activeHat);
+    requestAnimationFrame(() => applyBorderToEl(tbAv, activeBorder));
+  }
   // Profile modal
   const profAv = document.getElementById('p-avatar');
   if (profAv) {
     const initSpan = document.getElementById('p-avatar-initials');
     if (av && av.startsWith('data:')) {
       if (initSpan) initSpan.remove();
-      const existing = profAv.querySelector('img');
+      const existing = profAv.querySelector('img:not(.av-change-hint img)');
       if (existing) existing.remove();
       const img = document.createElement('img');
       img.src = av; img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;';
@@ -5094,9 +5100,26 @@ function refreshAllAvatars() {
     }
   }
   // Queue avatar
-  setAvatar('q-av', av, un);
+  setAvatar('q-av', av, un, activeHat);
   // Stage slots (if on stage)
-  if (mySlot) setAvatar('av-'+mySlot, av, un);
+  if (mySlot) setAvatar('av-'+mySlot, av, un, activeHat);
+  // ── UPDATE ALL MY CHAT BUBBLES ──────────────────────────────
+  if (me) {
+    document.querySelectorAll(`.msg-avatar[data-uid="${me.uid}"]`).forEach(el => {
+      const imgEl = av && av.startsWith('data:')
+        ? `<img src="${av}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+        : `<span>${getInitial(un)}</span>`;
+      const hatHtml = activeHat && HAT_SVGS && HAT_SVGS[activeHat]
+        ? `<span class="avatar-hat"><img src="${HAT_SVGS[activeHat]}" alt="" width="100%"></span>`
+        : '';
+      el.innerHTML = hatHtml
+        ? `<div class="avatar-wrap"><div class="avatar-img-clip">${imgEl}</div></div>${hatHtml}`
+        : imgEl;
+      // Update has-hat class on parent chat-msg
+      const msgDiv = el.closest('.chat-msg');
+      if (msgDiv) msgDiv.classList.toggle('has-hat', !!activeHat);
+    });
+  }
 }
 
 // ── GAMBLE GAME SWITCHER ──
