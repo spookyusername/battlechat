@@ -797,10 +797,17 @@
 <body>
 <script>
   // Unlock AudioContext on first interaction (browser policy)
-  document.addEventListener('click', function unlock() {
-    if (window._actx) window._actx.resume();
-    document.removeEventListener('click', unlock);
-  }, { once: true });
+  function _unlockAudio() {
+    if (window._actx) {
+      window._actx.resume().catch(()=>{});
+    }
+  }
+  ['click','keydown','touchstart'].forEach(evt =>
+    document.addEventListener(evt, function h() {
+      _unlockAudio();
+      document.removeEventListener(evt, h);
+    }, { once: true })
+  );
 </script>
 
 
@@ -3223,12 +3230,21 @@ window.showToast = msg => {
 
 // ── SFX ENGINE ──
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
-let _actx = null;
-function getACtx() { if (!_actx) _actx = new AudioCtx(); return _actx; }
+window._actx = null;
+function getACtx() {
+  if (!window._actx) {
+    try { window._actx = new AudioCtx(); } catch(e) { return null; }
+  }
+  if (window._actx.state === 'suspended') {
+    window._actx.resume().catch(()=>{});
+  }
+  return window._actx;
+}
 
 function sfxTone(freq, type, duration, vol=0.3, fadeOut=true) {
   try {
     const ctx = getACtx();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
@@ -5167,16 +5183,28 @@ function applyTtsVoice(utt, voice) {
 
 // Listen for TTS/SFX events from other users
 function listenGlobalEvents() {
+  if (window._eventsPollInterval) { clearInterval(window._eventsPollInterval); window._eventsPollInterval = null; }
+
   const startTs = Date.now();
   const seenEvents = new Set();
+  let consecutiveErrors = 0;
 
   async function pollEvents() {
     try {
-      // Only fetch lightweight fields, exclude audioData in listing
       const r = await fetch(`${SB_URL}/rest/v1/events?order=created_at.desc&limit=5`, {
         headers: pb._h()
       });
-      if (!r.ok) return;
+      if (!r.ok) {
+        consecutiveErrors++;
+        // Stop polling entirely if table keeps erroring (likely doesn't exist)
+        if (consecutiveErrors >= 3) {
+          console.warn('events table unavailable, disabling poll');
+          clearInterval(window._eventsPollInterval);
+          window._eventsPollInterval = null;
+        }
+        return;
+      }
+      consecutiveErrors = 0;
       const d = await r.json();
       for (const rec of (Array.isArray(d) ? d : [])) {
         if (seenEvents.has(rec.id)) continue;
@@ -5198,8 +5226,7 @@ function listenGlobalEvents() {
     } catch(e) {}
   }
 
-  if (window._eventsPollInterval) clearInterval(window._eventsPollInterval);
-  window._eventsPollInterval = setInterval(pollEvents, 5000); // slower poll - events are rare
+  window._eventsPollInterval = setInterval(pollEvents, 6000);
 }
 
 // ── BETTING SYSTEM ──
