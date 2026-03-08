@@ -445,9 +445,12 @@
   }
   .pip-mode .pip-vote-bar { display: flex; }
   .pip-vote-name {
-    font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 2.5px;
+    font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 2.5px;
     color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;
+    cursor: pointer;
+    transition: color 0.15s;
   }
+  .pip-vote-name:hover { color: var(--gold); }
 
   /* ── LEFT RAIL — sleek tall buttons ── */
   .menu-rail {
@@ -884,8 +887,7 @@
         </div>
       </div>
     <div class="pip-vote-bar" id="pip-bar-left">
-        <span class="pip-vote-name" id="pip-name-left">—</span>
-        <button class="pip-vote-btn" onclick="castVote('left')">VOTE</button>
+        <span class="pip-vote-name" id="pip-name-left" onclick="openProfileBySlot('left')" style="cursor:pointer;">—</span>
       </div>
     </div>
     <div class="cam-votebar"><div class="cam-votebar-fill" id="vbar-left" style="width:0%;margin-left:auto;"></div></div>
@@ -941,8 +943,7 @@
         </div>
       </div>
     <div class="pip-vote-bar" id="pip-bar-right">
-        <span class="pip-vote-name" id="pip-name-right">—</span>
-        <button class="pip-vote-btn" onclick="castVote('right')">VOTE</button>
+        <span class="pip-vote-name" id="pip-name-right" onclick="openProfileBySlot('right')" style="cursor:pointer;">—</span>
       </div>
     </div>
     <div class="cam-votebar"><div class="cam-votebar-fill" id="vbar-right" style="width:0%;"></div></div>
