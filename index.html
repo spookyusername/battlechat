@@ -2021,7 +2021,7 @@ async function restoreSession() {
   renderTopbar();
   if (me && myProfile) refreshShopOwned();
   listenStage();
-  listenGlobalEvents();
+  // listenGlobalEvents() disabled — SFX now broadcast via chat table
   listenChat();
   if (me) {
     applyUserPrefs(myProfile);
@@ -2277,11 +2277,30 @@ let _chatCooldownUntil = 0;
 
 function listenChat() {
   pb.subscribe('chat', '', evt => {
-    if (evt.action === 'create') {
-      // Skip our own messages — already added locally on send
-      if (me && evt.record.uid === me.uid) return;
-      addChatBubble(evt.record);
+    if (evt.action !== 'create') return;
+    const rec = evt.record;
+    // Intercept SFX broadcast messages — don't show in chat
+    if (rec.text && rec.text.startsWith('__SFX__:')) {
+      if (!me || rec.uid !== me.uid) { // don't replay our own (already played locally)
+        const sound = rec.text.slice(8);
+        playSfxSound(sound);
+        addSystemMsg('🎵 ' + rec.displayName + ' played a sound');
+      }
+      return;
     }
+    if (rec.text && rec.text.startsWith('__SFXDATA__:')) {
+      if (!me || rec.uid !== me.uid) {
+        try {
+          const payload = JSON.parse(rec.text.slice(12));
+          playSfxSound(payload.sound, payload.audioData, payload.trimStart, payload.trimEnd, payload.volume);
+          addSystemMsg('🎵 ' + rec.displayName + ' played a custom sound');
+        } catch(e) {}
+      }
+      return;
+    }
+    // Skip our own normal messages — already added locally on send
+    if (me && rec.uid === me.uid) return;
+    addChatBubble(rec);
   });
 }
 window.sendMessage = async () => {
@@ -5111,12 +5130,14 @@ window.sendCustomSfx = async () => {
   myProfile.coins = newCoins;
   await pb.updateUser(me.uid, { coins: newCoins }).catch(()=>{});
   updateCoinDisplays(newCoins);
-  await pb.createRecord('events', {
-    type: 'sfx', uid: me.uid, displayName: myProfile.displayName,
-    sound: 'custom', audioData,
-    trimStart: start, trimEnd: end, volume: Math.min(1, volume),
-    ts: Date.now()
+  // Store custom audio as base64 in a special chat message
+  const sfxPayload = JSON.stringify({ sound:'custom', audioData, trimStart:start, trimEnd:end, volume:Math.min(1,volume) });
+  await pb.createRecord('chat', {
+    uid: me.uid, displayName: myProfile.displayName, avatar: myProfile.avatar,
+    text: '__SFXDATA__:' + sfxPayload, level: 0, nameColor: myProfile.nameColor||'default', ts: Date.now()
   }).catch(()=>{});
+  // Play locally immediately
+  playSfxSound('custom', audioData, start, end, Math.min(1, volume));
   closeModal('sfx-overlay');
   showToast('SFX played!');
 };
@@ -5130,10 +5151,13 @@ window.sendSfx = async (sound) => {
   myProfile.coins = newCoins;
   await pb.updateUser(me.uid,{coins:newCoins}).catch(()=>{});
   updateCoinDisplays(newCoins);
-  await pb.createRecord('events', {
-    type: 'sfx', uid: me.uid, displayName: myProfile.displayName,
-    sound, ts: Date.now()
+  // Broadcast via chat table (type field) to avoid events table issues
+  await pb.createRecord('chat', {
+    uid: me.uid, displayName: myProfile.displayName, avatar: myProfile.avatar,
+    text: '__SFX__:' + sound, level: 0, nameColor: myProfile.nameColor||'default', ts: Date.now()
   }).catch(()=>{});
+  // Play locally immediately
+  playSfxSound(sound);
   closeModal('sfx-overlay');
   showToast('SFX played!');
 };
