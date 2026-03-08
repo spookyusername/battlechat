@@ -29,9 +29,9 @@
   .topbar-btn.enter:hover { background: var(--red-hot); border-color: var(--red-hot); }
   .collapse-btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; border: 1px solid var(--border); background: transparent; color: var(--muted); padding: 5px 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: border-color 0.2s, color 0.2s; }
   .collapse-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
-  .topbar-user { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 18px 10px 4px 4px; border: 1px solid var(--border); transition: border-color 0.2s; overflow: visible; }
+  .topbar-user { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 10px 4px 4px; border: 1px solid var(--border); transition: border-color 0.2s; overflow: visible; position: relative; }
   .topbar-user:hover { border-color: rgba(255,255,255,0.15); }
-  .topbar-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-family:'Bebas Neue',sans-serif; font-weight:700; overflow:visible; flex-shrink:0; position:relative; }
+  .topbar-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-family:'Bebas Neue',sans-serif; font-weight:700; overflow:visible; flex-shrink:0; position:relative; }
   .topbar-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; } .topbar-avatar > img { border-radius:50%; }
   .topbar-username { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; align-self: center; line-height: 1; }
 
@@ -190,11 +190,12 @@
   .chat-messages { flex: 1; overflow-y: auto; padding: 8px 0; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent; display: flex; flex-direction: column; }
   .chat-messages::-webkit-scrollbar { width: 3px; }
   .chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
-  .chat-msg { padding: 5px 12px; display: flex; gap: 9px; align-items: flex-start; }
-  .chat-msg.has-hat { padding-top: 22px; }
+  .chat-msg { padding: 5px 12px; display: flex; gap: 9px; align-items: center; }
+  .chat-msg.has-hat { padding-top: 24px; }
+  .chat-msg.has-hat .msg-avatar { align-self: flex-end; margin-bottom: 2px; }
   .chat-msg:hover { background: rgba(255,255,255,0.02); }
   .chat-msg.system { display: block; }
-  .msg-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue',sans-serif; font-size: 0.8rem; font-weight:700; flex-shrink: 0; overflow: visible; margin-top: 10px; cursor: pointer; position: relative; }
+  .msg-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue',sans-serif; font-size: 0.8rem; font-weight:700; flex-shrink: 0; overflow: visible; cursor: pointer; position: relative; flex-shrink: 0; align-self: center; }
   .msg-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
   .msg-avatar-inner { width:100%; height:100%; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; }
   .msg-lvl-badge { position:absolute; bottom:-4px; left:-4px; background:var(--dark); border:1px solid rgba(201,168,76,0.6); color:var(--gold); font-family:'Bebas Neue',sans-serif; font-size:0.6rem; font-weight:700; line-height:1; padding:1px 3px; border-radius:3px; pointer-events:none; z-index:2; }
@@ -804,7 +805,7 @@
   .avatar-hat { position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; z-index: 20; overflow: visible !important; display: block; line-height: 0; }
   .avatar-hat img { display: block; width: 100%; height: auto; }
   /* size per context — centered via left:50% + translateX(-50%) only */
-  .topbar-avatar .avatar-hat  { width: 36px;  top: -17px; }
+  .topbar-avatar .avatar-hat  { width: 28px;  top: -13px; }
   .cam-avatar-sm .avatar-hat  { width: 34px;  top: -16px; }
   .msg-avatar    .avatar-hat  { width: 42px;  top: -20px; }
   .profile-avatar-lg .avatar-hat { width: 130px; top: -58px; }
