@@ -349,7 +349,7 @@
   /* ── MENU PANEL — slides from left, stops before cam stack ── */
   .menu-panel {
     position: fixed; top: 96px; left: 0;
-    width: calc(100vw - 280px - 280px); /* leave 280px for cams, 280px for chat */
+    width: calc((100vw - 280px) / 2); /* exactly half of non-chat area, so divider sits under timer */
     min-width: 420px;
     height: calc(100vh - 96px);
     background: linear-gradient(180deg, #060606 0%, #0a0a0a 100%);
@@ -390,7 +390,7 @@
   .pip-mode #cam-left {
     position: fixed !important;
     top: 96px; right: 280px;
-    width: 280px !important;
+    width: calc((100vw - 280px) / 2) !important;
     height: calc((100vh - 96px) / 2) !important;
     z-index: 402;
     border-left: 2px solid rgba(217,43,43,0.45);
@@ -403,7 +403,7 @@
   .pip-mode #cam-right {
     position: fixed !important;
     bottom: 0; right: 280px;
-    width: 280px !important;
+    width: calc((100vw - 280px) / 2) !important;
     height: calc((100vh - 96px) / 2) !important;
     z-index: 402;
     border-left: 2px solid rgba(96,165,250,0.45);
