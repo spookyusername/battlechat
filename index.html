@@ -870,6 +870,35 @@
   .case-open-btn { width:100%; margin-top:12px; font-family:'Bebas Neue',sans-serif; font-size:1.1rem; letter-spacing:4px; padding:14px; background:var(--red); border:none; color:white; cursor:pointer; transition:background 0.2s; }
   .case-open-btn:hover { background:var(--red-hot); }
   .case-open-btn:disabled { background:rgba(255,255,255,0.1); color:var(--muted); cursor:not-allowed; }
+
+  /* ── INVENTORY ── */
+  .inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px; }
+  .inv-item {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    padding: 12px 10px 10px; text-align: center; cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    position: relative;
+  }
+  .inv-item:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.18); }
+  .inv-item.inv-equipped {
+    border-color: var(--red-hot) !important;
+    background: rgba(255,59,59,0.08) !important;
+  }
+  .inv-item.inv-equipped::after {
+    content: 'EQUIPPED'; position: absolute; top: 5px; right: 6px;
+    font-family: 'Bebas Neue', sans-serif; font-size: 0.5rem; letter-spacing: 2px;
+    color: var(--red-hot);
+  }
+  .inv-preview { font-size: 2rem; margin-bottom: 6px; line-height: 1; }
+  .inv-item-name { font-family: 'Barlow Condensed', sans-serif; font-size: 0.7rem; letter-spacing: 1.5px; color: var(--text); margin-bottom: 8px; text-transform: uppercase; }
+  .inv-equip-btn {
+    width: 100%; padding: 5px 0; background: var(--red); border: none; color: white;
+    font-family: 'Bebas Neue', sans-serif; font-size: 0.75rem; letter-spacing: 2px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .inv-equip-btn:hover { background: var(--red-hot); }
+  .inv-equip-btn.inv-unequip { background: rgba(255,255,255,0.08); color: var(--muted); }
+  .inv-equip-btn.inv-unequip:hover { background: rgba(255,255,255,0.14); color: var(--text); }
 </style>
 </head>
 <body>
@@ -1367,6 +1396,10 @@
       <span class="mrb-icon">🏆</span>
       <span class="mrb-label">Ranks</span>
     </button>
+    <button class="menu-rail-btn" id="mrb-inv"      onclick="switchMenuTab(this,'inv')"      data-tab="inv">
+      <span class="mrb-icon">🎒</span>
+      <span class="mrb-label">Inventory</span>
+    </button>
     <button class="menu-rail-btn" id="mrb-settings" onclick="switchMenuTab(this,'settings')" data-tab="settings">
       <span class="mrb-icon">⚙️</span>
       <span class="mrb-label">Config</span>
@@ -1783,79 +1816,68 @@
   </div>
 
   <!-- SETTINGS TAB -->
+  <!-- INVENTORY TAB -->
+  <div class="menu-tab" id="mtab-inv" style="display:none;">
+
+    <div id="inv-empty-msg" style="display:none;text-align:center;padding:40px 20px;">
+      <div style="font-size:2.5rem;margin-bottom:12px;">🎒</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:3px;color:var(--text);">NOTHING YET</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;letter-spacing:2px;color:var(--muted);margin-top:6px;">BUY ITEMS IN THE SHOP TO SEE THEM HERE</div>
+    </div>
+
+    <div id="inv-body">
+
+      <!-- HATS -->
+      <div class="inv-category" id="inv-cat-hats" style="display:none;">
+        <div class="menu-section-title" style="margin-top:0;">Hats</div>
+        <div class="inv-grid" id="inv-grid-hats"></div>
+      </div>
+
+      <!-- PROFILE BORDERS -->
+      <div class="inv-category" id="inv-cat-borders" style="display:none;">
+        <div class="menu-section-title">Profile Borders</div>
+        <div class="inv-grid" id="inv-grid-borders"></div>
+      </div>
+
+      <!-- CHAT TEXT COLORS -->
+      <div class="inv-category" id="inv-cat-textcolors" style="display:none;">
+        <div class="menu-section-title">Chat Text Colors</div>
+        <div class="inv-grid" id="inv-grid-textcolors"></div>
+      </div>
+
+      <!-- NAME COLORS -->
+      <div class="inv-category" id="inv-cat-namecolors" style="display:none;">
+        <div class="menu-section-title">Name Colors</div>
+        <div class="inv-grid" id="inv-grid-namecolors"></div>
+      </div>
+
+      <!-- THEMES -->
+      <div class="inv-category" id="inv-cat-themes" style="display:none;">
+        <div class="menu-section-title">Site Themes</div>
+        <div class="inv-grid" id="inv-grid-themes"></div>
+      </div>
+
+    </div>
+  </div>
+
   <div class="menu-tab" id="mtab-settings" style="display:none;">
-
-    <div class="menu-section-title">Equipped Cosmetics</div>
+    <div class="menu-section-title">Account</div>
     <div class="settings-group">
-
-      <!-- HAT -->
-      <div class="settings-row" id="settings-hat-row">
+      <div class="settings-row" onclick="openChangePassword()">
         <div class="settings-row-left">
-          <div class="settings-row-icon" id="hat-preview-icon">🎩</div>
+          <div class="settings-row-icon">🔑</div>
           <div>
-            <div class="settings-row-title">Hat</div>
-            <div class="settings-row-desc" id="hat-label">None equipped</div>
+            <div class="settings-row-title">Change Password</div>
+            <div class="settings-row-desc">Update your account password</div>
           </div>
         </div>
-        <select class="settings-select" id="hat-select" onchange="applyHat(this.value)">
-          <option value="none">None</option>
-        </select>
+        <span class="settings-arrow">›</span>
       </div>
-
-      <!-- PROFILE BORDER -->
-      <div class="settings-row" id="settings-border-row">
-        <div class="settings-row-left">
-          <div class="settings-row-icon">🔲</div>
-          <div>
-            <div class="settings-row-title">Profile Border</div>
-            <div class="settings-row-desc" id="border-label">None equipped</div>
-          </div>
-        </div>
-        <select class="settings-select" id="border-select" onchange="applyBorder(this.value)">
-          <option value="none">None</option>
-        </select>
-      </div>
-
-      <!-- CHAT TEXT COLOR -->
-      <div class="settings-row" id="settings-txtcolor-row">
-        <div class="settings-row-left">
-          <div class="settings-row-icon">💬</div>
-          <div>
-            <div class="settings-row-title">Chat Text Color</div>
-            <div class="settings-row-desc" id="txtcolor-label">Default</div>
-          </div>
-        </div>
-        <select class="settings-select" id="txtcolor-select" onchange="applyTextColor(this.value)">
-          <option value="none">Default</option>
-        </select>
-      </div>
-
-      <!-- NAME COLOR -->
-      <div class="settings-row" id="settings-namecolor-row">
-        <div class="settings-row-left">
-          <div class="settings-row-icon">🖊️</div>
-          <div>
-            <div class="settings-row-title">Name Color</div>
-            <div class="settings-row-desc">Your display name color</div>
-          </div>
-        </div>
-        <select class="settings-select" id="namecolor-select" onchange="applyNameColor(this.value)">
-          <option value="default">Default</option>
-          <option value="color_crimson">Period Blood</option>
-          <option value="color_gold">Piss Yellow</option>
-          <option value="color_cyan">Bonnie Blue</option>
-          <option value="color_violet">Purple Bruise</option>
-          <option value="color_toxic">Vomit Green</option>
-          <option value="color_white">Cum White</option>
-        </select>
-      </div>
-
-      <!-- THEME -->
       <div class="settings-row" id="settings-theme-row">
         <div class="settings-row-left">
           <div class="settings-row-icon">🎨</div>
           <div>
-            <div class="settings-row-title">Site Theme</div>
+            <div class="settings-row-title">Active Theme</div>
             <div class="settings-row-desc" id="active-theme-label">Default</div>
           </div>
         </div>
@@ -1869,20 +1891,23 @@
           <option value="rash">Red Rash</option>
         </select>
       </div>
-
-    </div>
-
-    <div class="menu-section-title" style="margin-top:18px;">Account</div>
-    <div class="settings-group">
-      <div class="settings-row" onclick="openChangePassword()">
+      <div class="settings-row" id="settings-namecolor-row">
         <div class="settings-row-left">
-          <div class="settings-row-icon">🔑</div>
+          <div class="settings-row-icon">🖊️</div>
           <div>
-            <div class="settings-row-title">Change Password</div>
-            <div class="settings-row-desc">Update your account password</div>
+            <div class="settings-row-title">Name Color</div>
+            <div class="settings-row-desc">Change your chat name color</div>
           </div>
         </div>
-        <span class="settings-arrow">›</span>
+        <select class="settings-select" id="namecolor-select" onchange="applyNameColor(this.value)">
+          <option value="default">Default</option>
+          <option value="color_crimson">Period Blood</option>
+          <option value="color_gold">Piss Yellow</option>
+          <option value="color_cyan">Bonnie Blue</option>
+          <option value="color_violet">Purple Bruise</option>
+          <option value="color_toxic">Vomit Green</option>
+          <option value="color_white">Cum White</option>
+        </select>
       </div>
       <div class="settings-row">
         <div class="settings-row-left">
@@ -1898,7 +1923,6 @@
         </label>
       </div>
     </div>
-
     <div id="pw-change-form" style="display:none;margin-top:16px;">
       <div class="menu-section-title">Change Password</div>
       <div class="settings-group">
@@ -1915,7 +1939,7 @@
     </div>
   </div>
 
-  </div><!-- end .menu-content -->
+    </div><!-- end .menu-content -->
 </div>
 
   <!-- SHOP TAB -->
@@ -3817,22 +3841,20 @@ window.switchMenuTab = (btn, tab) => {
   void el.offsetWidth; // reflow to restart animation
   el.style.animation='tabFadeIn 0.2s ease';
   // Update content header
-  const titles = { shop:'SHOP', gamble:'GAMBLE', lb:'LEADERBOARDS', settings:'SETTINGS' };
-  const subs   = { shop:'SPEND YOUR COINS', gamble:'RISK IT ALL', lb:'TOP PLAYERS', settings:'CONFIGURE' };
+  const titles = { shop:'SHOP', gamble:'GAMBLE', lb:'LEADERBOARDS', inv:'INVENTORY', settings:'SETTINGS' };
+  const subs   = { shop:'SPEND YOUR COINS', gamble:'RISK IT ALL', lb:'TOP PLAYERS', inv:'EQUIP YOUR ITEMS', settings:'CONFIGURE' };
   const titleEl = document.getElementById('menu-content-title');
   const subEl   = document.getElementById('menu-content-sub');
   if (titleEl) titleEl.textContent = titles[tab] || tab.toUpperCase();
   if (subEl)   subEl.textContent   = subs[tab]   || '';
   if (tab==='settings') loadSettingsState();
+  if (tab==='inv') renderInventory();
 };
 
 function refreshMenuCoins() {
   if (!me || !myProfile) return;
   userCoins = myProfile.coins || 0;
   document.getElementById('shop-coins').textContent = '🪙 ' + userCoins;
-  // Refresh settings equip dropdowns if settings tab is visible
-  const settingsTab = document.getElementById('mtab-settings');
-  if (settingsTab && settingsTab.style.display !== 'none') loadSettingsState();
 }
 
 window.buyItem = async (itemId, cost) => {
@@ -3848,31 +3870,12 @@ window.buyItem = async (itemId, cost) => {
     myProfile.coins = newCoins; myProfile.items = newItems;
     userCoins = newCoins;
     document.getElementById('shop-coins').textContent = '🪙 ' + newCoins;
-    SFX.win && SFX.win();
+    showToast('Purchased! 🎉');
+    SFX.win();
     loadSettingsState();
     refreshShopOwned();
-    showEquipToast(itemId);
   } catch(e) { showToast('Purchase failed.'); }
 };
-
-function showEquipToast(itemId) {
-  // Remove old equip toast if present
-  document.getElementById('equip-toast')?.remove();
-  const t = document.createElement('div');
-  t.id = 'equip-toast';
-  const isEquippable = itemId.startsWith('hat_') || itemId.startsWith('border_') || itemId.startsWith('txt_') || itemId.startsWith('color_') || itemId.startsWith('theme_');
-  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1c1c1c;border:1px solid rgba(255,255,255,0.15);padding:12px 18px;display:flex;align-items:center;gap:12px;z-index:9999;font-family:"Barlow Condensed",sans-serif;font-size:0.85rem;letter-spacing:1px;color:#e8e8e8;white-space:nowrap;animation:toastIn 0.3s ease;';
-  t.innerHTML = '🎉 Purchased! &nbsp;' + (isEquippable ? '<button onclick="goEquip()" style="background:var(--red);border:none;color:white;padding:5px 14px;font-family:'Bebas Neue',sans-serif;font-size:0.85rem;letter-spacing:2px;cursor:pointer;">EQUIP NOW</button>' : '') + '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0 0 0 4px;">✕</button>';
-  document.body.appendChild(t);
-  setTimeout(() => t?.remove(), 6000);
-}
-
-window.goEquip = () => {
-  document.getElementById('equip-toast')?.remove();
-  const settingsBtn = document.getElementById('mrb-settings');
-  if (settingsBtn) settingsBtn.click();
-};
-
 
 // ── HATS / BORDERS / TEXT COLORS ──
 const HAT_EMOJIS = {
@@ -3904,17 +3907,155 @@ function applyBorderToEl(el, border) {
 function applyActiveCosmetics(profile) {
   if (!profile) return;
   const owned = profile.items || [];
-  // Use saved equipped values, fall back to none
   activeHat = (profile.activeHat && owned.includes(profile.activeHat)) ? profile.activeHat : null;
   activeBorder = (profile.activeBorder && owned.includes(profile.activeBorder)) ? profile.activeBorder : null;
   activeTextColor = (profile.activeTextColor && owned.includes(profile.activeTextColor)) ? profile.activeTextColor : null;
-  // Apply border to topbar avatar
+  // Apply border classes to topbar avatar
   const tbAv = document.querySelector('.topbar-avatar');
   if (tbAv) {
-    BORDER_CLASSES.forEach(c => tbAv.classList.remove(c));
+    ['border-fire','border-ice','border-gold','border-toxic','border-violet','border-rainbow'].forEach(c => tbAv.classList.remove(c));
     if (activeBorder) tbAv.classList.add('border-' + activeBorder.replace('border_',''));
   }
 }
+
+
+// ── INVENTORY SYSTEM ──
+const INV_CATALOG = {
+  hats: [
+    { id:'hat_party',    name:'Party Hat',      preview:'🎉' },
+    { id:'hat_cowboy',   name:'Cowboy Hat',      preview:'🤠' },
+    { id:'hat_mushroom', name:'Mushroom Cap',    preview:'🍄' },
+    { id:'hat_dunce',    name:'Dunce Cap',       preview:'🎓' },
+    { id:'hat_crown',    name:'Crown',           preview:'👑' },
+    { id:'hat_tophat',   name:'Top Hat',         preview:'🎩' },
+    { id:'hat_wizard',   name:'Wizard Hat',      preview:'🧙' },
+    { id:'hat_devil',    name:'Devil Horns',     preview:'😈' },
+    { id:'hat_flower',   name:'Flower Crown',    preview:'🌸' },
+    { id:'hat_helmet',   name:'Battle Helmet',   preview:'🪖' },
+    { id:'hat_snapback', name:'Snapback',        preview:'🧢' },
+    { id:'hat_hardhat',  name:'Hard Hat',        preview:'⛑️' },
+  ],
+  borders: [
+    { id:'border_fire',    name:'Fire Border',     preview:'🔥', previewStyle:'color:#ff4400' },
+    { id:'border_ice',     name:'Ice Border',      preview:'❄️', previewStyle:'color:#00d4ff' },
+    { id:'border_gold',    name:'Gold Border',     preview:'✨', previewStyle:'color:#C9A84C' },
+    { id:'border_toxic',   name:'Toxic Border',    preview:'☢️', previewStyle:'color:#39ff14' },
+    { id:'border_violet',  name:'Violet Border',   preview:'🔮', previewStyle:'color:#b45aff' },
+    { id:'border_rainbow', name:'Rainbow Border',  preview:'🌈', previewStyle:'' },
+  ],
+  textcolors: [
+    { id:'txt_fire',    name:'Fire Orange',    preview:'Abc', previewStyle:'color:#ff6622;font-weight:bold;font-size:1.2rem;font-family:Barlow,sans-serif' },
+    { id:'txt_ice',     name:'Ice Blue',       preview:'Abc', previewStyle:'color:#00d4ff;font-weight:bold;font-size:1.2rem;font-family:Barlow,sans-serif' },
+    { id:'txt_toxic',   name:'Toxic Green',    preview:'Abc', previewStyle:'color:#39ff14;font-weight:bold;font-size:1.2rem;font-family:Barlow,sans-serif' },
+    { id:'txt_violet',  name:'Mystic Violet',  preview:'Abc', previewStyle:'color:#c97aff;font-weight:bold;font-size:1.2rem;font-family:Barlow,sans-serif' },
+    { id:'txt_gold',    name:'Gold',           preview:'Abc', previewStyle:'color:#ffd700;font-weight:bold;font-size:1.2rem;font-family:Barlow,sans-serif' },
+    { id:'txt_crimson', name:'Blood Red',      preview:'Abc', previewStyle:'color:#ff3b3b;font-weight:bold;font-size:1.2rem;font-family:Barlow,sans-serif' },
+  ],
+  namecolors: [
+    { id:'color_crimson', name:'Period Blood Red', preview:'NAME', previewStyle:'color:#FF3B3B;font-family:"Bebas Neue",sans-serif;letter-spacing:2px' },
+    { id:'color_toxic',   name:'Vomit Green',      preview:'NAME', previewStyle:'color:#39ff14;font-family:"Bebas Neue",sans-serif;letter-spacing:2px' },
+    { id:'color_gold',    name:'Piss Yellow',      preview:'NAME', previewStyle:'color:#C9A84C;font-family:"Bebas Neue",sans-serif;letter-spacing:2px' },
+    { id:'color_cyan',    name:'Bonnie Blue',      preview:'NAME', previewStyle:'color:#00e5ff;font-family:"Bebas Neue",sans-serif;letter-spacing:2px' },
+    { id:'color_violet',  name:'Purple Bruise',    preview:'NAME', previewStyle:'color:#b45aff;font-family:"Bebas Neue",sans-serif;letter-spacing:2px' },
+    { id:'color_white',   name:'Cum White',        preview:'NAME', previewStyle:'color:#ffffff;font-family:"Bebas Neue",sans-serif;letter-spacing:2px' },
+  ],
+  themes: [
+    { id:'theme_rash',  name:'Red Rash',        preview:'🔴', previewStyle:'color:#cc2200' },
+    { id:'theme_void',  name:'Brown Skidmark',  preview:'💩', previewStyle:'color:#6b3a1f' },
+    { id:'theme_gold',  name:'Yellow Earwax',   preview:'🟡', previewStyle:'color:#C9A84C' },
+    { id:'theme_toxic', name:'Green Septic',    preview:'🟢', previewStyle:'color:#39ff14' },
+    { id:'theme_ice',   name:'Blue Balls',      preview:'🔵', previewStyle:'color:#00bbff' },
+    { id:'theme_coal',  name:'Black Mold',      preview:'⚫', previewStyle:'color:#555' },
+  ],
+};
+
+function renderInventory() {
+  if (!myProfile) return;
+  const owned = myProfile.items || [];
+
+  let totalOwned = 0;
+  const cats = ['hats','borders','textcolors','namecolors','themes'];
+
+  cats.forEach(cat => {
+    const catItems = INV_CATALOG[cat].filter(i => owned.includes(i.id));
+    const catEl = document.getElementById('inv-cat-' + cat);
+    const gridEl = document.getElementById('inv-grid-' + cat);
+    if (!catEl || !gridEl) return;
+
+    if (catItems.length === 0) {
+      catEl.style.display = 'none';
+      return;
+    }
+    catEl.style.display = '';
+    totalOwned += catItems.length;
+
+    gridEl.innerHTML = '';
+    catItems.forEach(item => {
+      const isEquipped = isItemEquipped(cat, item.id);
+      const div = document.createElement('div');
+      div.className = 'inv-item' + (isEquipped ? ' inv-equipped' : '');
+      div.innerHTML = \`
+        <div class="inv-preview" style="\${item.previewStyle||''}">\${item.preview}</div>
+        <div class="inv-item-name">\${item.name}</div>
+        <button class="inv-equip-btn \${isEquipped ? 'inv-unequip' : ''}"
+          onclick="invEquip('\${cat}','\${item.id}')">
+          \${isEquipped ? 'UNEQUIP' : 'EQUIP'}
+        </button>\`;
+      gridEl.appendChild(div);
+    });
+  });
+
+  const emptyMsg = document.getElementById('inv-empty-msg');
+  const invBody = document.getElementById('inv-body');
+  if (totalOwned === 0) {
+    emptyMsg.style.display = '';
+    invBody.style.display = 'none';
+  } else {
+    emptyMsg.style.display = 'none';
+    invBody.style.display = '';
+  }
+}
+
+function isItemEquipped(cat, id) {
+  if (cat === 'hats')       return activeHat === id;
+  if (cat === 'borders')    return activeBorder === id;
+  if (cat === 'textcolors') return activeTextColor === id;
+  if (cat === 'namecolors') return activeNameColor === id;
+  if (cat === 'themes')     return activeTheme === id.replace('theme_','');
+  return false;
+}
+
+window.invEquip = async (cat, id) => {
+  if (!me) return;
+  const alreadyEquipped = isItemEquipped(cat, id);
+
+  if (cat === 'hats') {
+    activeHat = alreadyEquipped ? null : id;
+    await pb.updateUser(me.uid, { activeHat: activeHat }).catch(()=>{});
+    renderTopbar();
+  } else if (cat === 'borders') {
+    activeBorder = alreadyEquipped ? null : id;
+    await pb.updateUser(me.uid, { activeBorder: activeBorder }).catch(()=>{});
+    const tbAv = document.querySelector('.topbar-avatar');
+    if (tbAv) {
+      ['border-fire','border-ice','border-gold','border-toxic','border-violet','border-rainbow'].forEach(c => tbAv.classList.remove(c));
+      if (activeBorder) tbAv.classList.add('border-' + activeBorder.replace('border_',''));
+    }
+    renderTopbar();
+  } else if (cat === 'textcolors') {
+    activeTextColor = alreadyEquipped ? null : id;
+    await pb.updateUser(me.uid, { activeTextColor: activeTextColor }).catch(()=>{});
+  } else if (cat === 'namecolors') {
+    const newVal = alreadyEquipped ? 'default' : id;
+    window.applyNameColor(newVal);
+  } else if (cat === 'themes') {
+    const themeVal = alreadyEquipped ? 'default' : id.replace('theme_','');
+    window.applyTheme(themeVal);
+  }
+
+  renderInventory();
+  showToast(alreadyEquipped ? 'Unequipped!' : 'Equipped! ✓');
+};
 
 // ── SHOP SUB-TAB SWITCH ──
 window.switchShopSub = (sub, btn) => {
@@ -4175,14 +4316,9 @@ function refreshShopOwned() {
     const id = el.dataset.itemId;
     const priceEl = el.querySelector('.shop-price');
     if (!priceEl) return;
-    const isEquippable = id.startsWith('hat_') || id.startsWith('border_') || id.startsWith('txt_');
     if (owned.includes(id)) {
       el.classList.add('owned');
-      if (isEquippable) {
-        priceEl.innerHTML = '<span style="color:rgba(100,200,100,0.9);font-size:0.75rem;display:block;">✓ OWNED</span><span onclick="event.stopPropagation();goEquip()" style="background:var(--red);color:white;padding:2px 10px;font-size:0.65rem;letter-spacing:1.5px;cursor:pointer;display:inline-block;margin-top:3px;">EQUIP</span>';
-      } else {
-        priceEl.textContent = '✓ OWNED';
-      }
+      priceEl.textContent = '✓ OWNED';
       priceEl.classList.add('is-owned');
     } else {
       el.classList.remove('owned');
@@ -4233,49 +4369,6 @@ async function loadMenuLb(tab) {
   } catch(e) { console.error('LB error:', e); list.innerHTML = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">Could not load leaderboard.</div>'; }
 }
 
-// ── HAT / BORDER / TEXT COLOR EQUIP ──
-const HAT_NAMES = {
-  none:'None', hat_party:'Party Hat', hat_cowboy:'Cowboy Hat', hat_mushroom:'Mushroom Cap',
-  hat_dunce:'Dunce Cap', hat_crown:'Crown', hat_tophat:'Top Hat', hat_wizard:'Wizard Hat',
-  hat_devil:'Devil Horns', hat_flower:'Flower Crown', hat_helmet:'Battle Helmet',
-  hat_snapback:'Snapback', hat_hardhat:'Hard Hat'
-};
-const BORDER_NAMES = {
-  none:'None', border_fire:'Fire', border_ice:'Ice', border_gold:'Gold',
-  border_toxic:'Toxic', border_violet:'Violet', border_rainbow:'Rainbow'
-};
-const TEXT_COLOR_NAMES = {
-  none:'Default', txt_fire:'Fire Orange', txt_ice:'Ice Blue', txt_toxic:'Toxic Green',
-  txt_violet:'Mystic Violet', txt_gold:'Gold', txt_crimson:'Blood Red'
-};
-
-window.applyHat = val => {
-  activeHat = val === 'none' ? null : val;
-  if (me) pb.updateUser(me.uid, { activeHat: activeHat }).catch(()=>{});
-  const lbl = document.getElementById('hat-label');
-  const icon = document.getElementById('hat-preview-icon');
-  if (lbl) lbl.textContent = HAT_NAMES[val] || 'None';
-  if (icon) icon.textContent = (val !== 'none' && HAT_EMOJIS[val]) ? HAT_EMOJIS[val] : '🎩';
-  renderTopbar();
-};
-
-window.applyBorder = val => {
-  activeBorder = val === 'none' ? null : val;
-  if (me) pb.updateUser(me.uid, { activeBorder: activeBorder }).catch(()=>{});
-  const lbl = document.getElementById('border-label');
-  if (lbl) lbl.textContent = BORDER_NAMES[val] || 'None';
-  const tbAv = document.querySelector('.topbar-avatar');
-  BORDER_CLASSES.forEach(c => tbAv?.classList.remove(c));
-  if (activeBorder) tbAv?.classList.add('border-' + activeBorder.replace('border_',''));
-  renderTopbar();
-};
-
-window.applyTextColor = val => {
-  activeTextColor = val === 'none' ? null : val;
-  if (me) pb.updateUser(me.uid, { activeTextColor: activeTextColor }).catch(()=>{});
-  const lbl = document.getElementById('txtcolor-label');
-  if (lbl) lbl.textContent = TEXT_COLOR_NAMES[val] || 'Default';
-};
 
 window.applyTheme = val => {
   activeTheme = val;
@@ -4307,61 +4400,7 @@ function maybeSfx(fn) { return (...args) => { if (sfxEnabled) fn(...args); }; }
 
 function loadSettingsState() {
   const owned = myProfile?.items || [];
-
-  // ── HAT select: only owned hats ──
-  const hs = document.getElementById('hat-select');
-  if (hs) {
-    hs.innerHTML = '<option value="none">None</option>';
-    Object.entries(HAT_NAMES).forEach(([id, name]) => {
-      if (id === 'none') return;
-      if (owned.includes(id)) {
-        const o = document.createElement('option');
-        o.value = id; o.textContent = (HAT_EMOJIS[id]||'') + ' ' + name;
-        hs.appendChild(o);
-      }
-    });
-    hs.value = activeHat || 'none';
-    const hatLbl = document.getElementById('hat-label');
-    const hatIcon = document.getElementById('hat-preview-icon');
-    if (hatLbl) hatLbl.textContent = activeHat ? (HAT_NAMES[activeHat]||'None') : 'None';
-    if (hatIcon) hatIcon.textContent = activeHat && HAT_EMOJIS[activeHat] ? HAT_EMOJIS[activeHat] : '🎩';
-  }
-
-  // ── BORDER select: only owned borders ──
-  const bs = document.getElementById('border-select');
-  if (bs) {
-    bs.innerHTML = '<option value="none">None</option>';
-    Object.entries(BORDER_NAMES).forEach(([id, name]) => {
-      if (id === 'none') return;
-      if (owned.includes(id)) {
-        const o = document.createElement('option');
-        o.value = id; o.textContent = name;
-        bs.appendChild(o);
-      }
-    });
-    bs.value = activeBorder || 'none';
-    const bLbl = document.getElementById('border-label');
-    if (bLbl) bLbl.textContent = activeBorder ? (BORDER_NAMES[activeBorder]||'None') : 'None';
-  }
-
-  // ── TEXT COLOR select: only owned ──
-  const tcs = document.getElementById('txtcolor-select');
-  if (tcs) {
-    tcs.innerHTML = '<option value="none">Default</option>';
-    Object.entries(TEXT_COLOR_NAMES).forEach(([id, name]) => {
-      if (id === 'none') return;
-      if (owned.includes(id)) {
-        const o = document.createElement('option');
-        o.value = id; o.textContent = name;
-        tcs.appendChild(o);
-      }
-    });
-    tcs.value = activeTextColor || 'none';
-    const tcLbl = document.getElementById('txtcolor-label');
-    if (tcLbl) tcLbl.textContent = activeTextColor ? (TEXT_COLOR_NAMES[activeTextColor]||'Default') : 'Default';
-  }
-
-  // ── THEME select ──
+  // Theme select — only show owned themes
   const ts = document.getElementById('theme-select');
   if (ts) {
     Array.from(ts.options).forEach(o => {
@@ -4371,8 +4410,7 @@ function loadSettingsState() {
     });
     ts.value = myProfile?.activeTheme || 'default';
   }
-
-  // ── NAME COLOR select ──
+  // Name color select
   const ns = document.getElementById('namecolor-select');
   if (ns) {
     Array.from(ns.options).forEach(o => {
@@ -4382,7 +4420,6 @@ function loadSettingsState() {
     });
     ns.value = myProfile?.nameColor || 'default';
   }
-
   document.getElementById('sfx-toggle').checked = sfxEnabled;
   refreshMenuCoins();
 }
