@@ -2133,11 +2133,11 @@ const pb = {
   subscribe(table, filter, callback) {
     const key = table + ':' + (filter || '*');
     if (this._subs[key]) clearInterval(this._subs[key]);
-    const startTs = Date.now();
-    const seen = new Set();
+    // Diff-based polling: tracks full state so deletions and updates trigger callbacks
+    let lastSnapshot = null; // Map of id -> JSON string
     const poll = async () => {
       try {
-        let url = `${SB_URL}/rest/v1/${table}?order=created_at.desc&limit=20`;
+        let url = `${SB_URL}/rest/v1/${table}?limit=200`;
         if (filter) {
           const parts = filter.split('=');
           if (parts.length >= 2) {
@@ -2148,17 +2148,30 @@ const pb = {
         }
         const r = await fetch(url, { headers: this._h() });
         if (!r.ok) return;
-        const items = (await r.json()).reverse();
-        for (const record of items) {
-          if (seen.has(record.id)) continue;
-          const recTs = new Date(record.created_at).getTime();
-          if (recTs < startTs - 1000) { seen.add(record.id); continue; }
-          seen.add(record.id);
-          callback({ action: 'create', record });
+        const items = await r.json();
+        const currentMap = new Map(items.map(i => [i.id, JSON.stringify(i)]));
+
+        if (lastSnapshot !== null) {
+          // Detect new or updated records
+          for (const [id, json] of currentMap) {
+            if (!lastSnapshot.has(id)) {
+              callback({ action: 'create', record: JSON.parse(json) });
+            } else if (lastSnapshot.get(id) !== json) {
+              callback({ action: 'update', record: JSON.parse(json) });
+            }
+          }
+          // Detect deleted records
+          for (const [id, json] of lastSnapshot) {
+            if (!currentMap.has(id)) {
+              callback({ action: 'delete', record: JSON.parse(json) });
+            }
+          }
         }
+        lastSnapshot = currentMap;
       } catch(e) {}
     };
-    const interval = setInterval(poll, 4000);
+    poll(); // run immediately
+    const interval = setInterval(poll, 1500);
     this._subs[key] = interval;
     return () => { clearInterval(interval); delete this._subs[key]; };
   },
@@ -3078,9 +3091,26 @@ async function enterQueue() {
     if (myPos === -1) return;
     if (myPos >= freeSlots) return;
 
-    // Claim: delete our queue entry atomically
+    // Claim: verify slot still free, then delete queue entry
     _qLaunching = true;
     stopQueueListeners();
+
+    // Small jitter based on position to reduce race conditions
+    await new Promise(r => setTimeout(r, myPos * 120 + Math.random() * 80));
+
+    // Re-verify the slot is still free before claiming
+    let stillFree = false;
+    try {
+      const freshStage = await pb.listRecords('stage');
+      const occupiedNow = new Set(freshStage.filter(r=>r.uid).map(r=>r.slot));
+      stillFree = !occupiedNow.has(targetSlot) || (leftFree && !occupiedNow.has('left')) || (rightFree && !occupiedNow.has('right'));
+    } catch(e) { stillFree = true; }
+
+    if (!stillFree) {
+      _qLaunching = false;
+      _attachQueueListeners(tryAdvance);
+      return;
+    }
 
     let claimed = false;
     try {
@@ -3123,11 +3153,12 @@ async function enterQueue() {
 
 function _attachQueueListeners(fn) {
   stopQueueListeners();
-  // Subscribe to stage and queue changes
-  queueUnsubStage = pb.subscribe('stage', '', fn);
-  queueUnsubList  = pb.subscribe('queue', '', fn);
-  // Also poll every 2s to keep position fresh regardless of SSE/polling events
-  queueUnsubInterval = setInterval(fn, 4000);
+  // Subscribe to stage changes — any action (create/update/DELETE) triggers advance check
+  queueUnsubStage = pb.subscribe('stage', '', () => fn());
+  // Subscribe to queue changes
+  queueUnsubList  = pb.subscribe('queue', '', () => fn());
+  // Backup poll to keep position fresh
+  queueUnsubInterval = setInterval(fn, 1500);
 }
 
 function updateQueueUI(sorted, myPos) {
