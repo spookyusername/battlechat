@@ -1364,7 +1364,7 @@
           </div>
           <div class="cam-active-lbl" id="cam-active-lbl">Camera Active</div>
         </div>
-        <div class="cam-err" id="cam-err">⚠ Camera blocked. Allow access in your browser settings.</div>
+        <div class="cam-err" id="cam-err">⚠ Camera blocked. Allow access in your browser settings. <button onclick="retryCam()" style="margin-left:8px;background:var(--red);border:none;color:white;padding:3px 10px;cursor:pointer;font-family:'Porky',sans-serif;font-size:0.75rem;letter-spacing:1px;">RETRY</button></div>
         <div class="dev-selects" id="dev-selects" style="display:none;">
           <div class="dev-row">
             <div class="field-label">Camera</div>
@@ -2969,25 +2969,67 @@ async function startCamPreview() {
   const video=document.getElementById('arena-preview'), ph=document.getElementById('cam-ph');
   const lbl=document.getElementById('cam-active-lbl'), err=document.getElementById('cam-err');
   const btn=document.getElementById('arena-next-btn');
-  err.classList.remove('on'); btn.disabled=true; btn.textContent='LOOKS GOOD →';
+  const phTxt=document.getElementById('cam-ph-txt');
+
+  // Always stop any existing stream first so we get a fresh permission check
+  if (localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
+  video.srcObject=null; video.style.display='none';
+
+  err.classList.remove('on');
+  btn.disabled=true; btn.textContent='LOOKS GOOD →';
+  ph.style.display='flex'; lbl.classList.remove('on');
+  phTxt.textContent='Requesting camera...';
+  document.getElementById('dev-selects').style.display='none';
+
+  // Check if mediaDevices is available at all
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    phTxt.textContent='Camera not supported';
+    err.querySelector ? err.querySelector('span') : null;
+    err.childNodes[0].textContent = '⚠ Camera not supported in this browser.';
+    err.classList.add('on'); btn.disabled=false; btn.textContent='SKIP →';
+    return;
+  }
+
   try {
-    localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
-    video.srcObject=localStream; video.style.display='block';
-    ph.style.display='none'; lbl.classList.add('on'); btn.disabled=false;
-    const devs=await navigator.mediaDevices.enumerateDevices();
+    // First check current permission state without prompting
+    if (navigator.permissions) {
+      try {
+        const perm = await navigator.permissions.query({name:'camera'});
+        if (perm.state === 'denied') {
+          phTxt.textContent='Camera blocked';
+          err.classList.add('on'); btn.disabled=false; btn.textContent='SKIP →';
+          return;
+        }
+      } catch(pe) { /* permissions API not available, continue */ }
+    }
+
+    localStream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
+    video.srcObject = localStream;
+    video.style.display = 'block';
+    ph.style.display = 'none';
+    lbl.classList.add('on');
+    btn.disabled = false;
+    phTxt.textContent = 'Camera active';
+
+    const devs = await navigator.mediaDevices.enumerateDevices();
     const vs=document.getElementById('sel-video'), as=document.getElementById('sel-audio');
-    vs.innerHTML=''; as.innerHTML=''; let vc=0,ac=0;
-    devs.forEach(d=>{
+    vs.innerHTML=''; as.innerHTML=''; let vc=0, ac=0;
+    devs.forEach(d => {
       const o=document.createElement('option'); o.value=d.deviceId;
-      if(d.kind==='videoinput'){o.textContent=d.label||'Camera '+(++vc);vs.appendChild(o);}
-      else if(d.kind==='audioinput'){o.textContent=d.label||'Mic '+(++ac);as.appendChild(o);}
+      if(d.kind==='videoinput'){o.textContent=d.label||'Camera '+(++vc); vs.appendChild(o);}
+      else if(d.kind==='audioinput'){o.textContent=d.label||'Mic '+(++ac); as.appendChild(o);}
     });
     document.getElementById('dev-selects').style.display='flex';
+
   } catch(e) {
-    document.getElementById('cam-ph-txt').textContent='Camera blocked';
-    err.classList.add('on'); btn.disabled=false; btn.textContent='SKIP →';
+    console.warn('Camera error:', e.name, e.message);
+    phTxt.textContent = 'Camera blocked';
+    err.classList.add('on');
+    btn.disabled=false; btn.textContent='SKIP →';
   }
 }
+
+window.retryCam = () => { startCamPreview(); };
 
 function stopCamPreview() {
   const v=document.getElementById('arena-preview');
