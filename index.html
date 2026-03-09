@@ -67,7 +67,7 @@
   .cam-stats { display: flex; gap: 8px; margin-left: 4px; }
   .cam-stat { font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; }
   .cam-stat.w { color: #4CAF50; } .cam-stat.l { color: var(--red-hot); }
-  .cam-live { position: absolute; top: 12px; right: 12px; z-index: 5; background: var(--red); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.65rem; letter-spacing: 2px; color: white; padding: 3px 8px; display: flex; align-items: center; gap: 5px; }
+  .cam-live { position: absolute; top: 12px; right: 12px; z-index: 1; background: var(--red); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.65rem; letter-spacing: 2px; color: white; padding: 3px 8px; display: flex; align-items: center; gap: 5px; }
   .cam-live::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: white; animation: blink 1.2s infinite; }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
   .cam-votebar { height: 4px; background: var(--dark3); flex-shrink: 0; }
@@ -138,7 +138,7 @@
   .bstrip-right { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; cursor: pointer; border-radius: 4px; padding: 4px 10px 4px 6px; transition: background 0.15s, opacity 0.3s; overflow: visible; }
   .bstrip-left:hover, .bstrip-right:hover { background: rgba(255,255,255,0.05); }
   .bstrip-center { display: flex; flex-direction: column; align-items: center; gap: 3px; flex-shrink: 0; min-width: 80px; position: relative; }
-  .toast { position: fixed; top: 104px; left: 50%; transform: translateX(-50%) translateY(-8px); background: var(--gold); color: var(--black); font-family: 'Porky', sans-serif; font-size: 0.9rem; letter-spacing: 1px; padding: 7px 22px; clip-path: polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; z-index: 99999; white-space: nowrap; box-shadow: 0 4px 20px rgba(201,168,76,0.4); }
+  .toast { position: fixed; top: 104px; left: calc(50% - 140px); transform: translateX(-50%) translateY(-8px); background: var(--gold); color: var(--black); font-family: 'Porky', sans-serif; font-size: 0.9rem; letter-spacing: 1px; padding: 7px 22px; clip-path: polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; z-index: 99999; white-space: nowrap; box-shadow: 0 4px 20px rgba(201,168,76,0.4); }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .bstrip-progress-wrap { width: 100%; height: 3px; background: var(--dark3); border-radius: 2px; overflow: hidden; }
   .bstrip-progress-fill { height: 100%; width: 100%; transform-origin: left; background: linear-gradient(to right, var(--red), #e8321a, var(--gold)); transition: none; border-radius: 2px; }
