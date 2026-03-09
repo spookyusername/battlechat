@@ -2081,83 +2081,30 @@ const pb = {
     return d.items || [];
   },
 
-  // ── REAL-TIME via PocketBase SSE ──
+  // ── REAL-TIME via diff-based polling ──
   subscribe(table, filter, callback) {
     const key = table + ':' + (filter || '*');
-    // Close existing subscription
-    if (this._ws[key]) { try { this._ws[key].close(); } catch(e) {} delete this._ws[key]; }
     if (this._subs[key]) { clearInterval(this._subs[key]); delete this._subs[key]; }
-
-    // Use PocketBase realtime SSE
-    const clientId = Math.random().toString(36).slice(2);
-    let es = null;
     let lastSnapshot = null;
-
-    const startSSE = () => {
+    const poll = async () => {
       try {
-        es = new EventSource(`${PB_URL}/api/realtime`);
-        this._ws[key] = es;
-
-        es.addEventListener('PB_CONNECT', async (e) => {
-          // Subscribe to this collection
-          const data = JSON.parse(e.data);
-          const sseid = data.clientId;
-          await fetch(`${PB_URL}/api/realtime`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ clientId: sseid, subscriptions: [table] })
-          }).catch(() => {});
-        });
-
-        es.addEventListener(table, (e) => {
-          try {
-            const data = JSON.parse(e.data);
-            callback({ action: data.action, record: data.record });
-          } catch(err) {}
-        });
-
-        es.onerror = () => {
-          // Fall back to polling on SSE error
-          es.close();
-          delete this._ws[key];
-          _startPolling();
-        };
-      } catch(e) {
-        _startPolling();
-      }
-    };
-
-    const _startPolling = () => {
-      if (this._subs[key]) return;
-      const poll = async () => {
-        try {
-          const items = await this.listRecords(table, filter, '', 200);
-          const currentMap = new Map(items.map(i => [i.id, JSON.stringify(i)]));
-          if (lastSnapshot !== null) {
-            for (const [id, json] of currentMap) {
-              if (!lastSnapshot.has(id)) callback({ action: 'create', record: JSON.parse(json) });
-              else if (lastSnapshot.get(id) !== json) callback({ action: 'update', record: JSON.parse(json) });
-            }
-            for (const [id, json] of lastSnapshot) {
-              if (!currentMap.has(id)) callback({ action: 'delete', record: JSON.parse(json) });
-            }
+        const items = await this.listRecords(table, filter, '', 200);
+        const currentMap = new Map(items.map(i => [i.id, JSON.stringify(i)]));
+        if (lastSnapshot !== null) {
+          for (const [id, json] of currentMap) {
+            if (!lastSnapshot.has(id)) callback({ action: 'create', record: JSON.parse(json) });
+            else if (lastSnapshot.get(id) !== json) callback({ action: 'update', record: JSON.parse(json) });
           }
-          lastSnapshot = currentMap;
-        } catch(e) {}
-      };
-      poll();
-      this._subs[key] = setInterval(poll, 1500);
+          for (const [id, json] of lastSnapshot) {
+            if (!currentMap.has(id)) callback({ action: 'delete', record: JSON.parse(json) });
+          }
+        }
+        lastSnapshot = currentMap;
+      } catch(e) {}
     };
-
-    // Try SSE first, fall back to polling
-    startSSE();
-    // Also start polling as backup after 2s if SSE hasn't fired
-    setTimeout(() => { if (!this._ws[key] || this._ws[key].readyState > 1) _startPolling(); }, 2000);
-
-    return () => {
-      if (this._ws[key]) { try { this._ws[key].close(); } catch(e) {} delete this._ws[key]; }
-      if (this._subs[key]) { clearInterval(this._subs[key]); delete this._subs[key]; }
-    };
+    poll();
+    this._subs[key] = setInterval(poll, 1500);
+    return () => { clearInterval(this._subs[key]); delete this._subs[key]; };
   },
 
   // ── POLLING REALTIME (kept as internal fallback) ──
@@ -3037,7 +2984,7 @@ async function startCamPreview() {
     } else if (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {
       errTxt.textContent = '⚠ No camera found. Plug in a camera or use Skip.';
     } else if (e.name === 'NotReadableError' || e.name === 'TrackStartError') {
-      errTxt.textContent = '⚠ Camera is in use by another app. Close it and click Retry.';
+      errTxt.textContent = '⚠ Camera hardware error. Try: close other apps, unplug/replug camera, or restart browser, then click Retry.';
     } else {
       errTxt.textContent = '⚠ ' + e.name + ': ' + e.message + ' — click Retry or Skip.';
     }
