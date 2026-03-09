@@ -2170,12 +2170,21 @@ const pb = {
         const items = await this.listRecords(table, filter, '', 200);
         const currentMap = new Map(items.map(i => [i.id, JSON.stringify(i)]));
         if (lastSnapshot !== null) {
+          for (const [id, json] of currentMap) {
+            if (!lastSnapshot.has(id)) callback({ action: 'create', record: JSON.parse(json) });
+            else if (lastSnapshot.get(id) !== json) callback({ action: 'update', record: JSON.parse(json) });
+          }
+          for (const [id, json] of lastSnapshot) {
+            if (!currentMap.has(id)) callback({ action: 'delete', record: JSON.parse(json) });
+          }
+        }
+        lastSnapshot = currentMap;
       } catch(e) {}
     };
-    poll(); // run immediately
-    const interval = setInterval(poll, 1500);
-    this._subs[key] = interval;
-},
+    poll();
+    this._subs[key] = setInterval(poll, 1500);
+    return () => { clearInterval(this._subs[key]); delete this._subs[key]; };
+  },
   unsubscribe(table, filter) {
     const key = table + ':' + (filter || '*');
     if (this._ws && this._ws[key]) { try { this._ws[key].close(); } catch(e) {} delete this._ws[key]; }
