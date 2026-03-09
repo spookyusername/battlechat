@@ -1364,7 +1364,7 @@
           </div>
           <div class="cam-active-lbl" id="cam-active-lbl">Camera Active</div>
         </div>
-        <div class="cam-err" id="cam-err">⚠ Camera blocked. Allow access in your browser settings. <button onclick="retryCam()" style="margin-left:8px;background:var(--red);border:none;color:white;padding:3px 10px;cursor:pointer;font-family:'Porky',sans-serif;font-size:0.75rem;letter-spacing:1px;">RETRY</button></div>
+        <div class="cam-err" id="cam-err"><span id="cam-err-txt">⚠ Camera blocked. Allow access in your browser settings.</span> <button onclick="retryCam()" style="margin-left:8px;background:var(--red);border:none;color:white;padding:3px 10px;cursor:pointer;font-family:'Porky',sans-serif;font-size:0.75rem;letter-spacing:1px;">RETRY</button></div>
         <div class="dev-selects" id="dev-selects" style="display:none;">
           <div class="dev-row">
             <div class="field-label">Camera</div>
@@ -1968,106 +1968,79 @@
 <script>
 // ── POCKETBASE CONFIG ──
 // ── SUPABASE CONFIG ──
-// Replace these with your Supabase project URL and anon key
-const SB_URL  = 'https://kemuawsiordnqjkvlhec.supabase.co';
-const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtlbXVhd3Npb3JkbnFqa3ZsaGVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5MjQzMDYsImV4cCI6MjA4ODUwMDMwNn0.cXgaTg47mXUlRDTJcXiRAbkQvRptEylSLRfwKQEdkig';
+// ── POCKETBASE BACKEND ──
+const PB_URL = 'https://pocketbase-production-497e.up.railway.app';
 
-// ── SUPABASE HELPER (drop-in replacement for pb) ──
 const pb = {
-  _token: null,   // JWT from Supabase auth
+  _token: null,
   _userId: null,
   _subs: {},
+  _ws: {},   // active EventSource connections
 
-  _h(extra = {}) {
-    const h = { 'Content-Type': 'application/json', 'apikey': SB_ANON, 'Prefer': 'return=representation' };
+  _h() {
+    const h = { 'Content-Type': 'application/json' };
     if (this._token) h['Authorization'] = `Bearer ${this._token}`;
-    return { ...h, ...extra };
+    return h;
   },
 
   // ── AUTH ──
   async authWithPassword(email, password) {
-    const r = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SB_ANON },
-      body: JSON.stringify({ email, password })
-    });
-    if (!r.ok) { const e = await r.json(); throw new Error(e.error_description || e.msg || 'Login failed'); }
-    const d = await r.json();
-    this._token  = d.access_token;
-    this._userId = d.user.id;
-    return { token: d.access_token, record: { id: d.user.id, email: d.user.email } };
+    // PocketBase doesn't use email auth natively for our app — we store credentials in profiles
+    // We use a simple uid-based system: hash email to create a stable uid
+    const uid = await _hashUid(email);
+    this._userId = uid;
+    // Try to find existing profile
+    const existing = await this.getRecordByFilter('profiles', `uid='${uid}'`);
+    if (!existing) throw new Error('No account found. Please register.');
+    // Check password (stored hashed in profile)
+    const pwHash = await _hashUid(password + uid);
+    if (existing.pwHash && existing.pwHash !== pwHash) throw new Error('Wrong password.');
+    this._token = uid; // use uid as token for simplicity
+    return { token: uid, record: { id: uid, email } };
   },
   async createUser(email, password, data) {
-    // Sign up via Supabase Auth
-    const r = await fetch(`${SB_URL}/auth/v1/signup`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SB_ANON },
-      body: JSON.stringify({ email, password })
-    });
-    if (!r.ok) { const e = await r.json(); throw new Error(e.msg || e.error_description || 'Signup failed'); }
-    const d = await r.json();
-    const uid = d.user?.id || d.id;
-    // Create profile row in profiles table
-    const r2 = await fetch(`${SB_URL}/rest/v1/profiles`, {
-      method: 'POST',
-      headers: this._h(),
-      body: JSON.stringify({ id: uid, ...data })
-    });
-    if (!r2.ok) { const e = await r2.json(); throw new Error(e.message || 'Failed to create profile'); }
+    const uid = await _hashUid(email);
+    this._userId = uid;
+    const existing = await this.getRecordByFilter('profiles', `uid='${uid}'`);
+    if (existing) throw new Error('An account with this email already exists.');
+    const pwHash = await _hashUid(password + uid);
+    const rec = await this.createRecord('profiles', { uid, email, pwHash, ...data });
+    this._token = uid;
     return { id: uid };
   },
   logout() { this._token = null; this._userId = null; },
 
   // ── USERS / PROFILES ──
   async getUser(uid) {
-    const r = await fetch(`${SB_URL}/rest/v1/profiles?id=eq.${uid}&limit=1`, { headers: this._h() });
-    if (!r.ok) return null;
-    const d = await r.json();
-    const row = d[0];
-    if (!row) return null;
-    return { ...row, id: row.id };
+    return await this.getRecordByFilter('profiles', `uid='${uid}'`);
   },
   async updateUser(uid, data) {
-    const r = await fetch(`${SB_URL}/rest/v1/profiles?id=eq.${uid}`, {
-      method: 'PATCH',
-      headers: this._h(),
-      body: JSON.stringify(data)
-    });
-    if (!r.ok) throw new Error('Update failed');
-    const d = await r.json();
-    return d[0] || data;
+    const rec = await this.getRecordByFilter('profiles', `uid='${uid}'`);
+    if (!rec) throw new Error('Profile not found');
+    return await this.patchRecord('profiles', rec.id, data);
   },
   async getUsers(field, dir = 'DESC', max = 20) {
-    const order = `${field}.${dir.toLowerCase()}`;
-    const r = await fetch(`${SB_URL}/rest/v1/profiles?order=${order}&limit=${max}`, { headers: this._h() });
-    if (!r.ok) return [];
-    return await r.json();
+    const sort = (dir === 'DESC' ? '-' : '+') + field;
+    return await this.listRecords('profiles', '', sort, max);
   },
   async findUserByUsername(username) {
-    const r = await fetch(`${SB_URL}/rest/v1/profiles?displayName=eq.${encodeURIComponent(username)}&limit=1`, { headers: this._h() });
-    if (!r.ok) return null;
-    const d = await r.json();
-    return d[0] || null;
+    return await this.getRecordByFilter('profiles', `displayName='${username}'`);
   },
   async changePassword(newPassword) {
-    const r = await fetch(`${SB_URL}/auth/v1/user`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'apikey': SB_ANON, 'Authorization': `Bearer ${this._token}` },
-      body: JSON.stringify({ password: newPassword })
-    });
-    if (!r.ok) { const e = await r.json(); throw new Error(e.msg || 'Password change failed'); }
+    const uid = this._userId;
+    const pwHash = await _hashUid(newPassword + uid);
+    await this.updateUser(uid, { pwHash });
   },
 
   // ── GENERIC TABLE CRUD ──
   async createRecord(table, data) {
-    const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
+    const r = await fetch(`${PB_URL}/api/collections/${table}/records`, {
       method: 'POST',
       headers: this._h(),
       body: JSON.stringify(data)
     });
     if (!r.ok) { const e = await r.json(); throw new Error(e.message || 'Create failed'); }
-    const d = await r.json();
-    return Array.isArray(d) ? d[0] : d;
+    return await r.json();
   },
   async upsertRecord(table, filter, data) {
     const existing = await this.getRecordByFilter(table, filter);
@@ -2075,30 +2048,22 @@ const pb = {
     return this.createRecord(table, data);
   },
   async patchRecord(table, id, data) {
-    const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+    const r = await fetch(`${PB_URL}/api/collections/${table}/records/${id}`, {
       method: 'PATCH',
       headers: this._h(),
       body: JSON.stringify(data)
     });
     if (!r.ok) throw new Error('Patch failed');
-    const d = await r.json();
-    return Array.isArray(d) ? d[0] : d;
+    return await r.json();
   },
   async deleteRecord(table, id) {
     if (!id) return;
-    await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+    await fetch(`${PB_URL}/api/collections/${table}/records/${id}`, {
       method: 'DELETE',
       headers: this._h()
     });
   },
   async deleteRecordsByFilter(table, filter) {
-    if (!filter) {
-      // Delete all rows
-      await fetch(`${SB_URL}/rest/v1/${table}?id=neq.00000000-0000-0000-0000-000000000000`, {
-        method: 'DELETE', headers: this._h()
-      });
-      return;
-    }
     const items = await this.listRecords(table, filter);
     await Promise.all(items.map(i => this.deleteRecord(table, i.id)));
   },
@@ -2107,79 +2072,122 @@ const pb = {
     return items[0] || null;
   },
   async listRecords(table, filter = '', sort = '', max = 200) {
-    let url = `${SB_URL}/rest/v1/${table}?limit=${max}`;
-    if (filter) {
-      // Convert simple key='val' filters to Supabase PostgREST format
-      const parts = filter.split('=');
-      if (parts.length >= 2) {
-        const key = parts[0].trim();
-        const val = parts.slice(1).join('=').trim().replace(/^'|'$/g, '');
-        url += `&${key}=eq.${encodeURIComponent(val)}`;
-      }
-    }
-    if (sort) {
-      // Convert +ts → ts.asc, -ts → ts.desc
-      const s = sort.trim();
-      const dir = s.startsWith('-') ? 'desc' : 'asc';
-      const field = s.replace(/^[+-]/, '');
-      url += `&order=${field}.${dir}`;
-    }
+    let url = `${PB_URL}/api/collections/${table}/records?perPage=${max}`;
+    if (filter) url += `&filter=${encodeURIComponent(filter)}`;
+    if (sort)   url += `&sort=${encodeURIComponent(sort)}`;
     const r = await fetch(url, { headers: this._h() });
     if (!r.ok) return [];
-    return await r.json();
+    const d = await r.json();
+    return d.items || [];
   },
 
-  // ── POLLING REALTIME ──
+  // ── REAL-TIME via PocketBase SSE ──
   subscribe(table, filter, callback) {
     const key = table + ':' + (filter || '*');
+    // Close existing subscription
+    if (this._ws[key]) { try { this._ws[key].close(); } catch(e) {} delete this._ws[key]; }
+    if (this._subs[key]) { clearInterval(this._subs[key]); delete this._subs[key]; }
+
+    // Use PocketBase realtime SSE
+    const clientId = Math.random().toString(36).slice(2);
+    let es = null;
+    let lastSnapshot = null;
+
+    const startSSE = () => {
+      try {
+        es = new EventSource(`${PB_URL}/api/realtime`);
+        this._ws[key] = es;
+
+        es.addEventListener('PB_CONNECT', async (e) => {
+          // Subscribe to this collection
+          const data = JSON.parse(e.data);
+          const sseid = data.clientId;
+          await fetch(`${PB_URL}/api/realtime`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clientId: sseid, subscriptions: [table] })
+          }).catch(() => {});
+        });
+
+        es.addEventListener(table, (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            callback({ action: data.action, record: data.record });
+          } catch(err) {}
+        });
+
+        es.onerror = () => {
+          // Fall back to polling on SSE error
+          es.close();
+          delete this._ws[key];
+          _startPolling();
+        };
+      } catch(e) {
+        _startPolling();
+      }
+    };
+
+    const _startPolling = () => {
+      if (this._subs[key]) return;
+      const poll = async () => {
+        try {
+          const items = await this.listRecords(table, filter, '', 200);
+          const currentMap = new Map(items.map(i => [i.id, JSON.stringify(i)]));
+          if (lastSnapshot !== null) {
+            for (const [id, json] of currentMap) {
+              if (!lastSnapshot.has(id)) callback({ action: 'create', record: JSON.parse(json) });
+              else if (lastSnapshot.get(id) !== json) callback({ action: 'update', record: JSON.parse(json) });
+            }
+            for (const [id, json] of lastSnapshot) {
+              if (!currentMap.has(id)) callback({ action: 'delete', record: JSON.parse(json) });
+            }
+          }
+          lastSnapshot = currentMap;
+        } catch(e) {}
+      };
+      poll();
+      this._subs[key] = setInterval(poll, 1500);
+    };
+
+    // Try SSE first, fall back to polling
+    startSSE();
+    // Also start polling as backup after 2s if SSE hasn't fired
+    setTimeout(() => { if (!this._ws[key] || this._ws[key].readyState > 1) _startPolling(); }, 2000);
+
+    return () => {
+      if (this._ws[key]) { try { this._ws[key].close(); } catch(e) {} delete this._ws[key]; }
+      if (this._subs[key]) { clearInterval(this._subs[key]); delete this._subs[key]; }
+    };
+  },
+
+  // ── POLLING REALTIME (kept as internal fallback) ──
+  _pollSubscribe(table, filter, callback) {
+    const key = table + ':poll:' + (filter || '*');
     if (this._subs[key]) clearInterval(this._subs[key]);
-    // Diff-based polling: tracks full state so deletions and updates trigger callbacks
-    let lastSnapshot = null; // Map of id -> JSON string
+    let lastSnapshot = null;
     const poll = async () => {
       try {
-        let url = `${SB_URL}/rest/v1/${table}?limit=200`;
-        if (filter) {
-          const parts = filter.split('=');
-          if (parts.length >= 2) {
-            const key2 = parts[0].trim();
-            const val = parts.slice(1).join('=').trim().replace(/^'|'$/g, '');
-            url += `&${key2}=eq.${encodeURIComponent(val)}`;
-          }
-        }
-        const r = await fetch(url, { headers: this._h() });
-        if (!r.ok) return;
-        const items = await r.json();
+        const items = await this.listRecords(table, filter, '', 200);
         const currentMap = new Map(items.map(i => [i.id, JSON.stringify(i)]));
-
         if (lastSnapshot !== null) {
-          // Detect new or updated records
-          for (const [id, json] of currentMap) {
-            if (!lastSnapshot.has(id)) {
-              callback({ action: 'create', record: JSON.parse(json) });
-            } else if (lastSnapshot.get(id) !== json) {
-              callback({ action: 'update', record: JSON.parse(json) });
-            }
-          }
-          // Detect deleted records
-          for (const [id, json] of lastSnapshot) {
-            if (!currentMap.has(id)) {
-              callback({ action: 'delete', record: JSON.parse(json) });
-            }
-          }
-        }
-        lastSnapshot = currentMap;
       } catch(e) {}
     };
     poll(); // run immediately
     const interval = setInterval(poll, 1500);
     this._subs[key] = interval;
-    return () => { clearInterval(interval); delete this._subs[key]; };
-  },
+},
   unsubscribe(table, filter) {
     const key = table + ':' + (filter || '*');
+    if (this._ws && this._ws[key]) { try { this._ws[key].close(); } catch(e) {} delete this._ws[key]; }
     if (this._subs[key]) { clearInterval(this._subs[key]); delete this._subs[key]; }
   },
 };
+
+// ── UID HASH HELPER ──
+async function _hashUid(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('').slice(0,24);
+}
 
 // ── VISIBILITY OPTIMIZATION — pause polls when tab hidden ──
 document.addEventListener('visibilitychange', () => {
@@ -2442,23 +2450,23 @@ setInterval(async () => {
   // Refresh queue record to keep it "alive" (no actual expiry but good hygiene)
 }, 15000);
 
-window.addEventListener('beforeunload', async () => {
+window.addEventListener('beforeunload', () => {
   if (!me) return;
-  // Try synchronous cleanup (best effort)
+  // Best-effort cleanup on page close using PocketBase API
   if (mySlot) {
     const recId = _stageRecordIds[mySlot];
     if (recId) {
-      fetch(`${SB_URL}/rest/v1/stage?id=eq.${recId}`, {
+      fetch(`${PB_URL}/api/collections/stage/records/${recId}`, {
         method: 'DELETE',
-        headers: { 'apikey': SB_ANON, 'Authorization': `Bearer ${pb._token||''}` },
+        headers: { 'Content-Type': 'application/json' },
         keepalive: true
       }).catch(()=>{});
     }
   }
   if (_queueRecordId) {
-    fetch(`${SB_URL}/rest/v1/queue?id=eq.${_queueRecordId}`, {
+    fetch(`${PB_URL}/api/collections/queue/records/${_queueRecordId}`, {
       method: 'DELETE',
-      headers: { 'apikey': SB_ANON, 'Authorization': `Bearer ${pb._token||''}` },
+      headers: { 'Content-Type': 'application/json' },
       keepalive: true
     }).catch(()=>{});
   }
@@ -2966,66 +2974,65 @@ window.openArenaModal = () => {
 window.closeArenaModal = () => { stopCamPreview(); closeModal('arena-overlay'); };
 
 async function startCamPreview() {
-  const video=document.getElementById('arena-preview'), ph=document.getElementById('cam-ph');
-  const lbl=document.getElementById('cam-active-lbl'), err=document.getElementById('cam-err');
-  const btn=document.getElementById('arena-next-btn');
-  const phTxt=document.getElementById('cam-ph-txt');
+  const video  = document.getElementById('arena-preview');
+  const ph     = document.getElementById('cam-ph');
+  const lbl    = document.getElementById('cam-active-lbl');
+  const errDiv = document.getElementById('cam-err');
+  const btn    = document.getElementById('arena-next-btn');
+  const phTxt  = document.getElementById('cam-ph-txt');
+  const errTxt = document.getElementById('cam-err-txt');
 
-  // Always stop any existing stream first so we get a fresh permission check
-  if (localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
-  video.srcObject=null; video.style.display='none';
+  // Stop any existing tracks first
+  if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+  video.srcObject = null; video.style.display = 'none';
 
-  err.classList.remove('on');
-  btn.disabled=true; btn.textContent='LOOKS GOOD →';
-  ph.style.display='flex'; lbl.classList.remove('on');
-  phTxt.textContent='Requesting camera...';
-  document.getElementById('dev-selects').style.display='none';
+  // Reset UI
+  errDiv.classList.remove('on');
+  btn.disabled = true; btn.textContent = 'LOOKS GOOD →';
+  ph.style.display = 'flex'; lbl.classList.remove('on');
+  phTxt.textContent = 'Requesting camera...';
+  document.getElementById('dev-selects').style.display = 'none';
 
-  // Check if mediaDevices is available at all
+  // mediaDevices requires HTTPS or localhost
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    phTxt.textContent='Camera not supported';
-    err.querySelector ? err.querySelector('span') : null;
-    err.childNodes[0].textContent = '⚠ Camera not supported in this browser.';
-    err.classList.add('on'); btn.disabled=false; btn.textContent='SKIP →';
+    phTxt.textContent = 'Camera unavailable';
+    errTxt.textContent = '⚠ Camera requires HTTPS. Open this page over https://.';
+    errDiv.classList.add('on'); btn.disabled = false; btn.textContent = 'SKIP →';
     return;
   }
 
+  // Just try — no pre-check, let the browser handle the permission prompt
   try {
-    // First check current permission state without prompting
-    if (navigator.permissions) {
-      try {
-        const perm = await navigator.permissions.query({name:'camera'});
-        if (perm.state === 'denied') {
-          phTxt.textContent='Camera blocked';
-          err.classList.add('on'); btn.disabled=false; btn.textContent='SKIP →';
-          return;
-        }
-      } catch(pe) { /* permissions API not available, continue */ }
-    }
-
-    localStream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
-    video.srcObject = localStream;
-    video.style.display = 'block';
-    ph.style.display = 'none';
-    lbl.classList.add('on');
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    // SUCCESS
+    video.srcObject = localStream; video.style.display = 'block';
+    ph.style.display = 'none'; lbl.classList.add('on');
     btn.disabled = false;
-    phTxt.textContent = 'Camera active';
 
     const devs = await navigator.mediaDevices.enumerateDevices();
-    const vs=document.getElementById('sel-video'), as=document.getElementById('sel-audio');
-    vs.innerHTML=''; as.innerHTML=''; let vc=0, ac=0;
+    const vs = document.getElementById('sel-video'), as2 = document.getElementById('sel-audio');
+    vs.innerHTML = ''; as2.innerHTML = ''; let vc = 0, ac = 0;
     devs.forEach(d => {
-      const o=document.createElement('option'); o.value=d.deviceId;
-      if(d.kind==='videoinput'){o.textContent=d.label||'Camera '+(++vc); vs.appendChild(o);}
-      else if(d.kind==='audioinput'){o.textContent=d.label||'Mic '+(++ac); as.appendChild(o);}
+      const o = document.createElement('option'); o.value = d.deviceId;
+      if (d.kind === 'videoinput')      { o.textContent = d.label || 'Camera ' + (++vc); vs.appendChild(o); }
+      else if (d.kind === 'audioinput') { o.textContent = d.label || 'Mic '    + (++ac); as2.appendChild(o); }
     });
-    document.getElementById('dev-selects').style.display='flex';
+    document.getElementById('dev-selects').style.display = 'flex';
 
   } catch(e) {
     console.warn('Camera error:', e.name, e.message);
     phTxt.textContent = 'Camera blocked';
-    err.classList.add('on');
-    btn.disabled=false; btn.textContent='SKIP →';
+    // Show a specific message based on the error type
+    if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+      errTxt.textContent = '⚠ Permission denied. Click the camera icon in your address bar and set to Allow, then click Retry.';
+    } else if (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {
+      errTxt.textContent = '⚠ No camera found. Plug in a camera or use Skip.';
+    } else if (e.name === 'NotReadableError' || e.name === 'TrackStartError') {
+      errTxt.textContent = '⚠ Camera is in use by another app. Close it and click Retry.';
+    } else {
+      errTxt.textContent = '⚠ ' + e.name + ': ' + e.message + ' — click Retry or Skip.';
+    }
+    errDiv.classList.add('on'); btn.disabled = false; btn.textContent = 'SKIP →';
   }
 }
 
@@ -6161,7 +6168,7 @@ function listenGlobalEvents() {
 
   async function pollEvents() {
     try {
-      const r = await fetch(`${SB_URL}/rest/v1/events?order=created_at.desc&limit=5`, {
+      const r = await fetch(`${PB_URL}/api/collections/events/records?sort=-created&perPage=5`, {
         headers: pb._h()
       });
       if (!r.ok) {
