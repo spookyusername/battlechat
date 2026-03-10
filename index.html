@@ -864,36 +864,66 @@
   .case-card::before { content:''; position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent); transition:left 0.5s ease; }
   .case-card:hover::before { left:150%; }
 
-  /* Opening reel */
-  .case-open-reel-wrap { overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); position: relative; margin: 18px 0; height: 116px; }
-  .case-open-reel { display: flex; gap: 6px; padding: 13px 6px; will-change: transform; }
-  .case-track-center { position:absolute; top:0; bottom:0; left:50%; width:2px; background:var(--red-hot); z-index:3; transform:translateX(-50%); box-shadow:0 0 10px var(--red-hot); pointer-events:none; }
-  .case-open-reel-wrap::before, .case-open-reel-wrap::after { content:''; position:absolute; top:0; bottom:0; width:90px; z-index:2; pointer-events:none; }
-  .case-open-reel-wrap::before { left:0; background:linear-gradient(to right, rgba(0,0,0,0.95), transparent); }
-  .case-open-reel-wrap::after  { right:0; background:linear-gradient(to left, rgba(0,0,0,0.95), transparent); }
-  .reel-item { flex-shrink:0; width:86px; height:90px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); }
+  /* ── CASE OPENING OVERLAY ── */
+  @keyframes caseFloat    { 0%,100%{transform:translateY(0) rotate(-2deg)} 50%{transform:translateY(-18px) rotate(2deg)} }
+  @keyframes caseShake    { 0%,100%{transform:rotate(0deg)} 20%{transform:rotate(-8deg) scale(1.05)} 40%{transform:rotate(8deg) scale(1.08)} 60%{transform:rotate(-5deg) scale(1.04)} 80%{transform:rotate(5deg) scale(1.06)} }
+  @keyframes caseExplode  { 0%{transform:scale(1);opacity:1} 40%{transform:scale(1.6);opacity:0.5} 100%{transform:scale(0.1);opacity:0} }
+  @keyframes revealDrop   { 0%{transform:translateY(-60px) scale(0.5);opacity:0} 60%{transform:translateY(10px) scale(1.08)} 80%{transform:translateY(-5px) scale(0.97)} 100%{transform:translateY(0) scale(1);opacity:1} }
+  @keyframes rarityFlash  { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  @keyframes spinnerGrow  { from{transform:scaleX(0)} to{transform:scaleX(1)} }
+  @keyframes ultraPulse   { 0%,100%{box-shadow:0 0 20px rgba(255,255,255,0.35)} 50%{box-shadow:0 0 50px rgba(255,255,255,0.8),0 0 100px rgba(255,255,255,0.2)} }
+  @keyframes ultraReveal  { 0%{transform:scale(0.2) rotate(-10deg);opacity:0;filter:brightness(5)} 50%{transform:scale(1.2) rotate(3deg);filter:brightness(2)} 100%{transform:scale(1) rotate(0deg);opacity:1;filter:brightness(1)} }
+  @keyframes legendReveal { 0%{transform:scale(0.3);opacity:0;filter:brightness(4)} 60%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+  @keyframes epicReveal   { 0%{transform:scale(0.4) translateY(30px);opacity:0} 70%{transform:scale(1.05) translateY(-5px)} 100%{transform:scale(1) translateY(0);opacity:1} }
+  @keyframes confettiFall { 0%{transform:translateY(-20px) rotate(0deg);opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
+  @keyframes bgFlash      { 0%{opacity:0} 15%{opacity:0.35} 100%{opacity:0} }
+  @keyframes openBtnPulse { 0%,100%{box-shadow:0 0 0 0 rgba(217,43,43,0.4)} 50%{box-shadow:0 0 0 18px rgba(217,43,43,0)} }
+  #case-float-icon { animation: caseFloat 2.2s ease-in-out infinite; }
+  #case-open-btn   { animation: openBtnPulse 1.6s ease-in-out infinite; }
+  #case-open-btn:disabled { animation: none; background: rgba(255,255,255,0.08); color: #444; cursor: not-allowed; }
+
+  /* Reel */
+  .case-open-reel-wrap { overflow:hidden; border:1px solid rgba(255,255,255,0.12); background:rgba(0,0,0,0.6); position:relative; height:120px; border-radius:2px; }
+  .case-open-reel { display:flex; gap:6px; padding:15px 6px; will-change:transform; }
+  .case-track-center { position:absolute; top:0; bottom:0; left:50%; width:3px; background:var(--red-hot); z-index:3; transform:translateX(-50%); box-shadow:0 0 16px var(--red-hot),0 0 32px rgba(217,43,43,0.4); pointer-events:none; }
+  .case-track-center::before,.case-track-center::after { content:''; position:absolute; left:50%; transform:translateX(-50%); width:0; height:0; }
+  .case-track-center::before { top:0; border-left:8px solid transparent; border-right:8px solid transparent; border-top:10px solid var(--red-hot); }
+  .case-track-center::after  { bottom:0; border-left:8px solid transparent; border-right:8px solid transparent; border-bottom:10px solid var(--red-hot); }
+  .case-open-reel-wrap::before,.case-open-reel-wrap::after { content:''; position:absolute; top:0; bottom:0; width:100px; z-index:2; pointer-events:none; }
+  .case-open-reel-wrap::before { left:0; background:linear-gradient(to right,rgba(0,0,0,0.97),transparent); }
+  .case-open-reel-wrap::after  { right:0; background:linear-gradient(to left,rgba(0,0,0,0.97),transparent); }
+  .reel-item { flex-shrink:0; width:86px; height:90px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); transition:transform 0.1s; }
   .reel-item.rarity-common    { border-color:rgba(160,160,160,0.3); }
-  .reel-item.rarity-rare      { border-color:rgba(96,165,250,0.5); background:rgba(96,165,250,0.06); }
-  .reel-item.rarity-epic      { border-color:rgba(180,90,255,0.5); background:rgba(180,90,255,0.06); }
-  .reel-item.rarity-legendary { border-color:rgba(201,168,76,0.7); background:rgba(201,168,76,0.09); box-shadow:0 0 12px rgba(201,168,76,0.25); }
-  .reel-item.rarity-ultra     { border-color:rgba(255,255,255,0.9); background:rgba(255,255,255,0.08); box-shadow:0 0 20px rgba(255,255,255,0.35), inset 0 0 12px rgba(255,255,255,0.05); animation:ultraPulse 1.2s ease-in-out infinite; }
-  @keyframes ultraPulse { 0%,100%{box-shadow:0 0 20px rgba(255,255,255,0.35)} 50%{box-shadow:0 0 35px rgba(255,255,255,0.7), 0 0 60px rgba(255,255,255,0.2)} }
-  .reel-emoji { font-size: 2rem; line-height:1; }
-  .reel-label { font-family:'Barlow Condensed',sans-serif; font-size:0.48rem; letter-spacing:1px; color:var(--muted); text-align:center; padding:0 4px; }
-  .case-result-reveal { text-align:center; padding:16px 0 8px; animation:caseReveal 0.45s cubic-bezier(0.34,1.56,0.64,1); }
-  @keyframes caseReveal { from{transform:scale(0.4);opacity:0} to{transform:scale(1);opacity:1} }
-  .case-result-emoji { font-size:3.5rem; display:block; margin-bottom:10px; }
-  .case-result-name { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; letter-spacing:5px; }
-  .case-result-rarity { font-family:'Barlow Condensed',sans-serif; font-size:0.7rem; letter-spacing:3px; text-transform:uppercase; margin-top:6px; opacity:0.8; }
+  .reel-item.rarity-rare      { border-color:rgba(96,165,250,0.6); background:rgba(96,165,250,0.07); }
+  .reel-item.rarity-epic      { border-color:rgba(180,90,255,0.6); background:rgba(180,90,255,0.07); box-shadow:0 0 8px rgba(180,90,255,0.2); }
+  .reel-item.rarity-legendary { border-color:rgba(201,168,76,0.8); background:rgba(201,168,76,0.1); box-shadow:0 0 14px rgba(201,168,76,0.3); }
+  .reel-item.rarity-ultra     { border-color:rgba(255,255,255,0.95); background:rgba(255,255,255,0.09); animation:ultraPulse 1s ease-in-out infinite; }
+  .reel-emoji  { font-size:2.1rem; line-height:1; }
+  .reel-label  { font-family:'Barlow Condensed',sans-serif; font-size:0.46rem; letter-spacing:1px; color:var(--muted); text-align:center; padding:0 4px; }
+
+  /* Result reveal */
+  .case-result-reveal { text-align:center; padding:8px 0; }
+  .case-result-reveal.rarity-common    { animation:revealDrop 0.55s cubic-bezier(0.34,1.4,0.64,1) both; }
+  .case-result-reveal.rarity-rare      { animation:revealDrop 0.6s  cubic-bezier(0.34,1.4,0.64,1) both; }
+  .case-result-reveal.rarity-epic      { animation:epicReveal   0.7s cubic-bezier(0.22,1,0.36,1) both; }
+  .case-result-reveal.rarity-legendary { animation:legendReveal 0.8s cubic-bezier(0.22,1,0.36,1) both; }
+  .case-result-reveal.rarity-ultra     { animation:ultraReveal  1s   cubic-bezier(0.22,1,0.36,1) both; }
+  .case-result-emoji  { font-size:5.5rem; display:block; margin-bottom:14px; line-height:1; }
+  .case-result-name   { font-family:'Bebas Neue',sans-serif; font-size:2.4rem; letter-spacing:8px; }
+  .case-result-rarity { font-family:'Barlow Condensed',sans-serif; font-size:0.75rem; letter-spacing:5px; text-transform:uppercase; margin-top:8px; }
   .rarity-common    .case-result-rarity { color:#aaa; }
   .rarity-rare      .case-result-rarity { color:#60a5fa; }
   .rarity-epic      .case-result-rarity { color:#b45aff; }
-  .rarity-legendary .case-result-rarity { color:var(--gold); }
-  .rarity-ultra     .case-result-rarity { color:#fff; text-shadow:0 0 20px rgba(255,255,255,0.8); letter-spacing:6px; animation:ultraPulse 1.2s ease-in-out infinite; }
-  .rarity-ultra .case-result-emoji { filter: drop-shadow(0 0 16px rgba(255,255,255,0.8)); animation:ultraPulse 1.5s ease-in-out infinite; }
-  .case-open-btn { width:100%; margin-top:12px; font-family:'Bebas Neue',sans-serif; font-size:1.1rem; letter-spacing:4px; padding:14px; background:var(--red); border:none; color:white; cursor:pointer; transition:background 0.2s; }
-  .case-open-btn:hover { background:var(--red-hot); }
-  .case-open-btn:disabled { background:rgba(255,255,255,0.1); color:var(--muted); cursor:not-allowed; }
+  .rarity-legendary .case-result-rarity { color:var(--gold); animation:rarityFlash 1.5s ease-in-out infinite; }
+  .rarity-ultra     .case-result-rarity { color:#fff; letter-spacing:7px; text-shadow:0 0 30px rgba(255,255,255,1); animation:ultraPulse 1s ease-in-out infinite; }
+  .rarity-legendary .case-result-emoji  { filter:drop-shadow(0 0 20px rgba(201,168,76,0.7)); }
+  .rarity-ultra .case-result-emoji      { filter:drop-shadow(0 0 30px rgba(255,255,255,0.9)); animation:ultraPulse 1.2s ease-in-out infinite; }
+  /* rarity flash bg overlay */
+  .case-rarity-flash { position:fixed; inset:0; pointer-events:none; z-index:8999; opacity:0; }
+  .case-rarity-flash.fire { background:radial-gradient(ellipse at center,rgba(217,43,43,0.5),transparent 70%); animation:bgFlash 1.2s ease-out both; }
+  .case-rarity-flash.epic { background:radial-gradient(ellipse at center,rgba(180,90,255,0.5),transparent 70%); animation:bgFlash 1.2s ease-out both; }
+  .case-rarity-flash.gold { background:radial-gradient(ellipse at center,rgba(201,168,76,0.6),transparent 70%); animation:bgFlash 1.5s ease-out both; }
+  .case-rarity-flash.white{ background:radial-gradient(ellipse at center,rgba(255,255,255,0.7),transparent 70%); animation:bgFlash 2s ease-out both; }
 
   /* ─── INVENTORY TAB ─── */
   .inv-equipped-bar {
@@ -1730,23 +1760,7 @@
     </div>
   </div>
 
-  <!-- CASE OPENING MODAL -->
-  <div class="modal-overlay" id="case-overlay" style="display:none;" onclick="if(event.target===this&&!window._caseSpinning)closeModal('case-overlay')">
-    <div class="modal-box" style="max-width:520px;width:90%;">
-      <div class="modal-header">
-        <span class="modal-title" id="case-modal-title">OPENING CASE</span>
-        <button class="modal-close" onclick="if(!window._caseSpinning)closeModal('case-overlay')">✕</button>
-      </div>
-      <div id="case-modal-body" style="padding:20px;">
-        <div class="case-open-reel-wrap" id="case-reel-wrap">
-          <div class="case-open-reel" id="case-reel"></div>
-          <div class="case-track-center"></div>
-        </div>
-        <div id="case-result-area" style="display:none;"></div>
-        <button class="case-open-btn" id="case-open-btn" onclick="spinCase()">OPEN CASE</button>
-      </div>
-    </div>
-  </div>
+
 
   <!-- GAMBLE TAB -->
   <div class="menu-tab" id="mtab-gamble" style="display:none;">
@@ -4349,9 +4363,326 @@ function weightedPick(pool, isVoid = false) {
   return weighted[Math.floor(Math.random() * weighted.length)];
 }
 
+// ══════════════════════════════════════════════════
+//  CASE OPENING SYSTEM — dramatic 3-phase reveal
+// ══════════════════════════════════════════════════
+
+const CASE_META = {
+  standard: { icon:'📦', name:'STANDARD CASE',  color:'rgba(180,180,180,0.5)', flashClass:'fire' },
+  daily:    { icon:'🎁', name:'DAILY CASE',      color:'rgba(201,168,76,0.5)',  flashClass:'gold' },
+  battle:   { icon:'⚔️', name:'BATTLE CASE',    color:'rgba(217,43,43,0.6)',   flashClass:'fire' },
+  streak:   { icon:'🔥', name:'STREAK CASE',     color:'rgba(255,100,0,0.5)',   flashClass:'fire' },
+  void:     { icon:'🌑', name:'VOID CASE',       color:'rgba(255,255,255,0.4)', flashClass:'white' },
+};
+const CASE_ODDS = {
+  standard: '<span style="color:#888">■</span> Common 45% &nbsp;<span style="color:#60a5fa">■</span> Rare 28% &nbsp;<span style="color:#b45aff">■</span> Epic 18%<br><span style="color:#C9A84C">■</span> Legendary 4% &nbsp;<span style="color:#fff">■</span> <b>Ultra 5%</b>',
+  daily:    '<span style="color:#888">■</span> Common 55% &nbsp;<span style="color:#60a5fa">■</span> Rare 30% &nbsp;<span style="color:#b45aff">■</span> Epic 12%<br><span style="color:#C9A84C">■</span> Legendary 3% &nbsp;<span style="color:#555">■</span> Ultra 0%',
+  battle:   '<span style="color:#60a5fa">■</span> Rare 40% &nbsp;<span style="color:#b45aff">■</span> Epic 35%<br><span style="color:#C9A84C">■</span> Legendary 15% &nbsp;<span style="color:#fff">■</span> <b>Ultra 10%</b>',
+  streak:   '<span style="color:#60a5fa">■</span> Rare 30% &nbsp;<span style="color:#b45aff">■</span> Epic 35%<br><span style="color:#C9A84C">■</span> Legendary 25% &nbsp;<span style="color:#fff">■</span> <b>Ultra 10%</b>',
+  void:     '<span style="color:#b45aff">■</span> Epic 20% &nbsp;<span style="color:#C9A84C">■</span> Legendary 40%<br><span style="color:#fff">■</span> <b>Ultra 40%</b> — Void Black / Cum White',
+};
+
 let _currentCaseType = null;
 let _caseSpinning = false;
 window._caseSpinning = false;
+
+// ── open overlay ──
+window.openCase = (type) => {
+  if (!me)        { showToast('Log in first!'); return; }
+  if (!myProfile) { showToast('Profile not loaded yet!'); return; }
+  const coins  = myProfile.coins  || 0;
+  const wins   = myProfile.wins   || 0;
+  const streak = myProfile.currentStreak || 0;
+  if (type === 'standard' && coins < 400)  { showToast('Need 🪙 400 to open Standard Case!'); return; }
+  if (type === 'void'     && coins < 2500) { showToast('Need 🪙 2,500 to open Void Case!'); return; }
+  if (type === 'battle'   && wins < 1)     { showToast('Win at least one battle first!'); return; }
+  if (type === 'streak'   && streak < 3)   { showToast(`Need 3-win streak! At ${streak}/3`); return; }
+  if (type === 'daily') {
+    const elapsed = Date.now() - (myProfile.lastCaseDaily || 0);
+    if (elapsed < 86400000) { const h = Math.ceil((86400000-elapsed)/3600000); showToast(`Daily resets in ${h}h`); return; }
+  }
+
+  _currentCaseType = type;
+  _caseSpinning = false;
+  window._caseSpinning = false;
+
+  const meta = CASE_META[type] || CASE_META.standard;
+  // Set phase-1 content
+  document.getElementById('case-modal-title').textContent = meta.name;
+  document.getElementById('case-float-icon').textContent  = meta.icon;
+  document.getElementById('case-float-icon').style.filter = `drop-shadow(0 0 40px ${meta.color})`;
+  document.getElementById('case-float-name').textContent  = meta.name;
+  document.getElementById('case-float-odds').innerHTML    = CASE_ODDS[type] || '';
+  const costLabel = { standard:'OPEN — 🪙 400', void:'OPEN — 🪙 2,500', daily:'OPEN FREE', battle:'OPEN CASE', streak:'OPEN CASE' };
+  const btn = document.getElementById('case-open-btn');
+  btn.textContent = costLabel[type] || 'OPEN CASE';
+  btn.disabled = false;
+  btn.style.animation = 'openBtnPulse 1.5s ease-in-out infinite';
+
+  // Show phase-1, hide others
+  document.getElementById('case-phase-open').style.display   = 'flex';
+  document.getElementById('case-phase-reel').style.display   = 'none';
+  document.getElementById('case-phase-result').style.display = 'none';
+
+  // Build reel in background
+  buildReel(type);
+
+  // Show overlay
+  const ov = document.getElementById('case-overlay');
+  ov.style.display = 'flex';
+  requestAnimationFrame(() => { ov.style.opacity = '0'; requestAnimationFrame(() => { ov.style.transition = 'opacity 0.3s ease'; ov.style.opacity = '1'; }); });
+};
+
+window.closeCaseOverlay = () => {
+  if (_caseSpinning) return;
+  const ov = document.getElementById('case-overlay');
+  ov.style.transition = 'opacity 0.25s ease';
+  ov.style.opacity = '0';
+  setTimeout(() => { ov.style.display = 'none'; ov.style.opacity = '1'; }, 260);
+};
+
+window.caseOpenAgain = () => {
+  const type = _currentCaseType;
+  if (!type) return;
+  // Validate again
+  const coins  = myProfile?.coins  || 0;
+  const wins   = myProfile?.wins   || 0;
+  const streak = myProfile?.currentStreak || 0;
+  if (type === 'standard' && coins < 400)  { showToast('Not enough coins!'); closeCaseOverlay(); return; }
+  if (type === 'void'     && coins < 2500) { showToast('Not enough coins!'); closeCaseOverlay(); return; }
+  if (type === 'battle'   && wins < 1)     { closeCaseOverlay(); return; }
+  if (type === 'streak'   && streak < 3)   { closeCaseOverlay(); return; }
+  if (type === 'daily') {
+    const elapsed = Date.now() - (myProfile.lastCaseDaily || 0);
+    if (elapsed < 86400000) { showToast('Daily already used!'); closeCaseOverlay(); return; }
+  }
+  // Reset to phase 1
+  _caseSpinning = false;
+  window._caseSpinning = false;
+  const meta = CASE_META[type] || CASE_META.standard;
+  document.getElementById('case-float-icon').textContent = meta.icon;
+  const costLabel = { standard:'OPEN — 🪙 400', void:'OPEN — 🪙 2,500', daily:'OPEN FREE', battle:'OPEN CASE', streak:'OPEN CASE' };
+  const btn = document.getElementById('case-open-btn');
+  btn.textContent = costLabel[type] || 'OPEN CASE';
+  btn.disabled = false;
+  btn.style.animation = 'openBtnPulse 1.5s ease-in-out infinite';
+  document.getElementById('case-phase-open').style.display   = 'flex';
+  document.getElementById('case-phase-reel').style.display   = 'none';
+  document.getElementById('case-phase-result').style.display = 'none';
+  buildReel(type);
+};
+
+// ── build reel ──
+function buildReel(type) {
+  const pool = CASE_POOLS[type] || CASE_POOLS.standard;
+  const reel = document.getElementById('case-reel');
+  reel.innerHTML = '';
+  reel.style.transition = 'none';
+  reel.style.transform  = 'translateX(0)';
+  for (let i = 0; i < 52; i++) {
+    const item = weightedPick(pool, type === 'void');
+    const div = document.createElement('div');
+    div.className = `reel-item rarity-${item.rarity}`;
+    div.innerHTML = `<span class="reel-emoji">${item.emoji}</span><span class="reel-label">${item.name}</span>`;
+    reel.appendChild(div);
+  }
+}
+
+// ── particle burst ──
+function spawnParticles(rarity) {
+  const canvas = document.getElementById('case-particles');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const colors = {
+    common:    ['#aaa','#ccc','#888'],
+    rare:      ['#60a5fa','#3b82f6','#93c5fd'],
+    epic:      ['#b45aff','#9333ea','#d8b4fe'],
+    legendary: ['#C9A84C','#ffd700','#f59e0b'],
+    ultra:     ['#fff','#f0f0f0','#fffde7','#C9A84C'],
+  }[rarity] || ['#fff'];
+  const count = rarity === 'ultra' ? 120 : rarity === 'legendary' ? 80 : rarity === 'epic' ? 50 : 30;
+  const cx = canvas.width/2, cy = canvas.height/2;
+  const particles = Array.from({length:count}, () => ({
+    x:cx, y:cy,
+    vx:(Math.random()-0.5)*18*(rarity==='ultra'?2:1),
+    vy:(Math.random()-0.5)*18*(rarity==='ultra'?2:1) - 4,
+    r: Math.random()*6+2,
+    color: colors[Math.floor(Math.random()*colors.length)],
+    alpha:1, gravity:0.3
+  }));
+  let frame = 0;
+  const maxFrames = 90;
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.vy += p.gravity;
+      p.alpha = Math.max(0, 1 - frame/maxFrames);
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle = p.color + Math.round(p.alpha*255).toString(16).padStart(2,'0');
+      ctx.fill();
+    });
+    frame++;
+    if (frame < maxFrames) requestAnimationFrame(draw);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  draw();
+}
+
+// ── spin / reveal ──
+window.spinCase = async () => {
+  if (_caseSpinning) return;
+  if (!me) return;
+  const type = _currentCaseType;
+  const pool = CASE_POOLS[type] || CASE_POOLS.standard;
+
+  // Final validate
+  if (type === 'standard' && (myProfile.coins||0) < 400)  { showToast('Not enough coins!'); return; }
+  if (type === 'void'     && (myProfile.coins||0) < 2500) { showToast('Need 🪙 2,500!'); return; }
+  if (type === 'battle'   && (myProfile.wins||0) < 1)     { showToast('Win a battle first!'); return; }
+  if (type === 'streak'   && (myProfile.currentStreak||0) < 3) { showToast('Need 3-win streak!'); return; }
+  if (type === 'daily') {
+    const now = Date.now();
+    if (now - (myProfile.lastCaseDaily||0) < 86400000) { showToast('Daily not ready!'); return; }
+    await pb.updateUser(me.uid, { lastCaseDaily: now }).catch(()=>{});
+    myProfile.lastCaseDaily = now;
+  }
+
+  _caseSpinning = true;
+  window._caseSpinning = true;
+
+  // ── Phase 1 → 2: shake icon then transition to reel ──
+  const btn = document.getElementById('case-open-btn');
+  btn.disabled = true;
+  btn.style.animation = 'none';
+  const floatIcon = document.getElementById('case-float-icon');
+  floatIcon.style.animation = 'caseShake 0.6s ease-in-out';
+
+  await new Promise(r => setTimeout(r, 650));
+
+  // Explode icon
+  floatIcon.style.animation = 'caseExplode 0.4s ease-in both';
+  await new Promise(r => setTimeout(r, 350));
+
+  // Switch to reel phase
+  document.getElementById('case-phase-open').style.display   = 'none';
+  document.getElementById('case-phase-reel').style.display   = 'flex';
+  document.getElementById('case-phase-result').style.display = 'none';
+  document.getElementById('case-spin-label').textContent     = 'SPINNING...';
+
+  // Pick winner & place in reel
+  const winner   = weightedPick(pool, type === 'void');
+  const reel     = document.getElementById('case-reel');
+  const items    = reel.children;
+  const STRIDE   = 92;
+  const PAD_L    = 6;
+  const TARGET   = 38;
+  const winnerEl = items[TARGET];
+  winnerEl.className = `reel-item rarity-${winner.rarity}`;
+  winnerEl.innerHTML = `<span class="reel-emoji">${winner.emoji}</span><span class="reel-label">${winner.name}</span>`;
+
+  // Reset reel
+  reel.style.transition = 'none';
+  reel.style.transform  = 'translateX(0px)';
+  void reel.offsetWidth;
+
+  const reelWrap   = document.getElementById('case-reel-wrap');
+  const viewCenter = (reelWrap.offsetWidth || 600) / 2;
+  const itemCenter = PAD_L + TARGET * STRIDE + STRIDE / 2;
+  const jitter     = Math.random() * 24 - 12;
+  const scrollTo   = viewCenter - itemCenter + jitter;
+
+  // Small pre-delay then fire
+  await new Promise(r => setTimeout(r, 120));
+  reel.style.transition = 'transform 4.8s cubic-bezier(0.04, 0.9, 0.15, 1)';
+  reel.style.transform  = `translateX(${scrollTo}px)`;
+
+  // Wait for spin to finish
+  await new Promise(r => setTimeout(r, 5000));
+
+  // ── Phase 2 → 3: result flash + reveal ──
+  // Flash overlay
+  const flashEl = document.createElement('div');
+  flashEl.className = 'case-rarity-flash ' + ({
+    common:'fire', rare:'fire', epic:'epic', legendary:'gold', ultra:'white'
+  }[winner.rarity] || 'fire');
+  document.body.appendChild(flashEl);
+  setTimeout(() => flashEl.remove(), 1500);
+
+  // Particles
+  spawnParticles(winner.rarity);
+  SFX.win && SFX.win();
+
+  // Show result phase
+  document.getElementById('case-phase-reel').style.display   = 'none';
+  document.getElementById('case-phase-result').style.display = 'flex';
+
+  const resultArea = document.getElementById('case-result-area');
+  const rarityLabels = { common:'COMMON', rare:'RARE', epic:'EPIC', legendary:'LEGENDARY ✦', ultra:'✦ ULTRA RARE ✦' };
+  resultArea.innerHTML = `
+    <div class="case-result-reveal rarity-${winner.rarity}">
+      <span class="case-result-emoji">${winner.emoji}</span>
+      <div class="case-result-name">${winner.name}</div>
+      <div class="case-result-rarity">${rarityLabels[winner.rarity] || winner.rarity.toUpperCase()}</div>
+    </div>`;
+
+  // ── Save item to inventory ──
+  const owned      = myProfile.items || [];
+  const alreadyOwn = owned.includes(winner.id);
+  let   invMsg     = '';
+
+  if (type === 'void') {
+    const refund  = alreadyOwn ? 800 : 0;
+    const newCoins = (myProfile.coins||0) - 2500 + refund;
+    myProfile.coins = newCoins;
+    if (!alreadyOwn) myProfile.items = [...owned, winner.id];
+    await pb.updateUser(me.uid, { coins:newCoins, items: alreadyOwn ? owned : [...owned, winner.id] }).catch(()=>{});
+    updateCoinDisplays(newCoins);
+    invMsg = alreadyOwn ? 'DUPLICATE — CONVERTED TO 🪙 800' : '✓ ADDED TO INVENTORY';
+  } else if (type === 'standard') {
+    const refund  = alreadyOwn ? 150 : 0;
+    const newCoins = (myProfile.coins||0) - 400 + refund;
+    myProfile.coins = newCoins;
+    if (!alreadyOwn) myProfile.items = [...owned, winner.id];
+    await pb.updateUser(me.uid, { coins:newCoins, items: alreadyOwn ? owned : [...owned, winner.id] }).catch(()=>{});
+    updateCoinDisplays(newCoins);
+    invMsg = alreadyOwn ? 'DUPLICATE — CONVERTED TO 🪙 150' : '✓ ADDED TO INVENTORY';
+  } else {
+    if (!alreadyOwn) {
+      myProfile.items = [...owned, winner.id];
+      await pb.updateUser(me.uid, { items: myProfile.items }).catch(()=>{});
+      invMsg = '✓ ADDED TO INVENTORY';
+    } else {
+      const refund = type==='battle' ? 300 : type==='streak' ? 250 : 100;
+      myProfile.coins = (myProfile.coins||0) + refund;
+      await pb.updateUser(me.uid, { coins: myProfile.coins }).catch(()=>{});
+      updateCoinDisplays(myProfile.coins);
+      invMsg = `DUPLICATE — CONVERTED TO 🪙 ${refund}`;
+    }
+  }
+
+  document.getElementById('case-result-inv-msg').textContent = invMsg;
+
+  // Hide "open again" for daily
+  const openAgainBtn = document.getElementById('case-open-again-btn');
+  if (type === 'daily') {
+    openAgainBtn.style.display = 'none';
+  } else {
+    openAgainBtn.style.display = '';
+    const openAgainLabel = { standard:'OPEN AGAIN — 🪙 400', void:'OPEN AGAIN — 🪙 2,500', battle:'OPEN AGAIN', streak:'OPEN AGAIN' };
+    openAgainBtn.textContent = openAgainLabel[type] || 'OPEN AGAIN';
+  }
+
+  _caseSpinning = false;
+  window._caseSpinning = false;
+
+  refreshShopOwned();
+  if (typeof renderInventory === 'function') renderInventory();
+  applyActiveCosmetics(myProfile);
+  refreshMenuCoins();
+  refreshCaseCards();
+};
 
 function refreshCaseCards() {
   if (!myProfile) return;
@@ -4389,182 +4720,6 @@ function refreshCaseCards() {
     else { streakCard.classList.add('case-locked'); streakCost.textContent = `NEED 3 STREAK (${streak}/3)`; }
   }
 }
-
-window.openCase = (type) => {
-  if (!me) { showToast('Log in first!'); return; }
-  if (!myProfile) { showToast('Profile not loaded yet!'); return; }
-  const coins  = myProfile.coins  || 0;
-  const wins   = myProfile.wins   || 0;
-  const streak = myProfile.currentStreak || 0;
-  // Gate checks before opening modal
-  if (type === 'standard' && coins < 400)   { showToast('Need 🪙 400 to open Standard Case!'); return; }
-  if (type === 'void'     && coins < 2500)  { showToast('Need 🪙 2,500 to open Void Case!'); return; }
-  if (type === 'battle'   && wins < 1)      { showToast('Win at least one battle to unlock Battle Cases!'); return; }
-  if (type === 'streak'   && streak < 3)    { showToast(`Need a 3-win streak! You're at ${streak}/3`); return; }
-  if (type === 'daily') {
-    const elapsed = Date.now() - (myProfile.lastCaseDaily || 0);
-    if (elapsed < 86400000) {
-      const h = Math.ceil((86400000 - elapsed) / 3600000);
-      showToast(`Daily case resets in ${h}h`); return;
-    }
-  }
-
-  _currentCaseType = type;
-  _caseSpinning = false;
-  window._caseSpinning = false;
-
-  const titles = { standard:'STANDARD CASE', daily:'DAILY CASE', battle:'BATTLE CASE', streak:'STREAK CASE', void:'🌑 VOID CASE' };
-  document.getElementById('case-modal-title').textContent = titles[type] || 'CASE';
-  document.getElementById('case-result-area').style.display = 'none';
-  document.getElementById('case-result-area').innerHTML = '';
-  document.getElementById('case-reel-wrap').style.display = '';
-  document.getElementById('case-open-btn').disabled = false;
-  const caseCosts = { standard:'OPEN — 🪙 400', void:'OPEN — 🪙 2,500', daily:'OPEN CASE', battle:'OPEN CASE', streak:'OPEN CASE' };
-  document.getElementById('case-open-btn').textContent = caseCosts[type] || 'OPEN CASE';
-
-  // Populate reel with random items
-  buildReel(type);
-  openModal('case-overlay');
-};
-
-function buildReel(type) {
-  const pool = CASE_POOLS[type] || CASE_POOLS.standard;
-  const reel = document.getElementById('case-reel');
-  reel.innerHTML = '';
-  reel.style.transition = 'none';
-  reel.style.transform = 'translateX(0)';
-  // Fill reel with weighted random items so visible items look realistic
-  for (let i = 0; i < 50; i++) {
-    const item = weightedPick(pool);
-    const div = document.createElement('div');
-    div.className = `reel-item rarity-${item.rarity}`;
-    div.innerHTML = `<span class="reel-emoji">${item.emoji}</span><span class="reel-label">${item.name}</span>`;
-    reel.appendChild(div);
-  }
-}
-
-window.spinCase = async () => {
-  if (_caseSpinning) return;
-  if (!me) return;
-  const type = _currentCaseType;
-  const pool = CASE_POOLS[type] || CASE_POOLS.standard;
-
-  // Deduct cost / validate
-  if (type === 'standard') {
-    if ((myProfile.coins || 0) < 400) { showToast('Not enough coins!'); return; }
-  } else if (type === 'void') {
-    if ((myProfile.coins || 0) < 2500) { showToast('Need 🪙 2,500 to open Void Case!'); return; }
-  } else if (type === 'daily') {
-    const now = Date.now();
-    if (now - (myProfile.lastCaseDaily || 0) < 86400000) { showToast('Daily case not ready!'); return; }
-    await pb.updateUser(me.uid, { lastCaseDaily: now }).catch(()=>{});
-    myProfile.lastCaseDaily = now;
-  }
-
-  _caseSpinning = true;
-  window._caseSpinning = true;
-  document.getElementById('case-open-btn').disabled = true;
-  document.getElementById('case-open-btn').textContent = 'SPINNING...';
-  // Make sure reel is shown
-  document.getElementById('case-reel-wrap').style.display = '';
-  document.getElementById('case-result-area').style.display = 'none';
-
-  // Pick the winning item
-  const winner = weightedPick(pool, type === 'void');
-
-  // Place winner at a fixed target slot
-  const reel    = document.getElementById('case-reel');
-  const items   = reel.children;
-  const STRIDE  = 92;    // 86px item width + 6px gap
-  const PAD_L   = 6;     // reel padding-left
-  const TARGET  = 36;    // winner lands at index 36 of 50
-  const winnerEl = items[TARGET];
-  winnerEl.className = `reel-item rarity-${winner.rarity}`;
-  winnerEl.innerHTML = `<span class="reel-emoji">${winner.emoji}</span><span class="reel-label">${winner.name}</span>`;
-
-  // Hard-reset position with no transition, then force a reflow flush
-  reel.style.transition = 'none';
-  reel.style.transform  = 'translateX(0px)';
-  void reel.offsetWidth;
-
-  // Pixel center of the winner item relative to reel left edge
-  const itemCenter = PAD_L + TARGET * STRIDE + STRIDE / 2;
-  // Pixel center of the visible viewport
-  const reelWrap   = document.getElementById('case-reel-wrap');
-  const viewCenter = (reelWrap.offsetWidth || 480) / 2;
-  // Small jitter so the center line doesn't always stop dead-center
-  const jitter = Math.random() * 22 - 11;
-  const scrollTo = viewCenter - itemCenter + jitter;
-
-  // Animate — slow start, fast middle, hard brake at end
-  reel.style.transition = 'transform 4.5s cubic-bezier(0.04, 0.9, 0.18, 1)';
-  reel.style.transform  = `translateX(${scrollTo}px)`;
-
-  setTimeout(async () => {
-    // Show result
-    SFX.win && SFX.win();
-    document.getElementById('case-reel-wrap').style.display = 'none';
-
-    const resultArea = document.getElementById('case-result-area');
-    resultArea.style.display = 'block';
-    const rarityLabels = { common:'COMMON', rare:'RARE', epic:'EPIC', legendary:'LEGENDARY', ultra:'✦ ULTRA RARE ✦' };
-    const rarityLabel = rarityLabels[winner.rarity] || winner.rarity.toUpperCase();
-    resultArea.innerHTML = `
-      <div class="case-result-reveal rarity-${winner.rarity}">
-        <span class="case-result-emoji">${winner.emoji}</span>
-        <div class="case-result-name">${winner.name}</div>
-        <div class="case-result-rarity">${rarityLabel}</div>
-      </div>`;
-
-    // Deduct cost and grant item
-    const owned = myProfile.items || [];
-    const alreadyOwn = owned.includes(winner.id);
-    let coinsRefund = 0;
-
-    if (type === 'void') {
-      const refundVoid = alreadyOwn ? 800 : 0;
-      const newCoins = (myProfile.coins || 0) - 2500 + refundVoid;
-      myProfile.coins = newCoins;
-      await pb.updateUser(me.uid, { coins: newCoins, items: alreadyOwn ? owned : [...owned, winner.id] }).catch(()=>{});
-      updateCoinDisplays(newCoins);
-      if (alreadyOwn) resultArea.innerHTML += `<div style="font-family:'Barlow Condensed',sans-serif;font-size:0.7rem;letter-spacing:2px;color:var(--muted);text-align:center;margin-top:8px;">DUPLICATE — CONVERTED TO 🪙 800</div>`;
-    } else if (type === 'standard') {
-      const newCoins = (myProfile.coins || 0) - 400 + (alreadyOwn ? 150 : 0);
-      myProfile.coins = newCoins;
-      await pb.updateUser(me.uid, { coins: newCoins, items: alreadyOwn ? owned : [...owned, winner.id] }).catch(()=>{});
-      updateCoinDisplays(newCoins);
-      if (alreadyOwn) resultArea.innerHTML += `<div style="font-family:'Barlow Condensed',sans-serif;font-size:0.7rem;letter-spacing:2px;color:var(--muted);text-align:center;margin-top:8px;">DUPLICATE — CONVERTED TO 🪙 150</div>`;
-    } else {
-      if (!alreadyOwn) {
-        myProfile.items = [...owned, winner.id];
-        await pb.updateUser(me.uid, { items: myProfile.items }).catch(()=>{});
-      } else {
-        const refund = type === 'battle' ? 300 : type === 'streak' ? 250 : 100;
-        myProfile.coins = (myProfile.coins || 0) + refund;
-        await pb.updateUser(me.uid, { coins: myProfile.coins }).catch(()=>{});
-        updateCoinDisplays(myProfile.coins);
-        resultArea.innerHTML += `<div style="font-family:'Barlow Condensed',sans-serif;font-size:0.7rem;letter-spacing:2px;color:var(--muted);text-align:center;margin-top:8px;">DUPLICATE — CONVERTED TO 🪙 ${refund}</div>`;
-      }
-    }
-
-    // Rebuild reel for next spin
-    buildReel(type);
-    document.getElementById('case-reel-wrap').style.display = '';
-    document.getElementById('case-result-area').style.display = 'none';
-    document.getElementById('case-result-area').innerHTML = '';
-    const caseCosts2 = { standard:'OPEN AGAIN — 🪙 400', void:'OPEN AGAIN — 🪙 2,500', daily:'OPENED', battle:'OPEN AGAIN', streak:'OPEN AGAIN' };
-    document.getElementById('case-open-btn').textContent = caseCosts2[type] || 'OPEN AGAIN';
-    if (type === 'daily') document.getElementById('case-open-btn').disabled = true;
-    else document.getElementById('case-open-btn').disabled = false;
-    _caseSpinning = false;
-    window._caseSpinning = false;
-
-    refreshShopOwned();
-    applyActiveCosmetics(myProfile);
-    refreshMenuCoins();
-    refreshCaseCards();
-  }, 4200);
-};
 
 // ── SHOP OWNED STATE ──
 function refreshShopOwned() {
@@ -6508,5 +6663,39 @@ function escHtml(s='') { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 </script>
   <!-- TOAST -->
   <div class="toast" id="toast"></div>
+
+<!-- CASE OPENING — injected at body level so position:fixed works correctly -->
+<div id="case-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:#050505;flex-direction:column;align-items:center;justify-content:center;">
+  <canvas id="case-particles" style="position:absolute;inset:0;pointer-events:none;z-index:0;"></canvas>
+  <!-- top bar -->
+  <div style="position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:center;padding:0 20px;border-bottom:1px solid rgba(255,255,255,0.06);z-index:2;background:rgba(0,0,0,0.4);">
+    <span id="case-modal-title" style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:6px;color:#fff;">OPENING CASE</span>
+    <button onclick="if(!window._caseSpinning)closeCaseOverlay()" style="margin-left:auto;background:none;border:none;color:#666;font-size:1.3rem;cursor:pointer;padding:8px;line-height:1;transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#666'">✕</button>
+  </div>
+  <!-- PHASE 1: floating case + open button -->
+  <div id="case-phase-open" style="display:flex;flex-direction:column;align-items:center;gap:24px;z-index:2;padding-top:20px;">
+    <div id="case-float-icon" style="font-size:7rem;line-height:1;">📦</div>
+    <div id="case-float-name" style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:8px;color:#fff;"></div>
+    <div id="case-float-odds" style="font-family:'Barlow Condensed',sans-serif;font-size:0.68rem;letter-spacing:2px;color:#555;text-align:center;max-width:300px;line-height:1.9;"></div>
+    <button id="case-open-btn" onclick="spinCase()" style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:6px;background:#D92B2B;color:#fff;border:none;padding:18px 60px;cursor:pointer;clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);margin-top:8px;">OPEN CASE</button>
+  </div>
+  <!-- PHASE 2: reel -->
+  <div id="case-phase-reel" style="display:none;flex-direction:column;align-items:center;gap:18px;z-index:2;width:100%;max-width:700px;padding:0 24px;">
+    <div id="case-spin-label" style="font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:8px;color:#444;">SPINNING...</div>
+    <div class="case-open-reel-wrap" id="case-reel-wrap" style="width:100%;">
+      <div class="case-open-reel" id="case-reel"></div>
+      <div class="case-track-center"></div>
+    </div>
+  </div>
+  <!-- PHASE 3: result -->
+  <div id="case-phase-result" style="display:none;flex-direction:column;align-items:center;gap:0;z-index:2;text-align:center;padding-top:20px;">
+    <div id="case-result-area"></div>
+    <div id="case-result-inv-msg" style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;letter-spacing:3px;color:#555;margin-top:6px;"></div>
+    <div style="display:flex;gap:12px;margin-top:24px;">
+      <button id="case-open-again-btn" onclick="caseOpenAgain()" style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:4px;background:#D92B2B;color:#fff;border:none;padding:14px 40px;cursor:pointer;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);">OPEN AGAIN</button>
+      <button onclick="closeCaseOverlay()" style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:4px;background:transparent;color:#555;border:1px solid rgba(255,255,255,0.12);padding:14px 40px;cursor:pointer;transition:color 0.2s,border-color 0.2s;" onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.35)'" onmouseout="this.style.color='#555';this.style.borderColor='rgba(255,255,255,0.12)'">CLOSE</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
