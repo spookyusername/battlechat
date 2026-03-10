@@ -1709,11 +1709,11 @@
           <div class="case-name">Standard Case</div>
           <div class="case-desc">Hats · colors · borders · text effects</div>
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.54rem;letter-spacing:1px;margin:6px 0 4px;line-height:1.7;color:var(--muted);text-align:left;">
-            <span style="color:#888;">■</span> Common 45%&nbsp;&nbsp;<span style="color:#60a5fa;">■</span> Rare 28%<br>
-            <span style="color:#b45aff;">■</span> Epic 18%&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#C9A84C;">■</span> Legendary 4%<br>
-            <span style="color:#ffffff;">■</span> <b style="color:#fff;">Ultra 5%</b>
+            <span style="color:#888;">■</span> Common 50%&nbsp;&nbsp;<span style="color:#60a5fa;">■</span> Rare 25%<br>
+            <span style="color:#b45aff;">■</span> Epic 17.5%&nbsp;&nbsp;<span style="color:#C9A84C;">■</span> Legendary 5%<br>
+            <span style="color:#ffffff;">■</span> <b style="color:#fff;">Ultra 2.5%</b>
           </div>
-          <div class="case-cost">🪙 400</div>
+          <div class="case-cost">🪙 500</div>
         </div>
         <div class="case-card daily" id="case-daily-card" onclick="openCase('daily')">
           <span class="case-icon">🎁</span>
@@ -4350,7 +4350,7 @@ const CASE_POOLS = {
 
 // Weights: common=45, rare=28, epic=18, legendary=4, ultra=5
 // Void case overrides these with its own weights
-const RARITY_WEIGHTS = { common: 45, rare: 28, epic: 18, legendary: 4, ultra: 5 };
+const RARITY_WEIGHTS = { common: 100, rare: 50, epic: 35, legendary: 10, ultra: 5 }; // 50/25/17.5/5/2.5%
 const VOID_WEIGHTS   = { epic: 20, legendary: 40, ultra: 40 };
 
 function weightedPick(pool, isVoid = false) {
@@ -4375,7 +4375,7 @@ const CASE_META = {
   void:     { icon:'🌑', name:'VOID CASE',       color:'rgba(255,255,255,0.4)', flashClass:'white' },
 };
 const CASE_ODDS = {
-  standard: '<span style="color:#888">■</span> Common 45% &nbsp;<span style="color:#60a5fa">■</span> Rare 28% &nbsp;<span style="color:#b45aff">■</span> Epic 18%<br><span style="color:#C9A84C">■</span> Legendary 4% &nbsp;<span style="color:#fff">■</span> <b>Ultra 5%</b>',
+  standard: '<span style="color:#888">■</span> Common 50% &nbsp;<span style="color:#60a5fa">■</span> Rare 25% &nbsp;<span style="color:#b45aff">■</span> Epic 17.5%<br><span style="color:#C9A84C">■</span> Legendary 5% &nbsp;<span style="color:#fff">■</span> <b>Ultra 2.5%</b>',
   daily:    '<span style="color:#888">■</span> Common 55% &nbsp;<span style="color:#60a5fa">■</span> Rare 30% &nbsp;<span style="color:#b45aff">■</span> Epic 12%<br><span style="color:#C9A84C">■</span> Legendary 3% &nbsp;<span style="color:#555">■</span> Ultra 0%',
   battle:   '<span style="color:#60a5fa">■</span> Rare 40% &nbsp;<span style="color:#b45aff">■</span> Epic 35%<br><span style="color:#C9A84C">■</span> Legendary 15% &nbsp;<span style="color:#fff">■</span> <b>Ultra 10%</b>',
   streak:   '<span style="color:#60a5fa">■</span> Rare 30% &nbsp;<span style="color:#b45aff">■</span> Epic 35%<br><span style="color:#C9A84C">■</span> Legendary 25% &nbsp;<span style="color:#fff">■</span> <b>Ultra 10%</b>',
@@ -4393,7 +4393,7 @@ window.openCase = (type) => {
   const coins  = myProfile.coins  || 0;
   const wins   = myProfile.wins   || 0;
   const streak = myProfile.currentStreak || 0;
-  if (type === 'standard' && coins < 400)  { showToast('Need 🪙 400 to open Standard Case!'); return; }
+  if (type === 'standard' && coins < 500)  { showToast('Need 🪙 500 to open Standard Case!'); return; }
   if (type === 'void'     && coins < 2500) { showToast('Need 🪙 2,500 to open Void Case!'); return; }
   if (type === 'battle'   && wins < 1)     { showToast('Win at least one battle first!'); return; }
   if (type === 'streak'   && streak < 3)   { showToast(`Need 3-win streak! At ${streak}/3`); return; }
@@ -4413,7 +4413,7 @@ window.openCase = (type) => {
   document.getElementById('case-float-icon').style.filter = `drop-shadow(0 0 40px ${meta.color})`;
   document.getElementById('case-float-name').textContent  = meta.name;
   document.getElementById('case-float-odds').innerHTML    = CASE_ODDS[type] || '';
-  const costLabel = { standard:'OPEN — 🪙 400', void:'OPEN — 🪙 2,500', daily:'OPEN FREE', battle:'OPEN CASE', streak:'OPEN CASE' };
+  const costLabel = { standard:'OPEN — 🪙 500', void:'OPEN — 🪙 2,500', daily:'OPEN FREE', battle:'OPEN CASE', streak:'OPEN CASE' };
   const btn = document.getElementById('case-open-btn');
   btn.textContent = costLabel[type] || 'OPEN CASE';
   btn.disabled = false;
@@ -4448,7 +4448,7 @@ window.caseOpenAgain = () => {
   const coins  = myProfile?.coins  || 0;
   const wins   = myProfile?.wins   || 0;
   const streak = myProfile?.currentStreak || 0;
-  if (type === 'standard' && coins < 400)  { showToast('Not enough coins!'); closeCaseOverlay(); return; }
+  if (type === 'standard' && coins < 500)  { showToast('Not enough coins!'); closeCaseOverlay(); return; }
   if (type === 'void'     && coins < 2500) { showToast('Not enough coins!'); closeCaseOverlay(); return; }
   if (type === 'battle'   && wins < 1)     { closeCaseOverlay(); return; }
   if (type === 'streak'   && streak < 3)   { closeCaseOverlay(); return; }
@@ -4461,7 +4461,7 @@ window.caseOpenAgain = () => {
   window._caseSpinning = false;
   const meta = CASE_META[type] || CASE_META.standard;
   document.getElementById('case-float-icon').textContent = meta.icon;
-  const costLabel = { standard:'OPEN — 🪙 400', void:'OPEN — 🪙 2,500', daily:'OPEN FREE', battle:'OPEN CASE', streak:'OPEN CASE' };
+  const costLabel = { standard:'OPEN — 🪙 500', void:'OPEN — 🪙 2,500', daily:'OPEN FREE', battle:'OPEN CASE', streak:'OPEN CASE' };
   const btn = document.getElementById('case-open-btn');
   btn.textContent = costLabel[type] || 'OPEN CASE';
   btn.disabled = false;
@@ -4538,7 +4538,7 @@ window.spinCase = async () => {
   const pool = CASE_POOLS[type] || CASE_POOLS.standard;
 
   // Final validate
-  if (type === 'standard' && (myProfile.coins||0) < 400)  { showToast('Not enough coins!'); return; }
+  if (type === 'standard' && (myProfile.coins||0) < 500)  { showToast('Not enough coins!'); return; }
   if (type === 'void'     && (myProfile.coins||0) < 2500) { showToast('Need 🪙 2,500!'); return; }
   if (type === 'battle'   && (myProfile.wins||0) < 1)     { showToast('Win a battle first!'); return; }
   if (type === 'streak'   && (myProfile.currentStreak||0) < 3) { showToast('Need 3-win streak!'); return; }
@@ -4642,12 +4642,12 @@ window.spinCase = async () => {
     invMsg = alreadyOwn ? 'DUPLICATE — CONVERTED TO 🪙 800' : '✓ ADDED TO INVENTORY';
   } else if (type === 'standard') {
     const refund  = alreadyOwn ? 150 : 0;
-    const newCoins = (myProfile.coins||0) - 400 + refund;
+    const newCoins = (myProfile.coins||0) - 500 + refund;
     myProfile.coins = newCoins;
     if (!alreadyOwn) myProfile.items = [...owned, winner.id];
     await pb.updateUser(me.uid, { coins:newCoins, items: alreadyOwn ? owned : [...owned, winner.id] }).catch(()=>{});
     updateCoinDisplays(newCoins);
-    invMsg = alreadyOwn ? 'DUPLICATE — CONVERTED TO 🪙 150' : '✓ ADDED TO INVENTORY';
+    invMsg = alreadyOwn ? 'DUPLICATE — CONVERTED TO 🪙 175' : '✓ ADDED TO INVENTORY';
   } else {
     if (!alreadyOwn) {
       myProfile.items = [...owned, winner.id];
@@ -4670,7 +4670,7 @@ window.spinCase = async () => {
     openAgainBtn.style.display = 'none';
   } else {
     openAgainBtn.style.display = '';
-    const openAgainLabel = { standard:'OPEN AGAIN — 🪙 400', void:'OPEN AGAIN — 🪙 2,500', battle:'OPEN AGAIN', streak:'OPEN AGAIN' };
+    const openAgainLabel = { standard:'OPEN AGAIN — 🪙 500', void:'OPEN AGAIN — 🪙 2,500', battle:'OPEN AGAIN', streak:'OPEN AGAIN' };
     openAgainBtn.textContent = openAgainLabel[type] || 'OPEN AGAIN';
   }
 
