@@ -843,26 +843,32 @@
   .msg-text-crimson{ color: #ff3b3b !important; }
 
   /* ── CASE SYSTEM ── */
-  .cases-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px; max-height: 440px; overflow-y: auto; }
-  .case-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 18px 14px; cursor: pointer; text-align: center; transition: border-color 0.2s, background 0.2s, transform 0.15s; position: relative; overflow: hidden; }
-  .case-card:hover { background: rgba(255,255,255,0.055); transform: translateY(-2px); }
-  .case-card.case-locked { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
-  .case-icon { font-size: 2.4rem; margin-bottom: 8px; display: block; }
-  .case-name { font-family: 'Bebas Neue', sans-serif; font-size: 1.05rem; letter-spacing: 3px; color: var(--text); }
-  .case-desc { font-family: 'Barlow Condensed', sans-serif; font-size: 0.62rem; letter-spacing: 1.5px; color: var(--muted); margin: 4px 0 8px; text-transform: uppercase; line-height: 1.4; }
-  .case-cost { font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 2px; color: var(--gold); }
-  .case-card.standard { border-color: rgba(120,120,120,0.3); }
-  .case-card.standard:hover { border-color: rgba(180,180,180,0.5); }
-  .case-card.battle   { border-color: rgba(217,43,43,0.35); }
-  .case-card.battle:hover   { border-color: rgba(255,59,59,0.65); }
-  .case-card.daily    { border-color: rgba(201,168,76,0.35); }
-  .case-card.daily:hover    { border-color: rgba(201,168,76,0.7); }
-  .case-card.streak   { border-color: rgba(96,165,250,0.35); }
-  .case-card.streak:hover   { border-color: rgba(96,165,250,0.7); }
-  .case-card.void     { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.02); }
-  .case-card.void:hover     { border-color: rgba(255,255,255,0.6); box-shadow: 0 0 20px rgba(255,255,255,0.1); }
-  .case-card::before { content:''; position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent); transition:left 0.5s ease; }
-  .case-card:hover::before { left:150%; }
+  .cases-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:4px; max-height:calc(100vh - 220px); overflow-y:auto; padding-right:2px; }
+  .case-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); cursor:pointer; text-align:center; position:relative; overflow:hidden; height:160px; perspective:800px; }
+  .case-card.case-locked { opacity:0.4; cursor:not-allowed; pointer-events:none; }
+  /* front/hover flip */
+  .case-card-front, .case-card-hover {
+    position:absolute; inset:0; padding:14px 10px;
+    backface-visibility:hidden; transition:opacity 0.22s ease, transform 0.22s ease;
+  }
+  .case-card-front  { opacity:1;  transform:translateY(0);   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
+  .case-card-hover  { opacity:0;  transform:translateY(8px); display:flex; flex-direction:column; overflow:hidden; }
+  .case-card:hover .case-card-front { opacity:0; transform:translateY(-8px); }
+  .case-card:hover .case-card-hover { opacity:1; transform:translateY(0); }
+  .case-icon { font-size:2.2rem; line-height:1; display:block; }
+  .case-name { font-family:'Bebas Neue',sans-serif; font-size:0.95rem; letter-spacing:3px; color:var(--text); margin-top:4px; }
+  .case-desc { font-family:'Barlow Condensed',sans-serif; font-size:0.56rem; letter-spacing:1.5px; color:var(--muted); margin:3px 0 5px; text-transform:uppercase; line-height:1.4; }
+  .case-cost { font-family:'Bebas Neue',sans-serif; font-size:0.85rem; letter-spacing:2px; color:var(--gold); }
+  /* hover items panel */
+  .case-hover-items { display:grid; grid-template-columns:1fr 1fr; gap:3px; overflow-y:auto; max-height:140px; padding:2px; }
+  .chi { border:1px solid; border-radius:1px; padding:3px 4px; display:grid; grid-template-columns:18px 1fr auto; grid-template-rows:auto auto; column-gap:4px; align-items:center; }
+  .chi-em { font-size:0.9rem; grid-row:1/3; }
+  .chi-nm { font-family:'Barlow Condensed',sans-serif; font-size:0.52rem; letter-spacing:1px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .chi-pct{ font-family:'Bebas Neue',sans-serif; font-size:0.7rem; letter-spacing:1px; grid-row:1; text-align:right; }
+  .chi-rl { font-family:'Barlow Condensed',sans-serif; font-size:0.42rem; letter-spacing:1px; color:var(--muted)!important; grid-column:2/4; text-transform:uppercase; }
+  /* shimmer */
+  .case-card::after { content:''; position:absolute; top:0; left:-100%; width:50%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent); transition:left 0.45s ease; pointer-events:none; }
+  .case-card:hover::after { left:150%; }
 
   /* ── CASE OPENING OVERLAY ── */
   @keyframes caseFloat    { 0%,100%{transform:translateY(0) rotate(-2deg)} 50%{transform:translateY(-18px) rotate(2deg)} }
@@ -1487,273 +1493,444 @@
     </div>
     <button class="daily-btn" id="daily-reward-btn" onclick="claimDailyReward()">🎁 CLAIM DAILY REWARD — 100🪙</button>
 
-    <!-- SHOP SUB-TABS -->
-    <div style="display:flex;gap:0;margin-bottom:18px;border-bottom:1px solid rgba(255,255,255,0.07);">
-      <button class="shop-sub-btn active" id="ssb-items" onclick="switchShopSub('items',this)" style="flex:1;padding:8px 0;background:none;border:none;border-bottom:2px solid var(--red-hot);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.72rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;">ITEMS</button>
-      <button class="shop-sub-btn" id="ssb-cases" onclick="switchShopSub('cases',this)" style="flex:1;padding:8px 0;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.72rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;">CASES</button>
-    </div>
 
-    <!-- ITEMS SUB-TAB -->
-    <div id="shop-sub-items">
-      <div class="menu-section-title">Name Colors</div>
-      <div class="shop-grid">
-        <div class="shop-item" data-item-id="color_crimson" onclick="buyItem('color_crimson',300)">
-          <div class="shop-preview" style="color:#FF3B3B;">PERIOD</div>
-          <div class="shop-item-name">Period Blood Red</div>
-          <div class="shop-price" id="sp-color_crimson">🪙 300</div>
-        </div>
-        <div class="shop-item" data-item-id="color_toxic" onclick="buyItem('color_toxic',450)">
-          <div class="shop-preview" style="color:#39ff14;">VOMIT</div>
-          <div class="shop-item-name">Vomit Green</div>
-          <div class="shop-price" id="sp-color_toxic">🪙 450</div>
-        </div>
-        <div class="shop-item" data-item-id="color_gold" onclick="buyItem('color_gold',600)">
-          <div class="shop-preview" style="color:#C9A84C;">PISS</div>
-          <div class="shop-item-name">Piss Yellow</div>
-          <div class="shop-price" id="sp-color_gold">🪙 600</div>
-        </div>
-        <div class="shop-item" data-item-id="color_cyan" onclick="buyItem('color_cyan',750)">
-          <div class="shop-preview" style="color:#00e5ff;">BONNIE</div>
-          <div class="shop-item-name">Bonnie Blue</div>
-          <div class="shop-price" id="sp-color_cyan">🪙 750</div>
-        </div>
-        <div class="shop-item" data-item-id="color_violet" onclick="buyItem('color_violet',900)">
-          <div class="shop-preview" style="color:#b45aff;">GRAPE BRUISE</div>
-          <div class="shop-item-name">Purple Bruise</div>
-          <div class="shop-price" id="sp-color_violet">🪙 900</div>
-        </div>
-        <div class="shop-item case-only" data-item-id="color_white" onclick="showToast('🔒 Cum White is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="color:#ffffff;">CUM</div>
-          <div class="shop-item-name">Cum White</div>
-          <div class="shop-price" id="sp-color_white">🔒 ULTRA</div>
-        </div>
-        <div class="shop-item case-only" data-item-id="color_black" onclick="showToast('🔒 Void Black is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="background:#111;color:#e0e0e0;padding:2px 6px;border-radius:2px;">VOID</div>
-          <div class="shop-item-name">Void Black</div>
-          <div class="shop-price" id="sp-color_black">🔒 ULTRA</div>
-        </div>
-      </div>
-
-      <div class="menu-section-title" style="margin-top:18px;">Chat Text Colors</div>
-      <div class="shop-grid">
-        <div class="shop-item case-only" data-item-id="txt_fire" onclick="showToast('🔒 Fire Text is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="color:#ff6622;">🔥 FIRE</div>
-          <div class="shop-item-name">Fire Orange</div>
-          <div class="shop-price" id="sp-txt_fire">🪙 500</div>
-        </div>
-        <div class="shop-item case-only" data-item-id="txt_ice" onclick="showToast('🔒 Ice Text is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="color:#00d4ff;">❄️ ICE</div>
-          <div class="shop-item-name">Ice Blue</div>
-          <div class="shop-price" id="sp-txt_ice">🪙 500</div>
-        </div>
-        <div class="shop-item case-only" data-item-id="txt_toxic" onclick="showToast('🔒 Toxic Text is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="color:#39ff14;">☢️ TOXIC</div>
-          <div class="shop-item-name">Toxic Green</div>
-          <div class="shop-price" id="sp-txt_toxic">🪙 600</div>
-        </div>
-        <div class="shop-item case-only" data-item-id="txt_violet" onclick="showToast('🔒 Mystic Text is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="color:#c97aff;">🔮 MYSTIC</div>
-          <div class="shop-item-name">Mystic Violet</div>
-          <div class="shop-price" id="sp-txt_violet">🪙 600</div>
-        </div>
-        <div class="shop-item case-only" data-item-id="txt_gold" onclick="showToast('🔒 Gold Text is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="color:#ffd700;">✨ GOLD</div>
-          <div class="shop-item-name">Gold Text</div>
-          <div class="shop-price" id="sp-txt_gold">🪙 800</div>
-        </div>
-        <div class="shop-item case-only" data-item-id="txt_crimson" onclick="showToast('🔒 Blood Text is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="color:#ff3b3b;">💀 BLOOD</div>
-          <div class="shop-item-name">Blood Red Text</div>
-          <div class="shop-price" id="sp-txt_crimson">🪙 800</div>
-        </div>
-      </div>
-
-      <div class="menu-section-title" style="margin-top:18px;">Profile Borders</div>
-      <div class="shop-grid">
-        <div class="shop-item case-only" data-item-id="border_fire" onclick="showToast('🔒 Fire Border is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="color:#ff4400;">🔥 FIRE</div>
-          <div class="shop-item-name">Fire Border</div>
-          <div class="shop-price" id="sp-border_fire">🪙 700</div>
-        </div>
-        <div class="shop-item case-only" data-item-id="border_ice" onclick="showToast('🔒 Ice Border is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="color:#00d4ff;">❄️ ICE</div>
-          <div class="shop-item-name">Ice Border</div>
-          <div class="shop-price" id="sp-border_ice">🪙 700</div>
-        </div>
-        <div class="shop-item case-only" data-item-id="border_gold" onclick="showToast('🔒 Gold Border is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="color:#C9A84C;">✨ GOLD</div>
-          <div class="shop-item-name">Gold Border</div>
-          <div class="shop-price" id="sp-border_gold">🪙 900</div>
-        </div>
-        <div class="shop-item case-only" data-item-id="border_toxic" onclick="showToast('🔒 Toxic Border is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="color:#39ff14;">☢️ TOXIC</div>
-          <div class="shop-item-name">Toxic Border</div>
-          <div class="shop-price" id="sp-border_toxic">🪙 900</div>
-        </div>
-        <div class="shop-item case-only" data-item-id="border_violet" onclick="showToast('🔒 Violet Border is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="color:#b45aff;">🔮 VIOLET</div>
-          <div class="shop-item-name">Violet Border</div>
-          <div class="shop-price" id="sp-border_violet">🪙 1000</div>
-        </div>
-        <div class="shop-item case-only" data-item-id="border_rainbow" onclick="showToast('🔒 Rainbow Border is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="background:linear-gradient(90deg,#f00,#f80,#ff0,#0f0,#00f,#80f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">🌈 RAINBOW</div>
-          <div class="shop-item-name">Rainbow Border</div>
-          <div class="shop-price" id="sp-border_rainbow">🪙 2500</div>
-        </div>
-      </div>
-
-      <div class="menu-section-title" style="margin-top:18px;">Hats</div>
-      <div class="shop-grid">
-        <div class="shop-item" data-item-id="hat_party" onclick="buyItem('hat_party',300)">
-          <div class="shop-preview" style="font-size:2.4rem;line-height:1;padding:6px 0;text-align:center;">🎉</div>
-          <div class="shop-item-name">Party Hat</div>
-          <div class="shop-price" id="sp-hat_party">🪙 300</div>
-        </div>
-        <div class="shop-item" data-item-id="hat_cowboy" onclick="buyItem('hat_cowboy',400)">
-          <div class="shop-preview" style="font-size:2.4rem;line-height:1;padding:6px 0;text-align:center;">🤠</div>
-          <div class="shop-item-name">Cowboy Hat</div>
-          <div class="shop-price" id="sp-hat_cowboy">🪙 400</div>
-        </div>
-        <div class="shop-item" data-item-id="hat_mushroom" onclick="buyItem('hat_mushroom',500)">
-          <div class="shop-preview" style="font-size:2.4rem;line-height:1;padding:6px 0;text-align:center;">🍄</div>
-          <div class="shop-item-name">Mushroom Cap</div>
-          <div class="shop-price" id="sp-hat_mushroom">🪙 500</div>
-        </div>
-        <div class="shop-item" data-item-id="hat_dunce" onclick="buyItem('hat_dunce',200)">
-          <div class="shop-preview" style="font-size:2.4rem;line-height:1;padding:6px 0;text-align:center;">🎓</div>
-          <div class="shop-item-name">Dunce Cap</div>
-          <div class="shop-price" id="sp-hat_dunce">🪙 200</div>
-        </div>
-        <div class="shop-item case-only" data-item-id="hat_crown" onclick="showToast('🔒 Crown is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="font-size:2.4rem;line-height:1;padding:6px 0;text-align:center;">👑</div>
-          <div class="shop-item-name">Crown</div>
-          <div class="shop-price" id="sp-hat_crown">🪙 1500</div>
-        </div>
-        <div class="shop-item case-only" data-item-id="hat_tophat" onclick="showToast('🔒 Top Hat is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="font-size:2.4rem;line-height:1;padding:6px 0;text-align:center;">🎩</div>
-          <div class="shop-item-name">Top Hat</div>
-          <div class="shop-price" id="sp-hat_tophat">🪙 800</div>
-        </div>
-        <div class="shop-item case-only" data-item-id="hat_wizard" onclick="showToast('🔒 Wizard Hat is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="font-size:2.4rem;line-height:1;padding:6px 0;text-align:center;">🧙</div>
-          <div class="shop-item-name">Wizard Hat</div>
-          <div class="shop-price" id="sp-hat_wizard">🪙 1200</div>
-        </div>
-        <div class="shop-item case-only" data-item-id="hat_devil" onclick="showToast('🔒 Devil Horns is Case Only — open cases to unlock!')" style="opacity:0.7;cursor:not-allowed;" title="Unlock via Cases">
-          <div class="shop-preview" style="font-size:2.4rem;line-height:1;padding:6px 0;text-align:center;">😈</div>
-          <div class="shop-item-name">Devil Horns</div>
-          <div class="shop-price" id="sp-hat_devil">🪙 1000</div>
-        </div>
-        <div class="shop-item" data-item-id="hat_flower" onclick="buyItem('hat_flower',600)">
-          <div class="shop-preview" style="font-size:2.4rem;line-height:1;padding:6px 0;text-align:center;">🌸</div>
-          <div class="shop-item-name">Flower Crown</div>
-          <div class="shop-price" id="sp-hat_flower">🪙 600</div>
-        </div>
-        <div class="shop-item" data-item-id="hat_helmet" onclick="buyItem('hat_helmet',700)">
-          <div class="shop-preview" style="font-size:2.4rem;line-height:1;padding:6px 0;text-align:center;">🪖</div>
-          <div class="shop-item-name">Battle Helmet</div>
-          <div class="shop-price" id="sp-hat_helmet">🪙 700</div>
-        </div>
-        <div class="shop-item" data-item-id="hat_snapback" onclick="buyItem('hat_snapback',400)">
-          <div class="shop-preview" style="font-size:2.4rem;line-height:1;padding:6px 0;text-align:center;">🧢</div>
-          <div class="shop-item-name">Snapback</div>
-          <div class="shop-price" id="sp-hat_snapback">🪙 400</div>
-        </div>
-        <div class="shop-item" data-item-id="hat_hardhat" onclick="buyItem('hat_hardhat',350)">
-          <div class="shop-preview" style="font-size:2.4rem;line-height:1;padding:6px 0;text-align:center;">⛑️</div>
-          <div class="shop-item-name">Hard Hat</div>
-          <div class="shop-price" id="sp-hat_hardhat">🪙 350</div>
-        </div>
-      </div>
-
-      <div class="menu-section-title" style="margin-top:18px;">Site Themes</div>
-      <div class="shop-grid">
-        <div class="shop-item" data-item-id="theme_rash" onclick="buyItem('theme_rash',1000)">
-          <div class="shop-preview" style="color:#cc2200;">RASH</div>
-          <div class="shop-item-name">Red Rash</div>
-          <div class="shop-price" id="sp-theme_rash">🪙 1000</div>
-        </div>
-        <div class="shop-item" data-item-id="theme_void" onclick="buyItem('theme_void',1200)">
-          <div class="shop-preview" style="color:#6b3a1f;">SKIDMARK</div>
-          <div class="shop-item-name">Brown Skidmark</div>
-          <div class="shop-price" id="sp-theme_void">🪙 1200</div>
-        </div>
-        <div class="shop-item" data-item-id="theme_gold" onclick="buyItem('theme_gold',1400)">
-          <div class="shop-preview" style="color:#C9A84C;">EARWAX</div>
-          <div class="shop-item-name">Yellow Earwax</div>
-          <div class="shop-price" id="sp-theme_gold">🪙 1400</div>
-        </div>
-        <div class="shop-item" data-item-id="theme_toxic" onclick="buyItem('theme_toxic',1600)">
-          <div class="shop-preview" style="color:#39ff14;">SEPTIC</div>
-          <div class="shop-item-name">Green Septic</div>
-          <div class="shop-price" id="sp-theme_toxic">🪙 1600</div>
-        </div>
-        <div class="shop-item" data-item-id="theme_ice" onclick="buyItem('theme_ice',1800)">
-          <div class="shop-preview" style="color:#00bbff;">BLUEBALLS</div>
-          <div class="shop-item-name">Blue Balls</div>
-          <div class="shop-price" id="sp-theme_ice">🪙 1800</div>
-        </div>
-        <div class="shop-item" data-item-id="theme_coal" onclick="buyItem('theme_coal',2200)">
-          <div class="shop-preview" style="color:#555;text-shadow:0 0 6px rgba(255,255,255,0.2);">MOLD</div>
-          <div class="shop-item-name">Black Mold</div>
-          <div class="shop-price" id="sp-theme_coal">🪙 2200</div>
-        </div>
-      </div>
-    </div>
 
     <!-- CASES SUB-TAB -->
-    <div id="shop-sub-cases" style="display:none;">
+    <div id="shop-sub-cases">
       <div class="cases-grid">
-        <div class="case-card standard" onclick="openCase('standard')">
-          <span class="case-icon">📦</span>
-          <div class="case-name">Standard Case</div>
-          <div class="case-desc">Hats · colors · borders · text effects</div>
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.54rem;letter-spacing:1px;margin:6px 0 4px;line-height:1.7;color:var(--muted);text-align:left;">
-            <span style="color:#888;">■</span> Common 50%&nbsp;&nbsp;<span style="color:#60a5fa;">■</span> Rare 25%<br>
-            <span style="color:#b45aff;">■</span> Epic 17.5%&nbsp;&nbsp;<span style="color:#C9A84C;">■</span> Legendary 5%<br>
-            <span style="color:#ffffff;">■</span> <b style="color:#fff;">Ultra 2.5%</b>
+        <div class="case-card namecolor" onclick="openCase('namecolor')" style="--case-border:rgba(255,80,80,0.4);border-color:rgba(255,80,80,0.4);">
+          <div class="case-card-front">
+            <span class="case-icon">🎨</span>
+            <div class="case-name">NAME COLOR CASE</div>
+            <div class="case-desc">Username colors only</div>
+            <div class="case-cost">🪙 500</div>
           </div>
-          <div class="case-cost">🪙 500</div>
+          <div class="case-card-hover">
+            <div class="case-hover-items"><div class="chi" style="border-color:#aaa22;background:#aaa11;">
+  <span class="chi-em">🔴</span>
+  <span class="chi-nm" style="color:#aaa;">Period Red</span>
+  <span class="chi-pct" style="color:#aaa;">28.6%</span>
+  <span class="chi-rl" style="color:#aaa;">COMMON</span>
+</div><div class="chi" style="border-color:#aaa22;background:#aaa11;">
+  <span class="chi-em">🟢</span>
+  <span class="chi-nm" style="color:#aaa;">Vomit Green</span>
+  <span class="chi-pct" style="color:#aaa;">28.6%</span>
+  <span class="chi-rl" style="color:#aaa;">COMMON</span>
+</div><div class="chi" style="border-color:#60a5fa22;background:#60a5fa11;">
+  <span class="chi-em">🟡</span>
+  <span class="chi-nm" style="color:#60a5fa;">Piss Yellow</span>
+  <span class="chi-pct" style="color:#60a5fa;">14.3%</span>
+  <span class="chi-rl" style="color:#60a5fa;">RARE</span>
+</div><div class="chi" style="border-color:#60a5fa22;background:#60a5fa11;">
+  <span class="chi-em">🔵</span>
+  <span class="chi-nm" style="color:#60a5fa;">Bonnie Blue</span>
+  <span class="chi-pct" style="color:#60a5fa;">14.3%</span>
+  <span class="chi-rl" style="color:#60a5fa;">RARE</span>
+</div><div class="chi" style="border-color:#b45aff22;background:#b45aff11;">
+  <span class="chi-em">🟣</span>
+  <span class="chi-nm" style="color:#b45aff;">Grape Bruise</span>
+  <span class="chi-pct" style="color:#b45aff;">10.0%</span>
+  <span class="chi-rl" style="color:#b45aff;">EPIC</span>
+</div><div class="chi" style="border-color:#C9A84C22;background:#C9A84C11;">
+  <span class="chi-em">⬜</span>
+  <span class="chi-nm" style="color:#C9A84C;">Cum White</span>
+  <span class="chi-pct" style="color:#C9A84C;">2.9%</span>
+  <span class="chi-rl" style="color:#C9A84C;">LEGENDARY</span>
+</div><div class="chi" style="border-color:#ffffff22;background:#ffffff11;">
+  <span class="chi-em">⬛</span>
+  <span class="chi-nm" style="color:#ffffff;">Void Black</span>
+  <span class="chi-pct" style="color:#ffffff;">1.4%</span>
+  <span class="chi-rl" style="color:#ffffff;">ULTRA</span>
+</div></div>
+          </div>
         </div>
-        <div class="case-card daily" id="case-daily-card" onclick="openCase('daily')">
-          <span class="case-icon">🎁</span>
-          <div class="case-name">Daily Case</div>
-          <div class="case-desc">Free once per 24h · no ultra drops</div>
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.54rem;letter-spacing:1px;margin:6px 0 4px;line-height:1.7;color:var(--muted);text-align:left;">
-            <span style="color:#888;">■</span> Common 55%&nbsp;&nbsp;<span style="color:#60a5fa;">■</span> Rare 30%<br>
-            <span style="color:#b45aff;">■</span> Epic 12%&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#C9A84C;">■</span> Legendary 3%
+        <div class="case-card textcolor" onclick="openCase('textcolor')" style="--case-border:rgba(96,165,250,0.4);border-color:rgba(96,165,250,0.4);">
+          <div class="case-card-front">
+            <span class="case-icon">✏️</span>
+            <div class="case-name">TEXT COLOR CASE</div>
+            <div class="case-desc">Chat message colors</div>
+            <div class="case-cost">🪙 500</div>
           </div>
-          <div class="case-cost" id="case-daily-cost">FREE</div>
+          <div class="case-card-hover">
+            <div class="case-hover-items"><div class="chi" style="border-color:#aaa22;background:#aaa11;">
+  <span class="chi-em">🔥</span>
+  <span class="chi-nm" style="color:#aaa;">Fire Text</span>
+  <span class="chi-pct" style="color:#aaa;">29.0%</span>
+  <span class="chi-rl" style="color:#aaa;">COMMON</span>
+</div><div class="chi" style="border-color:#aaa22;background:#aaa11;">
+  <span class="chi-em">❄️</span>
+  <span class="chi-nm" style="color:#aaa;">Ice Text</span>
+  <span class="chi-pct" style="color:#aaa;">29.0%</span>
+  <span class="chi-rl" style="color:#aaa;">COMMON</span>
+</div><div class="chi" style="border-color:#60a5fa22;background:#60a5fa11;">
+  <span class="chi-em">☢️</span>
+  <span class="chi-nm" style="color:#60a5fa;">Toxic Text</span>
+  <span class="chi-pct" style="color:#60a5fa;">14.5%</span>
+  <span class="chi-rl" style="color:#60a5fa;">RARE</span>
+</div><div class="chi" style="border-color:#60a5fa22;background:#60a5fa11;">
+  <span class="chi-em">🔮</span>
+  <span class="chi-nm" style="color:#60a5fa;">Mystic Text</span>
+  <span class="chi-pct" style="color:#60a5fa;">14.5%</span>
+  <span class="chi-rl" style="color:#60a5fa;">RARE</span>
+</div><div class="chi" style="border-color:#b45aff22;background:#b45aff11;">
+  <span class="chi-em">✨</span>
+  <span class="chi-nm" style="color:#b45aff;">Gold Text</span>
+  <span class="chi-pct" style="color:#b45aff;">10.1%</span>
+  <span class="chi-rl" style="color:#b45aff;">EPIC</span>
+</div><div class="chi" style="border-color:#C9A84C22;background:#C9A84C11;">
+  <span class="chi-em">💀</span>
+  <span class="chi-nm" style="color:#C9A84C;">Blood Text</span>
+  <span class="chi-pct" style="color:#C9A84C;">2.9%</span>
+  <span class="chi-rl" style="color:#C9A84C;">LEGENDARY</span>
+</div></div>
+          </div>
         </div>
-        <div class="case-card battle" id="case-battle-card" onclick="openCase('battle')">
-          <span class="case-icon">⚔️</span>
-          <div class="case-name">Battle Case</div>
-          <div class="case-desc">Win a battle to unlock · no common drops</div>
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.54rem;letter-spacing:1px;margin:6px 0 4px;line-height:1.7;color:var(--muted);text-align:left;">
-            <span style="color:#60a5fa;">■</span> Rare 40%&nbsp;&nbsp;<span style="color:#b45aff;">■</span> Epic 35%<br>
-            <span style="color:#C9A84C;">■</span> Legendary 15%&nbsp;&nbsp;<span style="color:#fff;">■</span> <b style="color:#fff;">Ultra 10%</b>
+        <div class="case-card bordercase" onclick="openCase('border')" style="--case-border:rgba(180,90,255,0.4);border-color:rgba(180,90,255,0.4);">
+          <div class="case-card-front">
+            <span class="case-icon">🔲</span>
+            <div class="case-name">BORDER CASE</div>
+            <div class="case-desc">Profile border styles</div>
+            <div class="case-cost">🪙 500</div>
           </div>
-          <div class="case-cost" id="case-battle-cost">🏆 WIN A BATTLE FIRST</div>
+          <div class="case-card-hover">
+            <div class="case-hover-items"><div class="chi" style="border-color:#aaa22;background:#aaa11;">
+  <span class="chi-em">🔥</span>
+  <span class="chi-nm" style="color:#aaa;">Fire Border</span>
+  <span class="chi-pct" style="color:#aaa;">29.0%</span>
+  <span class="chi-rl" style="color:#aaa;">COMMON</span>
+</div><div class="chi" style="border-color:#aaa22;background:#aaa11;">
+  <span class="chi-em">❄️</span>
+  <span class="chi-nm" style="color:#aaa;">Ice Border</span>
+  <span class="chi-pct" style="color:#aaa;">29.0%</span>
+  <span class="chi-rl" style="color:#aaa;">COMMON</span>
+</div><div class="chi" style="border-color:#60a5fa22;background:#60a5fa11;">
+  <span class="chi-em">☢️</span>
+  <span class="chi-nm" style="color:#60a5fa;">Toxic Border</span>
+  <span class="chi-pct" style="color:#60a5fa;">14.5%</span>
+  <span class="chi-rl" style="color:#60a5fa;">RARE</span>
+</div><div class="chi" style="border-color:#60a5fa22;background:#60a5fa11;">
+  <span class="chi-em">🔮</span>
+  <span class="chi-nm" style="color:#60a5fa;">Violet Border</span>
+  <span class="chi-pct" style="color:#60a5fa;">14.5%</span>
+  <span class="chi-rl" style="color:#60a5fa;">RARE</span>
+</div><div class="chi" style="border-color:#b45aff22;background:#b45aff11;">
+  <span class="chi-em">✨</span>
+  <span class="chi-nm" style="color:#b45aff;">Gold Border</span>
+  <span class="chi-pct" style="color:#b45aff;">10.1%</span>
+  <span class="chi-rl" style="color:#b45aff;">EPIC</span>
+</div><div class="chi" style="border-color:#C9A84C22;background:#C9A84C11;">
+  <span class="chi-em">🌈</span>
+  <span class="chi-nm" style="color:#C9A84C;">Rainbow Border</span>
+  <span class="chi-pct" style="color:#C9A84C;">2.9%</span>
+  <span class="chi-rl" style="color:#C9A84C;">LEGENDARY</span>
+</div></div>
+          </div>
         </div>
-        <div class="case-card streak" id="case-streak-card" onclick="openCase('streak')">
-          <span class="case-icon">🔥</span>
-          <div class="case-name">Streak Case</div>
-          <div class="case-desc">3-win streak required · high rarity floor</div>
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.54rem;letter-spacing:1px;margin:6px 0 4px;line-height:1.7;color:var(--muted);text-align:left;">
-            <span style="color:#60a5fa;">■</span> Rare 30%&nbsp;&nbsp;<span style="color:#b45aff;">■</span> Epic 35%<br>
-            <span style="color:#C9A84C;">■</span> Legendary 25%&nbsp;&nbsp;<span style="color:#fff;">■</span> <b style="color:#fff;">Ultra 10%</b>
+        <div class="case-card hatcase" onclick="openCase('hat')" style="--case-border:rgba(201,168,76,0.4);border-color:rgba(201,168,76,0.4);">
+          <div class="case-card-front">
+            <span class="case-icon">🎩</span>
+            <div class="case-name">HAT CASE</div>
+            <div class="case-desc">Hats & headwear</div>
+            <div class="case-cost">🪙 500</div>
           </div>
-          <div class="case-cost" id="case-streak-cost">🔥 NEED 3-WIN STREAK</div>
+          <div class="case-card-hover">
+            <div class="case-hover-items"><div class="chi" style="border-color:#aaa22;background:#aaa11;">
+  <span class="chi-em">🎉</span>
+  <span class="chi-nm" style="color:#aaa;">Party Hat</span>
+  <span class="chi-pct" style="color:#aaa;">14.6%</span>
+  <span class="chi-rl" style="color:#aaa;">COMMON</span>
+</div><div class="chi" style="border-color:#aaa22;background:#aaa11;">
+  <span class="chi-em">🎓</span>
+  <span class="chi-nm" style="color:#aaa;">Dunce Cap</span>
+  <span class="chi-pct" style="color:#aaa;">14.6%</span>
+  <span class="chi-rl" style="color:#aaa;">COMMON</span>
+</div><div class="chi" style="border-color:#aaa22;background:#aaa11;">
+  <span class="chi-em">🧢</span>
+  <span class="chi-nm" style="color:#aaa;">Snapback</span>
+  <span class="chi-pct" style="color:#aaa;">14.6%</span>
+  <span class="chi-rl" style="color:#aaa;">COMMON</span>
+</div><div class="chi" style="border-color:#aaa22;background:#aaa11;">
+  <span class="chi-em">⛑️</span>
+  <span class="chi-nm" style="color:#aaa;">Hard Hat</span>
+  <span class="chi-pct" style="color:#aaa;">14.6%</span>
+  <span class="chi-rl" style="color:#aaa;">COMMON</span>
+</div><div class="chi" style="border-color:#60a5fa22;background:#60a5fa11;">
+  <span class="chi-em">🤠</span>
+  <span class="chi-nm" style="color:#60a5fa;">Cowboy Hat</span>
+  <span class="chi-pct" style="color:#60a5fa;">7.3%</span>
+  <span class="chi-rl" style="color:#60a5fa;">RARE</span>
+</div><div class="chi" style="border-color:#60a5fa22;background:#60a5fa11;">
+  <span class="chi-em">🌸</span>
+  <span class="chi-nm" style="color:#60a5fa;">Flower Crown</span>
+  <span class="chi-pct" style="color:#60a5fa;">7.3%</span>
+  <span class="chi-rl" style="color:#60a5fa;">RARE</span>
+</div><div class="chi" style="border-color:#60a5fa22;background:#60a5fa11;">
+  <span class="chi-em">🍄</span>
+  <span class="chi-nm" style="color:#60a5fa;">Mushroom Cap</span>
+  <span class="chi-pct" style="color:#60a5fa;">7.3%</span>
+  <span class="chi-rl" style="color:#60a5fa;">RARE</span>
+</div><div class="chi" style="border-color:#60a5fa22;background:#60a5fa11;">
+  <span class="chi-em">🪖</span>
+  <span class="chi-nm" style="color:#60a5fa;">Battle Helmet</span>
+  <span class="chi-pct" style="color:#60a5fa;">7.3%</span>
+  <span class="chi-rl" style="color:#60a5fa;">RARE</span>
+</div><div class="chi" style="border-color:#b45aff22;background:#b45aff11;">
+  <span class="chi-em">🎩</span>
+  <span class="chi-nm" style="color:#b45aff;">Top Hat</span>
+  <span class="chi-pct" style="color:#b45aff;">5.1%</span>
+  <span class="chi-rl" style="color:#b45aff;">EPIC</span>
+</div><div class="chi" style="border-color:#b45aff22;background:#b45aff11;">
+  <span class="chi-em">😈</span>
+  <span class="chi-nm" style="color:#b45aff;">Devil Horns</span>
+  <span class="chi-pct" style="color:#b45aff;">5.1%</span>
+  <span class="chi-rl" style="color:#b45aff;">EPIC</span>
+</div><div class="chi" style="border-color:#C9A84C22;background:#C9A84C11;">
+  <span class="chi-em">👑</span>
+  <span class="chi-nm" style="color:#C9A84C;">Crown</span>
+  <span class="chi-pct" style="color:#C9A84C;">1.5%</span>
+  <span class="chi-rl" style="color:#C9A84C;">LEGENDARY</span>
+</div><div class="chi" style="border-color:#ffffff22;background:#ffffff11;">
+  <span class="chi-em">🧙</span>
+  <span class="chi-nm" style="color:#ffffff;">Wizard Hat</span>
+  <span class="chi-pct" style="color:#ffffff;">0.7%</span>
+  <span class="chi-rl" style="color:#ffffff;">ULTRA</span>
+</div></div>
+          </div>
         </div>
-        <div class="case-card void" onclick="openCase('void')">
-          <span class="case-icon">🌑</span>
-          <div class="case-name">Void Case</div>
-          <div class="case-desc">No common · no rare · pure prestige tier</div>
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.54rem;letter-spacing:1px;margin:6px 0 4px;line-height:1.7;color:var(--muted);text-align:left;">
-            <span style="color:#b45aff;">■</span> Epic 20%&nbsp;&nbsp;<span style="color:#C9A84C;">■</span> Legendary 40%<br>
-            <span style="color:#fff;">■</span> <b style="color:#fff;">Ultra 40%</b> — Void Black / Cum White
+        <div class="case-card themecase" onclick="openCase('theme')" style="--case-border:rgba(39,255,20,0.35);border-color:rgba(39,255,20,0.35);">
+          <div class="case-card-front">
+            <span class="case-icon">🎨</span>
+            <div class="case-name">THEME CASE</div>
+            <div class="case-desc">Full site themes</div>
+            <div class="case-cost">🪙 500</div>
           </div>
-          <div class="case-cost">🪙 2,500</div>
+          <div class="case-card-hover">
+            <div class="case-hover-items"><div class="chi" style="border-color:#aaa22;background:#aaa11;">
+  <span class="chi-em">🔴</span>
+  <span class="chi-nm" style="color:#aaa;">Red Rash</span>
+  <span class="chi-pct" style="color:#aaa;">35.7%</span>
+  <span class="chi-rl" style="color:#aaa;">COMMON</span>
+</div><div class="chi" style="border-color:#60a5fa22;background:#60a5fa11;">
+  <span class="chi-em">💩</span>
+  <span class="chi-nm" style="color:#60a5fa;">Brown Skidmark</span>
+  <span class="chi-pct" style="color:#60a5fa;">17.9%</span>
+  <span class="chi-rl" style="color:#60a5fa;">RARE</span>
+</div><div class="chi" style="border-color:#60a5fa22;background:#60a5fa11;">
+  <span class="chi-em">🟡</span>
+  <span class="chi-nm" style="color:#60a5fa;">Yellow Earwax</span>
+  <span class="chi-pct" style="color:#60a5fa;">17.9%</span>
+  <span class="chi-rl" style="color:#60a5fa;">RARE</span>
+</div><div class="chi" style="border-color:#b45aff22;background:#b45aff11;">
+  <span class="chi-em">🟢</span>
+  <span class="chi-nm" style="color:#b45aff;">Green Septic</span>
+  <span class="chi-pct" style="color:#b45aff;">12.5%</span>
+  <span class="chi-rl" style="color:#b45aff;">EPIC</span>
+</div><div class="chi" style="border-color:#b45aff22;background:#b45aff11;">
+  <span class="chi-em">🔵</span>
+  <span class="chi-nm" style="color:#b45aff;">Blue Balls</span>
+  <span class="chi-pct" style="color:#b45aff;">12.5%</span>
+  <span class="chi-rl" style="color:#b45aff;">EPIC</span>
+</div><div class="chi" style="border-color:#C9A84C22;background:#C9A84C11;">
+  <span class="chi-em">⚫</span>
+  <span class="chi-nm" style="color:#C9A84C;">Black Mold</span>
+  <span class="chi-pct" style="color:#C9A84C;">3.6%</span>
+  <span class="chi-rl" style="color:#C9A84C;">LEGENDARY</span>
+</div></div>
+          </div>
+        </div>
+        <div class="case-card daily" onclick="openCase('daily')" style="--case-border:rgba(201,168,76,0.4);border-color:rgba(201,168,76,0.4);">
+          <div class="case-card-front">
+            <span class="case-icon">🎁</span>
+            <div class="case-name">DAILY CASE</div>
+            <div class="case-desc">Free once per 24h — mix of all cases</div>
+            <div class="case-cost" id="case-daily-cost">FREE</div>
+          </div>
+          <div class="case-card-hover">
+            <div class="case-hover-items"><div class="chi" style="border-color:#aaa22;background:#aaa11;">
+  <span class="chi-em">🔴</span>
+  <span class="chi-nm" style="color:#aaa;">Period Red</span>
+  <span class="chi-pct" style="color:#aaa;">9.4%</span>
+  <span class="chi-rl" style="color:#aaa;">COMMON</span>
+</div><div class="chi" style="border-color:#aaa22;background:#aaa11;">
+  <span class="chi-em">🎉</span>
+  <span class="chi-nm" style="color:#aaa;">Party Hat</span>
+  <span class="chi-pct" style="color:#aaa;">9.4%</span>
+  <span class="chi-rl" style="color:#aaa;">COMMON</span>
+</div><div class="chi" style="border-color:#aaa22;background:#aaa11;">
+  <span class="chi-em">🔥</span>
+  <span class="chi-nm" style="color:#aaa;">Fire Text</span>
+  <span class="chi-pct" style="color:#aaa;">9.4%</span>
+  <span class="chi-rl" style="color:#aaa;">COMMON</span>
+</div><div class="chi" style="border-color:#aaa22;background:#aaa11;">
+  <span class="chi-em">🔥</span>
+  <span class="chi-nm" style="color:#aaa;">Fire Border</span>
+  <span class="chi-pct" style="color:#aaa;">9.4%</span>
+  <span class="chi-rl" style="color:#aaa;">COMMON</span>
+</div><div class="chi" style="border-color:#aaa22;background:#aaa11;">
+  <span class="chi-em">🔴</span>
+  <span class="chi-nm" style="color:#aaa;">Red Rash</span>
+  <span class="chi-pct" style="color:#aaa;">9.4%</span>
+  <span class="chi-rl" style="color:#aaa;">COMMON</span>
+</div><div class="chi" style="border-color:#aaa22;background:#aaa11;">
+  <span class="chi-em">🎓</span>
+  <span class="chi-nm" style="color:#aaa;">Dunce Cap</span>
+  <span class="chi-pct" style="color:#aaa;">9.4%</span>
+  <span class="chi-rl" style="color:#aaa;">COMMON</span>
+</div><div class="chi" style="border-color:#60a5fa22;background:#60a5fa11;">
+  <span class="chi-em">🟡</span>
+  <span class="chi-nm" style="color:#60a5fa;">Piss Yellow</span>
+  <span class="chi-pct" style="color:#60a5fa;">4.7%</span>
+  <span class="chi-rl" style="color:#60a5fa;">RARE</span>
+</div><div class="chi" style="border-color:#60a5fa22;background:#60a5fa11;">
+  <span class="chi-em">🤠</span>
+  <span class="chi-nm" style="color:#60a5fa;">Cowboy Hat</span>
+  <span class="chi-pct" style="color:#60a5fa;">4.7%</span>
+  <span class="chi-rl" style="color:#60a5fa;">RARE</span>
+</div><div class="chi" style="border-color:#60a5fa22;background:#60a5fa11;">
+  <span class="chi-em">🔮</span>
+  <span class="chi-nm" style="color:#60a5fa;">Mystic Text</span>
+  <span class="chi-pct" style="color:#60a5fa;">4.7%</span>
+  <span class="chi-rl" style="color:#60a5fa;">RARE</span>
+</div><div class="chi" style="border-color:#60a5fa22;background:#60a5fa11;">
+  <span class="chi-em">☢️</span>
+  <span class="chi-nm" style="color:#60a5fa;">Toxic Border</span>
+  <span class="chi-pct" style="color:#60a5fa;">4.7%</span>
+  <span class="chi-rl" style="color:#60a5fa;">RARE</span>
+</div><div class="chi" style="border-color:#60a5fa22;background:#60a5fa11;">
+  <span class="chi-em">💩</span>
+  <span class="chi-nm" style="color:#60a5fa;">Brown Skidmark</span>
+  <span class="chi-pct" style="color:#60a5fa;">4.7%</span>
+  <span class="chi-rl" style="color:#60a5fa;">RARE</span>
+</div><div class="chi" style="border-color:#b45aff22;background:#b45aff11;">
+  <span class="chi-em">🟣</span>
+  <span class="chi-nm" style="color:#b45aff;">Grape Bruise</span>
+  <span class="chi-pct" style="color:#b45aff;">3.3%</span>
+  <span class="chi-rl" style="color:#b45aff;">EPIC</span>
+</div><div class="chi" style="border-color:#b45aff22;background:#b45aff11;">
+  <span class="chi-em">🎩</span>
+  <span class="chi-nm" style="color:#b45aff;">Top Hat</span>
+  <span class="chi-pct" style="color:#b45aff;">3.3%</span>
+  <span class="chi-rl" style="color:#b45aff;">EPIC</span>
+</div><div class="chi" style="border-color:#b45aff22;background:#b45aff11;">
+  <span class="chi-em">✨</span>
+  <span class="chi-nm" style="color:#b45aff;">Gold Text</span>
+  <span class="chi-pct" style="color:#b45aff;">3.3%</span>
+  <span class="chi-rl" style="color:#b45aff;">EPIC</span>
+</div><div class="chi" style="border-color:#b45aff22;background:#b45aff11;">
+  <span class="chi-em">🔮</span>
+  <span class="chi-nm" style="color:#b45aff;">Violet Border</span>
+  <span class="chi-pct" style="color:#b45aff;">3.3%</span>
+  <span class="chi-rl" style="color:#b45aff;">EPIC</span>
+</div><div class="chi" style="border-color:#b45aff22;background:#b45aff11;">
+  <span class="chi-em">⚫</span>
+  <span class="chi-nm" style="color:#b45aff;">Black Mold</span>
+  <span class="chi-pct" style="color:#b45aff;">3.3%</span>
+  <span class="chi-rl" style="color:#b45aff;">EPIC</span>
+</div><div class="chi" style="border-color:#C9A84C22;background:#C9A84C11;">
+  <span class="chi-em">👑</span>
+  <span class="chi-nm" style="color:#C9A84C;">Crown</span>
+  <span class="chi-pct" style="color:#C9A84C;">0.9%</span>
+  <span class="chi-rl" style="color:#C9A84C;">LEGENDARY</span>
+</div><div class="chi" style="border-color:#C9A84C22;background:#C9A84C11;">
+  <span class="chi-em">🌈</span>
+  <span class="chi-nm" style="color:#C9A84C;">Rainbow Border</span>
+  <span class="chi-pct" style="color:#C9A84C;">0.9%</span>
+  <span class="chi-rl" style="color:#C9A84C;">LEGENDARY</span>
+</div><div class="chi" style="border-color:#C9A84C22;background:#C9A84C11;">
+  <span class="chi-em">💀</span>
+  <span class="chi-nm" style="color:#C9A84C;">Blood Text</span>
+  <span class="chi-pct" style="color:#C9A84C;">0.9%</span>
+  <span class="chi-rl" style="color:#C9A84C;">LEGENDARY</span>
+</div><div class="chi" style="border-color:#ffffff22;background:#ffffff11;">
+  <span class="chi-em">⬜</span>
+  <span class="chi-nm" style="color:#ffffff;">Cum White</span>
+  <span class="chi-pct" style="color:#ffffff;">0.5%</span>
+  <span class="chi-rl" style="color:#ffffff;">ULTRA</span>
+</div><div class="chi" style="border-color:#ffffff22;background:#ffffff11;">
+  <span class="chi-em">⬛</span>
+  <span class="chi-nm" style="color:#ffffff;">Void Black</span>
+  <span class="chi-pct" style="color:#ffffff;">0.5%</span>
+  <span class="chi-rl" style="color:#ffffff;">ULTRA</span>
+</div></div>
+          </div>
+        </div>
+        <div class="case-card battle case-locked" onclick="openCase('battle')" style="--case-border:rgba(217,43,43,0.4);border-color:rgba(217,43,43,0.4);">
+          <div class="case-card-front">
+            <span class="case-icon">⚔️</span>
+            <div class="case-name">BATTLE CASE</div>
+            <div class="case-desc">Win a battle to unlock</div>
+            <div class="case-cost" id="case-battle-cost">🏆 WIN A BATTLE</div>
+          </div>
+          <div class="case-card-hover">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.6rem;letter-spacing:2px;color:#444;text-align:center;padding:8px 0;">COMING SOON</div>
+          </div>
+        </div>
+        <div class="case-card streak case-locked" onclick="openCase('streak')" style="--case-border:rgba(255,100,0,0.4);border-color:rgba(255,100,0,0.4);">
+          <div class="case-card-front">
+            <span class="case-icon">🔥</span>
+            <div class="case-name">STREAK CASE</div>
+            <div class="case-desc">3-win streak required</div>
+            <div class="case-cost" id="case-streak-cost">🔥 3-WIN STREAK</div>
+          </div>
+          <div class="case-card-hover">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.6rem;letter-spacing:2px;color:#444;text-align:center;padding:8px 0;">COMING SOON</div>
+          </div>
+        </div>
+        <div class="case-card void" onclick="openCase('void')" style="--case-border:rgba(255,255,255,0.25);border-color:rgba(255,255,255,0.25);">
+          <div class="case-card-front">
+            <span class="case-icon">🌑</span>
+            <div class="case-name">VOID CASE</div>
+            <div class="case-desc">No filler — pure prestige</div>
+            <div class="case-cost">🪙 2,500</div>
+          </div>
+          <div class="case-card-hover">
+            <div class="case-hover-items"><div class="chi" style="border-color:#b45aff22;background:#b45aff11;">
+  <span class="chi-em">✨</span>
+  <span class="chi-nm" style="color:#b45aff;">Gold Border</span>
+  <span class="chi-pct" style="color:#b45aff;">22.6%</span>
+  <span class="chi-rl" style="color:#b45aff;">EPIC</span>
+</div><div class="chi" style="border-color:#b45aff22;background:#b45aff11;">
+  <span class="chi-em">🔮</span>
+  <span class="chi-nm" style="color:#b45aff;">Violet Border</span>
+  <span class="chi-pct" style="color:#b45aff;">22.6%</span>
+  <span class="chi-rl" style="color:#b45aff;">EPIC</span>
+</div><div class="chi" style="border-color:#b45aff22;background:#b45aff11;">
+  <span class="chi-em">😈</span>
+  <span class="chi-nm" style="color:#b45aff;">Devil Horns</span>
+  <span class="chi-pct" style="color:#b45aff;">22.6%</span>
+  <span class="chi-rl" style="color:#b45aff;">EPIC</span>
+</div><div class="chi" style="border-color:#C9A84C22;background:#C9A84C11;">
+  <span class="chi-em">👑</span>
+  <span class="chi-nm" style="color:#C9A84C;">Crown</span>
+  <span class="chi-pct" style="color:#C9A84C;">6.5%</span>
+  <span class="chi-rl" style="color:#C9A84C;">LEGENDARY</span>
+</div><div class="chi" style="border-color:#C9A84C22;background:#C9A84C11;">
+  <span class="chi-em">🧙</span>
+  <span class="chi-nm" style="color:#C9A84C;">Wizard Hat</span>
+  <span class="chi-pct" style="color:#C9A84C;">6.5%</span>
+  <span class="chi-rl" style="color:#C9A84C;">LEGENDARY</span>
+</div><div class="chi" style="border-color:#C9A84C22;background:#C9A84C11;">
+  <span class="chi-em">🌈</span>
+  <span class="chi-nm" style="color:#C9A84C;">Rainbow Border</span>
+  <span class="chi-pct" style="color:#C9A84C;">6.5%</span>
+  <span class="chi-rl" style="color:#C9A84C;">LEGENDARY</span>
+</div><div class="chi" style="border-color:#C9A84C22;background:#C9A84C11;">
+  <span class="chi-em">💀</span>
+  <span class="chi-nm" style="color:#C9A84C;">Blood Text</span>
+  <span class="chi-pct" style="color:#C9A84C;">6.5%</span>
+  <span class="chi-rl" style="color:#C9A84C;">LEGENDARY</span>
+</div><div class="chi" style="border-color:#ffffff22;background:#ffffff11;">
+  <span class="chi-em">⬜</span>
+  <span class="chi-nm" style="color:#ffffff;">Cum White</span>
+  <span class="chi-pct" style="color:#ffffff;">3.2%</span>
+  <span class="chi-rl" style="color:#ffffff;">ULTRA</span>
+</div><div class="chi" style="border-color:#ffffff22;background:#ffffff11;">
+  <span class="chi-em">⬛</span>
+  <span class="chi-nm" style="color:#ffffff;">Void Black</span>
+  <span class="chi-pct" style="color:#ffffff;">3.2%</span>
+  <span class="chi-rl" style="color:#ffffff;">ULTRA</span>
+</div></div>
+          </div>
         </div>
       </div>
       <div id="case-lock-msg" style="font-family:'Barlow Condensed',sans-serif;font-size:0.7rem;letter-spacing:2px;color:var(--muted);text-align:center;margin-top:14px;text-transform:uppercase;"></div>
@@ -4209,142 +4386,102 @@ window.invScrollTo = (cat) => {
   if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
 };
 // ──────────────────────────────────────────────────────────────
-// ── SHOP SUB-TAB SWITCH ──
-window.switchShopSub = (sub, btn) => {
-  document.querySelectorAll('.shop-sub-btn').forEach(b => {
-    b.style.borderBottomColor = 'transparent';
-    b.style.color = 'var(--muted)';
-  });
-  btn.style.borderBottomColor = 'var(--red-hot)';
-  btn.style.color = 'var(--text)';
-  document.getElementById('shop-sub-items').style.display = sub === 'items' ? '' : 'none';
-  document.getElementById('shop-sub-cases').style.display = sub === 'cases' ? '' : 'none';
-  if (sub === 'cases') refreshCaseCards();
-};
+// switchShopSub removed — cases only
+
 
 // ── CASE DEFINITIONS ──
 const CASE_POOLS = {
-  // ── STANDARD CASE (400 coins) ── bread & butter, wide variety
-  standard: [
-    // Common (45%)
-    { id:'hat_party',    name:'Party Hat',       emoji:'🎉', rarity:'common' },
-    { id:'hat_dunce',    name:'Dunce Cap',        emoji:'🎓', rarity:'common' },
-    { id:'hat_snapback', name:'Snapback',         emoji:'🧢', rarity:'common' },
-    { id:'hat_hardhat',  name:'Hard Hat',         emoji:'⛑️', rarity:'common' },
-    { id:'color_crimson',name:'Period Red',       emoji:'🔴', rarity:'common' },
-    { id:'color_toxic',  name:'Vomit Green',      emoji:'🟢', rarity:'common' },
-    { id:'color_gold',   name:'Piss Yellow',      emoji:'🟡', rarity:'common' },
-    // Rare (28%)
-    { id:'hat_cowboy',   name:'Cowboy Hat',       emoji:'🤠', rarity:'rare' },
-    { id:'hat_flower',   name:'Flower Crown',     emoji:'🌸', rarity:'rare' },
-    { id:'hat_mushroom', name:'Mushroom Cap',     emoji:'🍄', rarity:'rare' },
-    { id:'hat_helmet',   name:'Battle Helmet',    emoji:'🪖', rarity:'rare' },
-    { id:'color_cyan',   name:'Bonnie Blue',      emoji:'🔵', rarity:'rare' },
-    { id:'color_violet', name:'Grape Bruise',     emoji:'🟣', rarity:'rare' },
-    { id:'txt_fire',     name:'Fire Text',        emoji:'🔥', rarity:'rare' },
-    { id:'txt_ice',      name:'Ice Text',         emoji:'❄️', rarity:'rare' },
-    // Epic (18%)
-    { id:'border_fire',  name:'Fire Border',      emoji:'🔥', rarity:'epic' },
-    { id:'border_ice',   name:'Ice Border',       emoji:'❄️', rarity:'epic' },
-    { id:'hat_tophat',   name:'Top Hat',          emoji:'🎩', rarity:'epic' },
-    { id:'txt_toxic',    name:'Toxic Text',       emoji:'☢️', rarity:'epic' },
-    { id:'txt_violet',   name:'Mystic Text',      emoji:'🔮', rarity:'epic' },
-    { id:'border_toxic', name:'Toxic Border',     emoji:'☢️', rarity:'epic' },
-    // Legendary (4%)
-    { id:'hat_crown',    name:'Crown',            emoji:'👑', rarity:'legendary' },
-    { id:'hat_devil',    name:'Devil Horns',      emoji:'😈', rarity:'legendary' },
-    { id:'hat_wizard',   name:'Wizard Hat',       emoji:'🧙', rarity:'legendary' },
-    { id:'border_rainbow',name:'Rainbow Border',  emoji:'🌈', rarity:'legendary' },
-    // Ultra (5%) — black & white exclusives
-    { id:'color_white',  name:'Cum White',        emoji:'⬜', rarity:'ultra' },
-    { id:'color_black',  name:'Void Black',       emoji:'⬛', rarity:'ultra' },
+  // NAME COLOR CASE
+  namecolor: [
+    { id:'color_crimson', name:'Period Red',    emoji:'🔴', rarity:'common' },
+    { id:'color_toxic',   name:'Vomit Green',   emoji:'🟢', rarity:'common' },
+    { id:'color_gold',    name:'Piss Yellow',   emoji:'🟡', rarity:'rare' },
+    { id:'color_cyan',    name:'Bonnie Blue',   emoji:'🔵', rarity:'rare' },
+    { id:'color_violet',  name:'Grape Bruise',  emoji:'🟣', rarity:'epic' },
+    { id:'color_white',   name:'Cum White',     emoji:'⬜', rarity:'legendary' },
+    { id:'color_black',   name:'Void Black',    emoji:'⬛', rarity:'ultra' },
   ],
-
-  // ── DAILY CASE (free/24h) ── smaller pool, mostly commons/rares
+  // TEXT COLOR CASE
+  textcolor: [
+    { id:'txt_fire',    name:'Fire Text',    emoji:'🔥', rarity:'common' },
+    { id:'txt_ice',     name:'Ice Text',     emoji:'❄️', rarity:'common' },
+    { id:'txt_toxic',   name:'Toxic Text',   emoji:'☢️', rarity:'rare' },
+    { id:'txt_violet',  name:'Mystic Text',  emoji:'🔮', rarity:'rare' },
+    { id:'txt_gold',    name:'Gold Text',    emoji:'✨', rarity:'epic' },
+    { id:'txt_crimson', name:'Blood Text',   emoji:'💀', rarity:'legendary' },
+  ],
+  // BORDER CASE
+  border: [
+    { id:'border_fire',    name:'Fire Border',    emoji:'🔥', rarity:'common' },
+    { id:'border_ice',     name:'Ice Border',     emoji:'❄️', rarity:'common' },
+    { id:'border_toxic',   name:'Toxic Border',   emoji:'☢️', rarity:'rare' },
+    { id:'border_violet',  name:'Violet Border',  emoji:'🔮', rarity:'rare' },
+    { id:'border_gold',    name:'Gold Border',    emoji:'✨', rarity:'epic' },
+    { id:'border_rainbow', name:'Rainbow Border', emoji:'🌈', rarity:'legendary' },
+  ],
+  // HAT CASE
+  hat: [
+    { id:'hat_party',    name:'Party Hat',      emoji:'🎉', rarity:'common' },
+    { id:'hat_dunce',    name:'Dunce Cap',      emoji:'🎓', rarity:'common' },
+    { id:'hat_snapback', name:'Snapback',       emoji:'🧢', rarity:'common' },
+    { id:'hat_hardhat',  name:'Hard Hat',       emoji:'⛑️', rarity:'common' },
+    { id:'hat_cowboy',   name:'Cowboy Hat',     emoji:'🤠', rarity:'rare' },
+    { id:'hat_flower',   name:'Flower Crown',   emoji:'🌸', rarity:'rare' },
+    { id:'hat_mushroom', name:'Mushroom Cap',   emoji:'🍄', rarity:'rare' },
+    { id:'hat_helmet',   name:'Battle Helmet',  emoji:'🪖', rarity:'rare' },
+    { id:'hat_tophat',   name:'Top Hat',        emoji:'🎩', rarity:'epic' },
+    { id:'hat_devil',    name:'Devil Horns',    emoji:'😈', rarity:'epic' },
+    { id:'hat_crown',    name:'Crown',          emoji:'👑', rarity:'legendary' },
+    { id:'hat_wizard',   name:'Wizard Hat',     emoji:'🧙', rarity:'ultra' },
+  ],
+  // THEME CASE
+  theme: [
+    { id:'theme_rash',  name:'Red Rash',       emoji:'🔴', rarity:'common' },
+    { id:'theme_void',  name:'Brown Skidmark', emoji:'💩', rarity:'rare' },
+    { id:'theme_gold',  name:'Yellow Earwax',  emoji:'🟡', rarity:'rare' },
+    { id:'theme_toxic', name:'Green Septic',   emoji:'🟢', rarity:'epic' },
+    { id:'theme_ice',   name:'Blue Balls',     emoji:'🔵', rarity:'epic' },
+    { id:'theme_coal',  name:'Black Mold',     emoji:'⚫', rarity:'legendary' },
+  ],
+  // DAILY CASE — mix of all (excluding battle/streak)
   daily: [
-    // Common (55%)
-    { id:'hat_party',    name:'Party Hat',        emoji:'🎉', rarity:'common' },
-    { id:'hat_dunce',    name:'Dunce Cap',         emoji:'🎓', rarity:'common' },
-    { id:'hat_snapback', name:'Snapback',          emoji:'🧢', rarity:'common' },
-    { id:'color_crimson',name:'Period Red',        emoji:'🔴', rarity:'common' },
-    { id:'color_gold',   name:'Piss Yellow',       emoji:'🟡', rarity:'common' },
-    // Rare (30%)
-    { id:'hat_cowboy',   name:'Cowboy Hat',        emoji:'🤠', rarity:'rare' },
-    { id:'hat_flower',   name:'Flower Crown',      emoji:'🌸', rarity:'rare' },
-    { id:'hat_hardhat',  name:'Hard Hat',          emoji:'⛑️', rarity:'rare' },
-    { id:'txt_fire',     name:'Fire Text',         emoji:'🔥', rarity:'rare' },
-    { id:'color_cyan',   name:'Bonnie Blue',       emoji:'🔵', rarity:'rare' },
-    // Epic (12%)
-    { id:'hat_mushroom', name:'Mushroom Cap',      emoji:'🍄', rarity:'epic' },
-    { id:'border_fire',  name:'Fire Border',       emoji:'🔥', rarity:'epic' },
-    { id:'txt_toxic',    name:'Toxic Text',        emoji:'☢️', rarity:'epic' },
-    // Legendary (3%)
-    { id:'hat_wizard',   name:'Wizard Hat',        emoji:'🧙', rarity:'legendary' },
-    // Ultra (0% — daily can't drop ultra, grind for it)
+    { id:'color_crimson', name:'Period Red',    emoji:'🔴', rarity:'common' },
+    { id:'hat_party',     name:'Party Hat',     emoji:'🎉', rarity:'common' },
+    { id:'txt_fire',      name:'Fire Text',     emoji:'🔥', rarity:'common' },
+    { id:'border_fire',   name:'Fire Border',   emoji:'🔥', rarity:'common' },
+    { id:'theme_rash',    name:'Red Rash',      emoji:'🔴', rarity:'common' },
+    { id:'hat_dunce',     name:'Dunce Cap',     emoji:'🎓', rarity:'common' },
+    { id:'color_gold',    name:'Piss Yellow',   emoji:'🟡', rarity:'rare' },
+    { id:'hat_cowboy',    name:'Cowboy Hat',    emoji:'🤠', rarity:'rare' },
+    { id:'txt_violet',    name:'Mystic Text',   emoji:'🔮', rarity:'rare' },
+    { id:'border_toxic',  name:'Toxic Border',  emoji:'☢️', rarity:'rare' },
+    { id:'theme_void',    name:'Brown Skidmark',emoji:'💩', rarity:'rare' },
+    { id:'color_violet',  name:'Grape Bruise',  emoji:'🟣', rarity:'epic' },
+    { id:'hat_tophat',    name:'Top Hat',       emoji:'🎩', rarity:'epic' },
+    { id:'txt_gold',      name:'Gold Text',     emoji:'✨', rarity:'epic' },
+    { id:'border_violet', name:'Violet Border', emoji:'🔮', rarity:'epic' },
+    { id:'theme_coal',    name:'Black Mold',    emoji:'⚫', rarity:'epic' },
+    { id:'hat_crown',     name:'Crown',         emoji:'👑', rarity:'legendary' },
+    { id:'border_rainbow',name:'Rainbow Border',emoji:'🌈', rarity:'legendary' },
+    { id:'txt_crimson',   name:'Blood Text',    emoji:'💀', rarity:'legendary' },
+    { id:'color_white',   name:'Cum White',     emoji:'⬜', rarity:'ultra' },
+    { id:'color_black',   name:'Void Black',    emoji:'⬛', rarity:'ultra' },
   ],
-
-  // ── BATTLE CASE (earned by winning) ── no commons, higher floor
-  battle: [
-    // Rare (40%) — no common in battle case
-    { id:'hat_helmet',   name:'Battle Helmet',     emoji:'🪖', rarity:'rare' },
-    { id:'txt_crimson',  name:'Blood Text',        emoji:'💀', rarity:'rare' },
-    { id:'txt_ice',      name:'Ice Text',          emoji:'❄️', rarity:'rare' },
-    { id:'color_violet', name:'Grape Bruise',      emoji:'🟣', rarity:'rare' },
-    { id:'hat_cowboy',   name:'Cowboy Hat',        emoji:'🤠', rarity:'rare' },
-    // Epic (35%)
-    { id:'border_gold',  name:'Gold Border',       emoji:'✨', rarity:'epic' },
-    { id:'border_violet',name:'Violet Border',     emoji:'🔮', rarity:'epic' },
-    { id:'txt_gold',     name:'Gold Text',         emoji:'✨', rarity:'epic' },
-    { id:'txt_violet',   name:'Mystic Text',       emoji:'🔮', rarity:'epic' },
-    { id:'hat_tophat',   name:'Top Hat',           emoji:'🎩', rarity:'epic' },
-    { id:'hat_devil',    name:'Devil Horns',       emoji:'😈', rarity:'epic' },
-    // Legendary (15%)
-    { id:'hat_crown',    name:'Crown',             emoji:'👑', rarity:'legendary' },
-    { id:'border_rainbow',name:'Rainbow Border',   emoji:'🌈', rarity:'legendary' },
-    { id:'hat_wizard',   name:'Wizard Hat',        emoji:'🧙', rarity:'legendary' },
-    { id:'txt_crimson',  name:'Blood Red Text',    emoji:'💀', rarity:'legendary' },
-    // Ultra (10%) — battle case has higher ultra chance as reward for winning
-    { id:'color_white',  name:'Cum White',         emoji:'⬜', rarity:'ultra' },
-    { id:'color_black',  name:'Void Black',        emoji:'⬛', rarity:'ultra' },
-  ],
-
-  // ── STREAK CASE (3-win streak) ── exclusive high-tier loot
-  streak: [
-    // Rare (30%)
-    { id:'hat_helmet',   name:'Battle Helmet',     emoji:'🪖', rarity:'rare' },
-    { id:'border_fire',  name:'Fire Border',       emoji:'🔥', rarity:'rare' },
-    { id:'border_ice',   name:'Ice Border',        emoji:'❄️', rarity:'rare' },
-    { id:'txt_gold',     name:'Gold Text',         emoji:'✨', rarity:'rare' },
-    // Epic (35%)
-    { id:'hat_tophat',   name:'Top Hat',           emoji:'🎩', rarity:'epic' },
-    { id:'txt_violet',   name:'Mystic Text',       emoji:'🔮', rarity:'epic' },
-    { id:'border_violet',name:'Violet Border',     emoji:'🔮', rarity:'epic' },
-    { id:'hat_devil',    name:'Devil Horns',       emoji:'😈', rarity:'epic' },
-    { id:'border_gold',  name:'Gold Border',       emoji:'✨', rarity:'epic' },
-    // Legendary (25%)
-    { id:'hat_crown',    name:'Crown',             emoji:'👑', rarity:'legendary' },
-    { id:'hat_wizard',   name:'Wizard Hat',        emoji:'🧙', rarity:'legendary' },
-    { id:'border_rainbow',name:'Rainbow Border',   emoji:'🌈', rarity:'legendary' },
-    { id:'txt_crimson',  name:'Blood Red Text',    emoji:'💀', rarity:'legendary' },
-    // Ultra (10%) — streak rewards dedication
-    { id:'color_white',  name:'Cum White',         emoji:'⬜', rarity:'ultra' },
-    { id:'color_black',  name:'Void Black',        emoji:'⬛', rarity:'ultra' },
-  ],
-
-  // ── VOID CASE (2500 coins) ── pure ultra/legendary pool, no filler
+  // BATTLE CASE — empty for now
+  battle: [],
+  // STREAK CASE — empty for now
+  streak: [],
+  // VOID CASE
   void: [
-    // Epic (20%)
-    { id:'border_gold',  name:'Gold Border',       emoji:'✨', rarity:'epic' },
-    { id:'border_violet',name:'Violet Border',     emoji:'🔮', rarity:'epic' },
-    { id:'hat_devil',    name:'Devil Horns',       emoji:'😈', rarity:'epic' },
-    // Legendary (40%)
-    { id:'hat_crown',    name:'Crown',             emoji:'👑', rarity:'legendary' },
-    { id:'hat_wizard',   name:'Wizard Hat',        emoji:'🧙', rarity:'legendary' },
-    { id:'border_rainbow',name:'Rainbow Border',   emoji:'🌈', rarity:'legendary' },
-    { id:'txt_crimson',  name:'Blood Red Text',    emoji:'💀', rarity:'legendary' },
-    // Ultra (40%) — void case has massive ultra chance
-    { id:'color_white',  name:'Cum White',         emoji:'⬜', rarity:'ultra' },
-    { id:'color_black',  name:'Void Black',        emoji:'⬛', rarity:'ultra' },
+    { id:'border_gold',   name:'Gold Border',    emoji:'✨', rarity:'epic' },
+    { id:'border_violet', name:'Violet Border',  emoji:'🔮', rarity:'epic' },
+    { id:'hat_devil',     name:'Devil Horns',    emoji:'😈', rarity:'epic' },
+    { id:'hat_crown',     name:'Crown',          emoji:'👑', rarity:'legendary' },
+    { id:'hat_wizard',    name:'Wizard Hat',     emoji:'🧙', rarity:'legendary' },
+    { id:'border_rainbow',name:'Rainbow Border', emoji:'🌈', rarity:'legendary' },
+    { id:'txt_crimson',   name:'Blood Text',     emoji:'💀', rarity:'legendary' },
+    { id:'color_white',   name:'Cum White',      emoji:'⬜', rarity:'ultra' },
+    { id:'color_black',   name:'Void Black',     emoji:'⬛', rarity:'ultra' },
   ],
 };
 
@@ -4368,18 +4505,26 @@ function weightedPick(pool, isVoid = false) {
 // ══════════════════════════════════════════════════
 
 const CASE_META = {
-  standard: { icon:'📦', name:'STANDARD CASE',  color:'rgba(180,180,180,0.5)', flashClass:'fire' },
-  daily:    { icon:'🎁', name:'DAILY CASE',      color:'rgba(201,168,76,0.5)',  flashClass:'gold' },
-  battle:   { icon:'⚔️', name:'BATTLE CASE',    color:'rgba(217,43,43,0.6)',   flashClass:'fire' },
-  streak:   { icon:'🔥', name:'STREAK CASE',     color:'rgba(255,100,0,0.5)',   flashClass:'fire' },
-  void:     { icon:'🌑', name:'VOID CASE',       color:'rgba(255,255,255,0.4)', flashClass:'white' },
+  namecolor: { icon:'🎨', name:'NAME COLOR CASE', color:'rgba(255,80,80,0.5)',   flashClass:'fire' },
+  textcolor: { icon:'✏️', name:'TEXT COLOR CASE', color:'rgba(96,165,250,0.5)',  flashClass:'fire' },
+  border:    { icon:'🔲', name:'BORDER CASE',      color:'rgba(180,90,255,0.5)', flashClass:'epic' },
+  hat:       { icon:'🎩', name:'HAT CASE',         color:'rgba(201,168,76,0.5)', flashClass:'gold' },
+  theme:     { icon:'🎨', name:'THEME CASE',       color:'rgba(39,255,20,0.4)',  flashClass:'fire' },
+  daily:     { icon:'🎁', name:'DAILY CASE',       color:'rgba(201,168,76,0.5)', flashClass:'gold' },
+  battle:    { icon:'⚔️', name:'BATTLE CASE',     color:'rgba(217,43,43,0.6)',   flashClass:'fire' },
+  streak:    { icon:'🔥', name:'STREAK CASE',      color:'rgba(255,100,0,0.5)',  flashClass:'fire' },
+  void:      { icon:'🌑', name:'VOID CASE',        color:'rgba(255,255,255,0.4)',flashClass:'white' },
 };
 const CASE_ODDS = {
-  standard: '<span style="color:#888">■</span> Common 50% &nbsp;<span style="color:#60a5fa">■</span> Rare 25% &nbsp;<span style="color:#b45aff">■</span> Epic 17.5%<br><span style="color:#C9A84C">■</span> Legendary 5% &nbsp;<span style="color:#fff">■</span> <b>Ultra 2.5%</b>',
-  daily:    '<span style="color:#888">■</span> Common 55% &nbsp;<span style="color:#60a5fa">■</span> Rare 30% &nbsp;<span style="color:#b45aff">■</span> Epic 12%<br><span style="color:#C9A84C">■</span> Legendary 3% &nbsp;<span style="color:#555">■</span> Ultra 0%',
-  battle:   '<span style="color:#60a5fa">■</span> Rare 40% &nbsp;<span style="color:#b45aff">■</span> Epic 35%<br><span style="color:#C9A84C">■</span> Legendary 15% &nbsp;<span style="color:#fff">■</span> <b>Ultra 10%</b>',
-  streak:   '<span style="color:#60a5fa">■</span> Rare 30% &nbsp;<span style="color:#b45aff">■</span> Epic 35%<br><span style="color:#C9A84C">■</span> Legendary 25% &nbsp;<span style="color:#fff">■</span> <b>Ultra 10%</b>',
-  void:     '<span style="color:#b45aff">■</span> Epic 20% &nbsp;<span style="color:#C9A84C">■</span> Legendary 40%<br><span style="color:#fff">■</span> <b>Ultra 40%</b> — Void Black / Cum White',
+  namecolor: '<span style="color:#aaa">■</span> Common 50% &nbsp;<span style="color:#60a5fa">■</span> Rare 25% &nbsp;<span style="color:#b45aff">■</span> Epic 17.5%<br><span style="color:#C9A84C">■</span> Legendary 5% &nbsp;<span style="color:#fff">■</span> <b>Ultra 2.5%</b>',
+  textcolor: '<span style="color:#aaa">■</span> Common 50% &nbsp;<span style="color:#60a5fa">■</span> Rare 25% &nbsp;<span style="color:#b45aff">■</span> Epic 17.5%<br><span style="color:#C9A84C">■</span> Legendary 5% &nbsp;<span style="color:#fff">■</span> <b>Ultra 2.5%</b>',
+  border:    '<span style="color:#aaa">■</span> Common 50% &nbsp;<span style="color:#60a5fa">■</span> Rare 25% &nbsp;<span style="color:#b45aff">■</span> Epic 17.5%<br><span style="color:#C9A84C">■</span> Legendary 5% &nbsp;<span style="color:#fff">■</span> <b>Ultra 2.5%</b>',
+  hat:       '<span style="color:#aaa">■</span> Common 50% &nbsp;<span style="color:#60a5fa">■</span> Rare 25% &nbsp;<span style="color:#b45aff">■</span> Epic 17.5%<br><span style="color:#C9A84C">■</span> Legendary 5% &nbsp;<span style="color:#fff">■</span> <b>Ultra 2.5%</b>',
+  theme:     '<span style="color:#aaa">■</span> Common 50% &nbsp;<span style="color:#60a5fa">■</span> Rare 25% &nbsp;<span style="color:#b45aff">■</span> Epic 17.5%<br><span style="color:#C9A84C">■</span> Legendary 5% &nbsp;<span style="color:#fff">■</span> <b>Ultra 2.5%</b>',
+  daily:     '<span style="color:#aaa">■</span> Common 50% &nbsp;<span style="color:#60a5fa">■</span> Rare 25% &nbsp;<span style="color:#b45aff">■</span> Epic 17.5%<br><span style="color:#C9A84C">■</span> Legendary 5% &nbsp;<span style="color:#fff">■</span> <b>Ultra 2.5%</b>',
+  battle:    '<span style="color:#444">COMING SOON</span>',
+  streak:    '<span style="color:#444">COMING SOON</span>',
+  void:      '<span style="color:#b45aff">■</span> Epic 20% &nbsp;<span style="color:#C9A84C">■</span> Legendary 40%<br><span style="color:#fff">■</span> <b>Ultra 40%</b> — Void Black / Cum White',
 };
 
 let _currentCaseType = null;
@@ -4393,10 +4538,14 @@ window.openCase = (type) => {
   const coins  = myProfile.coins  || 0;
   const wins   = myProfile.wins   || 0;
   const streak = myProfile.currentStreak || 0;
-  if (type === 'standard' && coins < 500)  { showToast('Need 🪙 500 to open Standard Case!'); return; }
-  if (type === 'void'     && coins < 2500) { showToast('Need 🪙 2,500 to open Void Case!'); return; }
-  if (type === 'battle'   && wins < 1)     { showToast('Win at least one battle first!'); return; }
-  if (type === 'streak'   && streak < 3)   { showToast(`Need 3-win streak! At ${streak}/3`); return; }
+  const _item_cases = ['namecolor','textcolor','border','hat','theme'];
+  if (_item_cases.includes(type) && coins < 500) { showToast('Need 🪙 500 to open!'); return; }
+  if (type === 'void'   && coins < 2500) { showToast('Need 🪙 2,500 to open Void Case!'); return; }
+  if (type === 'battle' && wins < 1)     { showToast('Win at least one battle first!'); return; }
+  if (type === 'streak' && streak < 3)   { showToast(`Need 3-win streak! At ${streak}/3`); return; }
+  // empty pool guard
+  const _pool = CASE_POOLS[type] || [];
+  if (_pool.length === 0) { showToast('Coming soon — no items in this case yet!'); return; }
   if (type === 'daily') {
     const elapsed = Date.now() - (myProfile.lastCaseDaily || 0);
     if (elapsed < 86400000) { const h = Math.ceil((86400000-elapsed)/3600000); showToast(`Daily resets in ${h}h`); return; }
@@ -4413,7 +4562,7 @@ window.openCase = (type) => {
   document.getElementById('case-float-icon').style.filter = `drop-shadow(0 0 40px ${meta.color})`;
   document.getElementById('case-float-name').textContent  = meta.name;
   document.getElementById('case-float-odds').innerHTML    = CASE_ODDS[type] || '';
-  const costLabel = { standard:'OPEN — 🪙 500', void:'OPEN — 🪙 2,500', daily:'OPEN FREE', battle:'OPEN CASE', streak:'OPEN CASE' };
+  const costLabel = { namecolor:'OPEN — 🪙 500', textcolor:'OPEN — 🪙 500', border:'OPEN — 🪙 500', hat:'OPEN — 🪙 500', theme:'OPEN — 🪙 500', void:'OPEN — 🪙 2,500', daily:'OPEN FREE', battle:'OPEN CASE', streak:'OPEN CASE' };
   const btn = document.getElementById('case-open-btn');
   btn.textContent = costLabel[type] || 'OPEN CASE';
   btn.disabled = false;
@@ -4448,7 +4597,8 @@ window.caseOpenAgain = () => {
   const coins  = myProfile?.coins  || 0;
   const wins   = myProfile?.wins   || 0;
   const streak = myProfile?.currentStreak || 0;
-  if (type === 'standard' && coins < 500)  { showToast('Not enough coins!'); closeCaseOverlay(); return; }
+  const _item_cases2 = ['namecolor','textcolor','border','hat','theme'];
+  if (_item_cases2.includes(type) && coins < 500) { showToast('Not enough coins!'); closeCaseOverlay(); return; }
   if (type === 'void'     && coins < 2500) { showToast('Not enough coins!'); closeCaseOverlay(); return; }
   if (type === 'battle'   && wins < 1)     { closeCaseOverlay(); return; }
   if (type === 'streak'   && streak < 3)   { closeCaseOverlay(); return; }
@@ -4461,7 +4611,7 @@ window.caseOpenAgain = () => {
   window._caseSpinning = false;
   const meta = CASE_META[type] || CASE_META.standard;
   document.getElementById('case-float-icon').textContent = meta.icon;
-  const costLabel = { standard:'OPEN — 🪙 500', void:'OPEN — 🪙 2,500', daily:'OPEN FREE', battle:'OPEN CASE', streak:'OPEN CASE' };
+  const costLabel = { namecolor:'OPEN — 🪙 500', textcolor:'OPEN — 🪙 500', border:'OPEN — 🪙 500', hat:'OPEN — 🪙 500', theme:'OPEN — 🪙 500', void:'OPEN — 🪙 2,500', daily:'OPEN FREE', battle:'OPEN CASE', streak:'OPEN CASE' };
   const btn = document.getElementById('case-open-btn');
   btn.textContent = costLabel[type] || 'OPEN CASE';
   btn.disabled = false;
@@ -4538,7 +4688,8 @@ window.spinCase = async () => {
   const pool = CASE_POOLS[type] || CASE_POOLS.standard;
 
   // Final validate
-  if (type === 'standard' && (myProfile.coins||0) < 500)  { showToast('Not enough coins!'); return; }
+  const _icases = ['namecolor','textcolor','border','hat','theme'];
+  if (_icases.includes(type) && (myProfile.coins||0) < 500) { showToast('Not enough coins!'); return; }
   if (type === 'void'     && (myProfile.coins||0) < 2500) { showToast('Need 🪙 2,500!'); return; }
   if (type === 'battle'   && (myProfile.wins||0) < 1)     { showToast('Win a battle first!'); return; }
   if (type === 'streak'   && (myProfile.currentStreak||0) < 3) { showToast('Need 3-win streak!'); return; }
@@ -4632,6 +4783,7 @@ window.spinCase = async () => {
   const alreadyOwn = owned.includes(winner.id);
   let   invMsg     = '';
 
+  const _icases2 = ['namecolor','textcolor','border','hat','theme'];
   if (type === 'void') {
     const refund  = alreadyOwn ? 800 : 0;
     const newCoins = (myProfile.coins||0) - 2500 + refund;
@@ -4640,8 +4792,8 @@ window.spinCase = async () => {
     await pb.updateUser(me.uid, { coins:newCoins, items: alreadyOwn ? owned : [...owned, winner.id] }).catch(()=>{});
     updateCoinDisplays(newCoins);
     invMsg = alreadyOwn ? 'DUPLICATE — CONVERTED TO 🪙 800' : '✓ ADDED TO INVENTORY';
-  } else if (type === 'standard') {
-    const refund  = alreadyOwn ? 150 : 0;
+  } else if (['namecolor','textcolor','border','hat','theme'].includes(type)) {
+    const refund  = alreadyOwn ? 175 : 0;
     const newCoins = (myProfile.coins||0) - 500 + refund;
     myProfile.coins = newCoins;
     if (!alreadyOwn) myProfile.items = [...owned, winner.id];
@@ -4670,7 +4822,7 @@ window.spinCase = async () => {
     openAgainBtn.style.display = 'none';
   } else {
     openAgainBtn.style.display = '';
-    const openAgainLabel = { standard:'OPEN AGAIN — 🪙 500', void:'OPEN AGAIN — 🪙 2,500', battle:'OPEN AGAIN', streak:'OPEN AGAIN' };
+    const openAgainLabel = { namecolor:'OPEN AGAIN — 🪙 500', textcolor:'OPEN AGAIN — 🪙 500', border:'OPEN AGAIN — 🪙 500', hat:'OPEN AGAIN — 🪙 500', theme:'OPEN AGAIN — 🪙 500', void:'OPEN AGAIN — 🪙 2,500', daily:'OPENED', battle:'OPEN AGAIN', streak:'OPEN AGAIN' };
     openAgainBtn.textContent = openAgainLabel[type] || 'OPEN AGAIN';
   }
 
