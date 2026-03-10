@@ -855,7 +855,9 @@
   .case-card-hover  { opacity:0;  transform:translateY(8px); display:flex; flex-direction:column; overflow:hidden; }
   .case-card:hover .case-card-front { opacity:0; transform:translateY(-8px); }
   .case-card:hover .case-card-hover { opacity:1; transform:translateY(0); }
-  .case-icon { font-size:2.2rem; line-height:1; display:block; }
+  .case-icon { display:block; }
+  .case-crate-svg { display:block; width:52px; height:52px; margin:0 auto; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.5)); transition:transform 0.18s ease, filter 0.18s ease; }
+  .case-card:hover .case-crate-svg { transform:translateY(-3px) scale(1.06); filter:drop-shadow(0 6px 14px rgba(0,0,0,0.6)); }
   .case-name { font-family:'Bebas Neue',sans-serif; font-size:0.95rem; letter-spacing:3px; color:var(--text); margin-top:4px; }
   .case-desc { font-family:'Barlow Condensed',sans-serif; font-size:0.56rem; letter-spacing:1.5px; color:var(--muted); margin:3px 0 5px; text-transform:uppercase; line-height:1.4; }
   .case-cost { font-family:'Bebas Neue',sans-serif; font-size:0.85rem; letter-spacing:2px; color:var(--gold); }
@@ -884,7 +886,8 @@
   @keyframes confettiFall { 0%{transform:translateY(-20px) rotate(0deg);opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
   @keyframes bgFlash      { 0%{opacity:0} 15%{opacity:0.35} 100%{opacity:0} }
   @keyframes openBtnPulse { 0%,100%{box-shadow:0 0 0 0 rgba(217,43,43,0.4)} 50%{box-shadow:0 0 0 18px rgba(217,43,43,0)} }
-  #case-float-icon { animation: caseFloat 2.2s ease-in-out infinite; }
+  #case-float-icon { animation: caseFloat 2.2s ease-in-out infinite; display:flex; align-items:center; justify-content:center; }
+  #case-float-icon .case-crate-svg { width:90px; height:90px; filter:drop-shadow(0 0 30px rgba(255,255,255,0.15)); }
   #case-open-btn   { animation: openBtnPulse 1.6s ease-in-out infinite; }
   #case-open-btn:disabled { animation: none; background: rgba(255,255,255,0.08); color: #444; cursor: not-allowed; }
 
@@ -1500,7 +1503,28 @@
       <div class="cases-grid">
         <div class="case-card namecolor" onclick="openCase('namecolor')" style="--case-border:rgba(255,80,80,0.4);border-color:rgba(255,80,80,0.4);">
           <div class="case-card-front">
-            <span class="case-icon">🎨</span>
+            <svg class="case-crate-svg" width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- shadow -->
+  <ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/>
+  <!-- top face -->
+  <polygon points="26,4 46,14 26,24 6,14" fill="#3a1a1a"/>
+  <!-- top face border/planks -->
+  <line x1="26" y1="4" x2="26" y2="24" stroke="#FF3B3B" stroke-width="0.7" opacity="0.5"/>
+  <line x1="6" y1="14" x2="46" y2="14" stroke="#FF3B3B" stroke-width="0.7" opacity="0.5"/>
+  <polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#FF3B3B" stroke-width="1" opacity="0.7"/>
+  <!-- front face (left) -->
+  <polygon points="6,14 26,24 26,44 6,34" fill="#2a1010"/>
+  <line x1="6" y1="24" x2="26" y2="34" stroke="#FF3B3B" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#FF3B3B" stroke-width="1" opacity="0.6"/>
+  <!-- right face -->
+  <polygon points="26,24 46,14 46,34 26,44" fill="#1e0c0c"/>
+  <line x1="26" y1="34" x2="46" y2="24" stroke="#FF3B3B" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#FF3B3B" stroke-width="1" opacity="0.6"/>
+  <!-- latch on front face -->
+  <rect x="13" y="27" width="5" height="4" rx="0.5" fill="#FF3B3B" opacity="0.8"/>
+  <!-- symbol on right face -->
+  <text x="36" y="31" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#FF3B3B" opacity="0.9" text-anchor="middle" dominant-baseline="middle">Aa</text>
+</svg>
             <div class="case-name">NAME COLOR CASE</div>
             <div class="case-desc">Username colors only</div>
             <div class="case-cost">🪙 500</div>
@@ -1546,7 +1570,28 @@
         </div>
         <div class="case-card textcolor" onclick="openCase('textcolor')" style="--case-border:rgba(96,165,250,0.4);border-color:rgba(96,165,250,0.4);">
           <div class="case-card-front">
-            <span class="case-icon">✏️</span>
+            <svg class="case-crate-svg" width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- shadow -->
+  <ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/>
+  <!-- top face -->
+  <polygon points="26,4 46,14 26,24 6,14" fill="#151e2e"/>
+  <!-- top face border/planks -->
+  <line x1="26" y1="4" x2="26" y2="24" stroke="#60a5fa" stroke-width="0.7" opacity="0.5"/>
+  <line x1="6" y1="14" x2="46" y2="14" stroke="#60a5fa" stroke-width="0.7" opacity="0.5"/>
+  <polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#60a5fa" stroke-width="1" opacity="0.7"/>
+  <!-- front face (left) -->
+  <polygon points="6,14 26,24 26,44 6,34" fill="#0e1520"/>
+  <line x1="6" y1="24" x2="26" y2="34" stroke="#60a5fa" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#60a5fa" stroke-width="1" opacity="0.6"/>
+  <!-- right face -->
+  <polygon points="26,24 46,14 46,34 26,44" fill="#0a1018"/>
+  <line x1="26" y1="34" x2="46" y2="24" stroke="#60a5fa" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#60a5fa" stroke-width="1" opacity="0.6"/>
+  <!-- latch on front face -->
+  <rect x="13" y="27" width="5" height="4" rx="0.5" fill="#60a5fa" opacity="0.8"/>
+  <!-- symbol on right face -->
+  <text x="36" y="31" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#60a5fa" opacity="0.9" text-anchor="middle" dominant-baseline="middle">T</text>
+</svg>
             <div class="case-name">TEXT COLOR CASE</div>
             <div class="case-desc">Chat message colors</div>
             <div class="case-cost">🪙 500</div>
@@ -1587,7 +1632,28 @@
         </div>
         <div class="case-card bordercase" onclick="openCase('border')" style="--case-border:rgba(180,90,255,0.4);border-color:rgba(180,90,255,0.4);">
           <div class="case-card-front">
-            <span class="case-icon">🔲</span>
+            <svg class="case-crate-svg" width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- shadow -->
+  <ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/>
+  <!-- top face -->
+  <polygon points="26,4 46,14 26,24 6,14" fill="#1a1230"/>
+  <!-- top face border/planks -->
+  <line x1="26" y1="4" x2="26" y2="24" stroke="#b45aff" stroke-width="0.7" opacity="0.5"/>
+  <line x1="6" y1="14" x2="46" y2="14" stroke="#b45aff" stroke-width="0.7" opacity="0.5"/>
+  <polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#b45aff" stroke-width="1" opacity="0.7"/>
+  <!-- front face (left) -->
+  <polygon points="6,14 26,24 26,44 6,34" fill="#100c22"/>
+  <line x1="6" y1="24" x2="26" y2="34" stroke="#b45aff" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#b45aff" stroke-width="1" opacity="0.6"/>
+  <!-- right face -->
+  <polygon points="26,24 46,14 46,34 26,44" fill="#0c0918"/>
+  <line x1="26" y1="34" x2="46" y2="24" stroke="#b45aff" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#b45aff" stroke-width="1" opacity="0.6"/>
+  <!-- latch on front face -->
+  <rect x="13" y="27" width="5" height="4" rx="0.5" fill="#b45aff" opacity="0.8"/>
+  <!-- symbol on right face -->
+  <text x="36" y="30" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#b45aff" opacity="0.9" text-anchor="middle" dominant-baseline="middle">◻</text>
+</svg>
             <div class="case-name">BORDER CASE</div>
             <div class="case-desc">Profile border styles</div>
             <div class="case-cost">🪙 500</div>
@@ -1628,7 +1694,28 @@
         </div>
         <div class="case-card hatcase" onclick="openCase('hat')" style="--case-border:rgba(201,168,76,0.4);border-color:rgba(201,168,76,0.4);">
           <div class="case-card-front">
-            <span class="case-icon">🎩</span>
+            <svg class="case-crate-svg" width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- shadow -->
+  <ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/>
+  <!-- top face -->
+  <polygon points="26,4 46,14 26,24 6,14" fill="#1e1a0a"/>
+  <!-- top face border/planks -->
+  <line x1="26" y1="4" x2="26" y2="24" stroke="#C9A84C" stroke-width="0.7" opacity="0.5"/>
+  <line x1="6" y1="14" x2="46" y2="14" stroke="#C9A84C" stroke-width="0.7" opacity="0.5"/>
+  <polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#C9A84C" stroke-width="1" opacity="0.7"/>
+  <!-- front face (left) -->
+  <polygon points="6,14 26,24 26,44 6,34" fill="#161208"/>
+  <line x1="6" y1="24" x2="26" y2="34" stroke="#C9A84C" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#C9A84C" stroke-width="1" opacity="0.6"/>
+  <!-- right face -->
+  <polygon points="26,24 46,14 46,34 26,44" fill="#100d05"/>
+  <line x1="26" y1="34" x2="46" y2="24" stroke="#C9A84C" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#C9A84C" stroke-width="1" opacity="0.6"/>
+  <!-- latch on front face -->
+  <rect x="13" y="27" width="5" height="4" rx="0.5" fill="#C9A84C" opacity="0.8"/>
+  <!-- symbol on right face -->
+  <text x="36" y="30" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#C9A84C" opacity="0.9" text-anchor="middle" dominant-baseline="middle">▲</text>
+</svg>
             <div class="case-name">HAT CASE</div>
             <div class="case-desc">Hats & headwear</div>
             <div class="case-cost">🪙 500</div>
@@ -1699,7 +1786,28 @@
         </div>
         <div class="case-card themecase" onclick="openCase('theme')" style="--case-border:rgba(39,255,20,0.35);border-color:rgba(39,255,20,0.35);">
           <div class="case-card-front">
-            <span class="case-icon">🎨</span>
+            <svg class="case-crate-svg" width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- shadow -->
+  <ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/>
+  <!-- top face -->
+  <polygon points="26,4 46,14 26,24 6,14" fill="#0e1e0e"/>
+  <!-- top face border/planks -->
+  <line x1="26" y1="4" x2="26" y2="24" stroke="#39ff14" stroke-width="0.7" opacity="0.5"/>
+  <line x1="6" y1="14" x2="46" y2="14" stroke="#39ff14" stroke-width="0.7" opacity="0.5"/>
+  <polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#39ff14" stroke-width="1" opacity="0.7"/>
+  <!-- front face (left) -->
+  <polygon points="6,14 26,24 26,44 6,34" fill="#081408"/>
+  <line x1="6" y1="24" x2="26" y2="34" stroke="#39ff14" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#39ff14" stroke-width="1" opacity="0.6"/>
+  <!-- right face -->
+  <polygon points="26,24 46,14 46,34 26,44" fill="#051005"/>
+  <line x1="26" y1="34" x2="46" y2="24" stroke="#39ff14" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#39ff14" stroke-width="1" opacity="0.6"/>
+  <!-- latch on front face -->
+  <rect x="13" y="27" width="5" height="4" rx="0.5" fill="#39ff14" opacity="0.8"/>
+  <!-- symbol on right face -->
+  <text x="36" y="30" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#39ff14" opacity="0.9" text-anchor="middle" dominant-baseline="middle">◈</text>
+</svg>
             <div class="case-name">THEME CASE</div>
             <div class="case-desc">Full site themes</div>
             <div class="case-cost">🪙 500</div>
@@ -1740,7 +1848,28 @@
         </div>
         <div class="case-card daily" onclick="openCase('daily')" style="--case-border:rgba(201,168,76,0.4);border-color:rgba(201,168,76,0.4);">
           <div class="case-card-front">
-            <span class="case-icon">🎁</span>
+            <svg class="case-crate-svg" width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- shadow -->
+  <ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/>
+  <!-- top face -->
+  <polygon points="26,4 46,14 26,24 6,14" fill="#1e1a08"/>
+  <!-- top face border/planks -->
+  <line x1="26" y1="4" x2="26" y2="24" stroke="#ffd700" stroke-width="0.7" opacity="0.5"/>
+  <line x1="6" y1="14" x2="46" y2="14" stroke="#ffd700" stroke-width="0.7" opacity="0.5"/>
+  <polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#ffd700" stroke-width="1" opacity="0.7"/>
+  <!-- front face (left) -->
+  <polygon points="6,14 26,24 26,44 6,34" fill="#161208"/>
+  <line x1="6" y1="24" x2="26" y2="34" stroke="#ffd700" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#ffd700" stroke-width="1" opacity="0.6"/>
+  <!-- right face -->
+  <polygon points="26,24 46,14 46,34 26,44" fill="#100d05"/>
+  <line x1="26" y1="34" x2="46" y2="24" stroke="#ffd700" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#ffd700" stroke-width="1" opacity="0.6"/>
+  <!-- latch on front face -->
+  <rect x="13" y="27" width="5" height="4" rx="0.5" fill="#ffd700" opacity="0.8"/>
+  <!-- symbol on right face -->
+  <text x="36" y="31" font-size="10" fill="#ffd700" opacity="0.85" text-anchor="middle" dominant-baseline="middle">★</text>
+</svg>
             <div class="case-name">DAILY CASE</div>
             <div class="case-desc">Free once per 24h — mix of all cases</div>
             <div class="case-cost" id="case-daily-cost">FREE</div>
@@ -1856,7 +1985,28 @@
         </div>
         <div class="case-card battle case-locked" onclick="openCase('battle')" style="--case-border:rgba(217,43,43,0.4);border-color:rgba(217,43,43,0.4);">
           <div class="case-card-front">
-            <span class="case-icon">⚔️</span>
+            <svg class="case-crate-svg" width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- shadow -->
+  <ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/>
+  <!-- top face -->
+  <polygon points="26,4 46,14 26,24 6,14" fill="#1e0808"/>
+  <!-- top face border/planks -->
+  <line x1="26" y1="4" x2="26" y2="24" stroke="#ff3b3b" stroke-width="0.7" opacity="0.5"/>
+  <line x1="6" y1="14" x2="46" y2="14" stroke="#ff3b3b" stroke-width="0.7" opacity="0.5"/>
+  <polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#ff3b3b" stroke-width="1" opacity="0.7"/>
+  <!-- front face (left) -->
+  <polygon points="6,14 26,24 26,44 6,34" fill="#160505"/>
+  <line x1="6" y1="24" x2="26" y2="34" stroke="#ff3b3b" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#ff3b3b" stroke-width="1" opacity="0.6"/>
+  <!-- right face -->
+  <polygon points="26,24 46,14 46,34 26,44" fill="#100303"/>
+  <line x1="26" y1="34" x2="46" y2="24" stroke="#ff3b3b" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#ff3b3b" stroke-width="1" opacity="0.6"/>
+  <!-- latch on front face -->
+  <rect x="13" y="27" width="5" height="4" rx="0.5" fill="#ff3b3b" opacity="0.8"/>
+  <!-- symbol on right face -->
+  <text x="36" y="30" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#ff3b3b" opacity="0.9" text-anchor="middle" dominant-baseline="middle">⚔</text>
+</svg>
             <div class="case-name">BATTLE CASE</div>
             <div class="case-desc">Win a battle to unlock</div>
             <div class="case-cost" id="case-battle-cost">🏆 WIN A BATTLE</div>
@@ -1867,7 +2017,28 @@
         </div>
         <div class="case-card streak case-locked" onclick="openCase('streak')" style="--case-border:rgba(255,100,0,0.4);border-color:rgba(255,100,0,0.4);">
           <div class="case-card-front">
-            <span class="case-icon">🔥</span>
+            <svg class="case-crate-svg" width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- shadow -->
+  <ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/>
+  <!-- top face -->
+  <polygon points="26,4 46,14 26,24 6,14" fill="#1e1008"/>
+  <!-- top face border/planks -->
+  <line x1="26" y1="4" x2="26" y2="24" stroke="#ff6600" stroke-width="0.7" opacity="0.5"/>
+  <line x1="6" y1="14" x2="46" y2="14" stroke="#ff6600" stroke-width="0.7" opacity="0.5"/>
+  <polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#ff6600" stroke-width="1" opacity="0.7"/>
+  <!-- front face (left) -->
+  <polygon points="6,14 26,24 26,44 6,34" fill="#160c05"/>
+  <line x1="6" y1="24" x2="26" y2="34" stroke="#ff6600" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#ff6600" stroke-width="1" opacity="0.6"/>
+  <!-- right face -->
+  <polygon points="26,24 46,14 46,34 26,44" fill="#100903"/>
+  <line x1="26" y1="34" x2="46" y2="24" stroke="#ff6600" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#ff6600" stroke-width="1" opacity="0.6"/>
+  <!-- latch on front face -->
+  <rect x="13" y="27" width="5" height="4" rx="0.5" fill="#ff6600" opacity="0.8"/>
+  <!-- symbol on right face -->
+  <text x="36" y="30" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#ff6600" opacity="0.9" text-anchor="middle" dominant-baseline="middle">▲</text>
+</svg>
             <div class="case-name">STREAK CASE</div>
             <div class="case-desc">3-win streak required</div>
             <div class="case-cost" id="case-streak-cost">🔥 3-WIN STREAK</div>
@@ -1878,7 +2049,28 @@
         </div>
         <div class="case-card void" onclick="openCase('void')" style="--case-border:rgba(255,255,255,0.25);border-color:rgba(255,255,255,0.25);">
           <div class="case-card-front">
-            <span class="case-icon">🌑</span>
+            <svg class="case-crate-svg" width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- shadow -->
+  <ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/>
+  <!-- top face -->
+  <polygon points="26,4 46,14 26,24 6,14" fill="#111118"/>
+  <!-- top face border/planks -->
+  <line x1="26" y1="4" x2="26" y2="24" stroke="#e0e0ff" stroke-width="0.7" opacity="0.5"/>
+  <line x1="6" y1="14" x2="46" y2="14" stroke="#e0e0ff" stroke-width="0.7" opacity="0.5"/>
+  <polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#e0e0ff" stroke-width="1" opacity="0.7"/>
+  <!-- front face (left) -->
+  <polygon points="6,14 26,24 26,44 6,34" fill="#0a0a12"/>
+  <line x1="6" y1="24" x2="26" y2="34" stroke="#e0e0ff" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#e0e0ff" stroke-width="1" opacity="0.6"/>
+  <!-- right face -->
+  <polygon points="26,24 46,14 46,34 26,44" fill="#07070d"/>
+  <line x1="26" y1="34" x2="46" y2="24" stroke="#e0e0ff" stroke-width="0.7" opacity="0.4"/>
+  <polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#e0e0ff" stroke-width="1" opacity="0.6"/>
+  <!-- latch on front face -->
+  <rect x="13" y="27" width="5" height="4" rx="0.5" fill="#e0e0ff" opacity="0.8"/>
+  <!-- symbol on right face -->
+  <text x="36" y="30" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#e0e0ff" opacity="0.9" text-anchor="middle" dominant-baseline="middle">✦</text>
+</svg>
             <div class="case-name">VOID CASE</div>
             <div class="case-desc">No filler — pure prestige</div>
             <div class="case-cost">🪙 2,500</div>
@@ -4505,15 +4697,15 @@ function weightedPick(pool, isVoid = false) {
 // ══════════════════════════════════════════════════
 
 const CASE_META = {
-  namecolor: { icon:'🎨', name:'NAME COLOR CASE', color:'rgba(255,80,80,0.5)',   flashClass:'fire' },
-  textcolor: { icon:'✏️', name:'TEXT COLOR CASE', color:'rgba(96,165,250,0.5)',  flashClass:'fire' },
-  border:    { icon:'🔲', name:'BORDER CASE',      color:'rgba(180,90,255,0.5)', flashClass:'epic' },
-  hat:       { icon:'🎩', name:'HAT CASE',         color:'rgba(201,168,76,0.5)', flashClass:'gold' },
-  theme:     { icon:'🎨', name:'THEME CASE',       color:'rgba(39,255,20,0.4)',  flashClass:'fire' },
-  daily:     { icon:'🎁', name:'DAILY CASE',       color:'rgba(201,168,76,0.5)', flashClass:'gold' },
-  battle:    { icon:'⚔️', name:'BATTLE CASE',     color:'rgba(217,43,43,0.6)',   flashClass:'fire' },
-  streak:    { icon:'🔥', name:'STREAK CASE',      color:'rgba(255,100,0,0.5)',  flashClass:'fire' },
-  void:      { icon:'🌑', name:'VOID CASE',        color:'rgba(255,255,255,0.4)',flashClass:'white' },
+  namecolor: { icon:'<svg class="case-crate-svg" width="90" height="90" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/><polygon points="26,4 46,14 26,24 6,14" fill="#3a1a1a"/><line x1="26" y1="4" x2="26" y2="24" stroke="#FF3B3B" stroke-width="0.7" opacity="0.5"/><line x1="6" y1="14" x2="46" y2="14" stroke="#FF3B3B" stroke-width="0.7" opacity="0.5"/><polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#FF3B3B" stroke-width="1" opacity="0.7"/><polygon points="6,14 26,24 26,44 6,34" fill="#2a1010"/><line x1="6" y1="24" x2="26" y2="34" stroke="#FF3B3B" stroke-width="0.7" opacity="0.4"/><polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#FF3B3B" stroke-width="1" opacity="0.6"/><polygon points="26,24 46,14 46,34 26,44" fill="#1e0c0c"/><line x1="26" y1="34" x2="46" y2="24" stroke="#FF3B3B" stroke-width="0.7" opacity="0.4"/><polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#FF3B3B" stroke-width="1" opacity="0.6"/><rect x="13" y="27" width="5" height="4" rx="0.5" fill="#FF3B3B" opacity="0.8"/><text x="36" y="31" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#FF3B3B" opacity="0.9" text-anchor="middle" dominant-baseline="middle">Aa</text></svg>', name:'NAME COLOR CASE', color:'rgba(255,80,80,0.5)', flashClass:'fire' },
+  textcolor: { icon:'<svg class="case-crate-svg" width="90" height="90" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/><polygon points="26,4 46,14 26,24 6,14" fill="#151e2e"/><line x1="26" y1="4" x2="26" y2="24" stroke="#60a5fa" stroke-width="0.7" opacity="0.5"/><line x1="6" y1="14" x2="46" y2="14" stroke="#60a5fa" stroke-width="0.7" opacity="0.5"/><polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#60a5fa" stroke-width="1" opacity="0.7"/><polygon points="6,14 26,24 26,44 6,34" fill="#0e1520"/><line x1="6" y1="24" x2="26" y2="34" stroke="#60a5fa" stroke-width="0.7" opacity="0.4"/><polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#60a5fa" stroke-width="1" opacity="0.6"/><polygon points="26,24 46,14 46,34 26,44" fill="#0a1018"/><line x1="26" y1="34" x2="46" y2="24" stroke="#60a5fa" stroke-width="0.7" opacity="0.4"/><polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#60a5fa" stroke-width="1" opacity="0.6"/><rect x="13" y="27" width="5" height="4" rx="0.5" fill="#60a5fa" opacity="0.8"/><text x="36" y="31" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#60a5fa" opacity="0.9" text-anchor="middle" dominant-baseline="middle">T</text></svg>', name:'TEXT COLOR CASE', color:'rgba(96,165,250,0.5)', flashClass:'fire' },
+  border: { icon:'<svg class="case-crate-svg" width="90" height="90" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/><polygon points="26,4 46,14 26,24 6,14" fill="#1a1230"/><line x1="26" y1="4" x2="26" y2="24" stroke="#b45aff" stroke-width="0.7" opacity="0.5"/><line x1="6" y1="14" x2="46" y2="14" stroke="#b45aff" stroke-width="0.7" opacity="0.5"/><polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#b45aff" stroke-width="1" opacity="0.7"/><polygon points="6,14 26,24 26,44 6,34" fill="#100c22"/><line x1="6" y1="24" x2="26" y2="34" stroke="#b45aff" stroke-width="0.7" opacity="0.4"/><polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#b45aff" stroke-width="1" opacity="0.6"/><polygon points="26,24 46,14 46,34 26,44" fill="#0c0918"/><line x1="26" y1="34" x2="46" y2="24" stroke="#b45aff" stroke-width="0.7" opacity="0.4"/><polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#b45aff" stroke-width="1" opacity="0.6"/><rect x="13" y="27" width="5" height="4" rx="0.5" fill="#b45aff" opacity="0.8"/><text x="36" y="30" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#b45aff" opacity="0.9" text-anchor="middle" dominant-baseline="middle">&#9633;</text></svg>', name:'BORDER CASE', color:'rgba(180,90,255,0.5)', flashClass:'epic' },
+  hat: { icon:'<svg class="case-crate-svg" width="90" height="90" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/><polygon points="26,4 46,14 26,24 6,14" fill="#1e1a0a"/><line x1="26" y1="4" x2="26" y2="24" stroke="#C9A84C" stroke-width="0.7" opacity="0.5"/><line x1="6" y1="14" x2="46" y2="14" stroke="#C9A84C" stroke-width="0.7" opacity="0.5"/><polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#C9A84C" stroke-width="1" opacity="0.7"/><polygon points="6,14 26,24 26,44 6,34" fill="#161208"/><line x1="6" y1="24" x2="26" y2="34" stroke="#C9A84C" stroke-width="0.7" opacity="0.4"/><polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#C9A84C" stroke-width="1" opacity="0.6"/><polygon points="26,24 46,14 46,34 26,44" fill="#100d05"/><line x1="26" y1="34" x2="46" y2="24" stroke="#C9A84C" stroke-width="0.7" opacity="0.4"/><polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#C9A84C" stroke-width="1" opacity="0.6"/><rect x="13" y="27" width="5" height="4" rx="0.5" fill="#C9A84C" opacity="0.8"/><text x="36" y="31" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#C9A84C" opacity="0.9" text-anchor="middle" dominant-baseline="middle">H</text></svg>', name:'HAT CASE', color:'rgba(201,168,76,0.5)', flashClass:'gold' },
+  theme: { icon:'<svg class="case-crate-svg" width="90" height="90" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/><polygon points="26,4 46,14 26,24 6,14" fill="#0e1e0e"/><line x1="26" y1="4" x2="26" y2="24" stroke="#39ff14" stroke-width="0.7" opacity="0.5"/><line x1="6" y1="14" x2="46" y2="14" stroke="#39ff14" stroke-width="0.7" opacity="0.5"/><polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#39ff14" stroke-width="1" opacity="0.7"/><polygon points="6,14 26,24 26,44 6,34" fill="#081408"/><line x1="6" y1="24" x2="26" y2="34" stroke="#39ff14" stroke-width="0.7" opacity="0.4"/><polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#39ff14" stroke-width="1" opacity="0.6"/><polygon points="26,24 46,14 46,34 26,44" fill="#051005"/><line x1="26" y1="34" x2="46" y2="24" stroke="#39ff14" stroke-width="0.7" opacity="0.4"/><polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#39ff14" stroke-width="1" opacity="0.6"/><rect x="13" y="27" width="5" height="4" rx="0.5" fill="#39ff14" opacity="0.8"/><text x="36" y="31" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#39ff14" opacity="0.9" text-anchor="middle" dominant-baseline="middle">T</text></svg>', name:'THEME CASE', color:'rgba(39,255,20,0.4)', flashClass:'fire' },
+  daily: { icon:'<svg class="case-crate-svg" width="90" height="90" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/><polygon points="26,4 46,14 26,24 6,14" fill="#1e1a08"/><line x1="26" y1="4" x2="26" y2="24" stroke="#ffd700" stroke-width="0.7" opacity="0.5"/><line x1="6" y1="14" x2="46" y2="14" stroke="#ffd700" stroke-width="0.7" opacity="0.5"/><polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#ffd700" stroke-width="1" opacity="0.7"/><polygon points="6,14 26,24 26,44 6,34" fill="#161208"/><line x1="6" y1="24" x2="26" y2="34" stroke="#ffd700" stroke-width="0.7" opacity="0.4"/><polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#ffd700" stroke-width="1" opacity="0.6"/><polygon points="26,24 46,14 46,34 26,44" fill="#100d05"/><line x1="26" y1="34" x2="46" y2="24" stroke="#ffd700" stroke-width="0.7" opacity="0.4"/><polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#ffd700" stroke-width="1" opacity="0.6"/><rect x="13" y="27" width="5" height="4" rx="0.5" fill="#ffd700" opacity="0.8"/><text x="36" y="31" font-size="10" fill="#ffd700" opacity="0.85" text-anchor="middle" dominant-baseline="middle">&#9733;</text></svg>', name:'DAILY CASE', color:'rgba(201,168,76,0.5)', flashClass:'gold' },
+  battle: { icon:'<svg class="case-crate-svg" width="90" height="90" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/><polygon points="26,4 46,14 26,24 6,14" fill="#1e0808"/><line x1="26" y1="4" x2="26" y2="24" stroke="#ff3b3b" stroke-width="0.7" opacity="0.5"/><line x1="6" y1="14" x2="46" y2="14" stroke="#ff3b3b" stroke-width="0.7" opacity="0.5"/><polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#ff3b3b" stroke-width="1" opacity="0.7"/><polygon points="6,14 26,24 26,44 6,34" fill="#160505"/><line x1="6" y1="24" x2="26" y2="34" stroke="#ff3b3b" stroke-width="0.7" opacity="0.4"/><polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#ff3b3b" stroke-width="1" opacity="0.6"/><polygon points="26,24 46,14 46,34 26,44" fill="#100303"/><line x1="26" y1="34" x2="46" y2="24" stroke="#ff3b3b" stroke-width="0.7" opacity="0.4"/><polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#ff3b3b" stroke-width="1" opacity="0.6"/><rect x="13" y="27" width="5" height="4" rx="0.5" fill="#ff3b3b" opacity="0.8"/><text x="36" y="31" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#ff3b3b" opacity="0.9" text-anchor="middle" dominant-baseline="middle">B</text></svg>', name:'BATTLE CASE', color:'rgba(217,43,43,0.6)', flashClass:'fire' },
+  streak: { icon:'<svg class="case-crate-svg" width="90" height="90" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/><polygon points="26,4 46,14 26,24 6,14" fill="#1e1008"/><line x1="26" y1="4" x2="26" y2="24" stroke="#ff6600" stroke-width="0.7" opacity="0.5"/><line x1="6" y1="14" x2="46" y2="14" stroke="#ff6600" stroke-width="0.7" opacity="0.5"/><polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#ff6600" stroke-width="1" opacity="0.7"/><polygon points="6,14 26,24 26,44 6,34" fill="#160c05"/><line x1="6" y1="24" x2="26" y2="34" stroke="#ff6600" stroke-width="0.7" opacity="0.4"/><polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#ff6600" stroke-width="1" opacity="0.6"/><polygon points="26,24 46,14 46,34 26,44" fill="#100903"/><line x1="26" y1="34" x2="46" y2="24" stroke="#ff6600" stroke-width="0.7" opacity="0.4"/><polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#ff6600" stroke-width="1" opacity="0.6"/><rect x="13" y="27" width="5" height="4" rx="0.5" fill="#ff6600" opacity="0.8"/><text x="36" y="31" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#ff6600" opacity="0.9" text-anchor="middle" dominant-baseline="middle">S</text></svg>', name:'STREAK CASE', color:'rgba(255,100,0,0.5)', flashClass:'fire' },
+  void: { icon:'<svg class="case-crate-svg" width="90" height="90" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="26" cy="47" rx="14" ry="3" fill="rgba(0,0,0,0.35)"/><polygon points="26,4 46,14 26,24 6,14" fill="#111118"/><line x1="26" y1="4" x2="26" y2="24" stroke="#e0e0ff" stroke-width="0.7" opacity="0.5"/><line x1="6" y1="14" x2="46" y2="14" stroke="#e0e0ff" stroke-width="0.7" opacity="0.5"/><polygon points="26,4 46,14 26,24 6,14" fill="none" stroke="#e0e0ff" stroke-width="1" opacity="0.7"/><polygon points="6,14 26,24 26,44 6,34" fill="#0a0a12"/><line x1="6" y1="24" x2="26" y2="34" stroke="#e0e0ff" stroke-width="0.7" opacity="0.4"/><polygon points="6,14 26,24 26,44 6,34" fill="none" stroke="#e0e0ff" stroke-width="1" opacity="0.6"/><polygon points="26,24 46,14 46,34 26,44" fill="#07070d"/><line x1="26" y1="34" x2="46" y2="24" stroke="#e0e0ff" stroke-width="0.7" opacity="0.4"/><polygon points="26,24 46,14 46,34 26,44" fill="none" stroke="#e0e0ff" stroke-width="1" opacity="0.6"/><rect x="13" y="27" width="5" height="4" rx="0.5" fill="#e0e0ff" opacity="0.8"/><text x="36" y="31" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="#e0e0ff" opacity="0.9" text-anchor="middle" dominant-baseline="middle">V</text></svg>', name:'VOID CASE', color:'rgba(255,255,255,0.4)', flashClass:'white' },
 };
 const CASE_ODDS = {
   namecolor: '<span style="color:#aaa">■</span> Common 50% &nbsp;<span style="color:#60a5fa">■</span> Rare 25% &nbsp;<span style="color:#b45aff">■</span> Epic 17.5%<br><span style="color:#C9A84C">■</span> Legendary 5% &nbsp;<span style="color:#fff">■</span> <b>Ultra 2.5%</b>',
@@ -4558,7 +4750,7 @@ window.openCase = (type) => {
   const meta = CASE_META[type] || CASE_META.standard;
   // Set phase-1 content
   document.getElementById('case-modal-title').textContent = meta.name;
-  document.getElementById('case-float-icon').textContent  = meta.icon;
+  document.getElementById('case-float-icon').innerHTML   = meta.icon;
   document.getElementById('case-float-icon').style.filter = `drop-shadow(0 0 40px ${meta.color})`;
   document.getElementById('case-float-name').textContent  = meta.name;
   document.getElementById('case-float-odds').innerHTML    = CASE_ODDS[type] || '';
@@ -4610,7 +4802,7 @@ window.caseOpenAgain = () => {
   _caseSpinning = false;
   window._caseSpinning = false;
   const meta = CASE_META[type] || CASE_META.standard;
-  document.getElementById('case-float-icon').textContent = meta.icon;
+  document.getElementById('case-float-icon').innerHTML   = meta.icon;
   const costLabel = { namecolor:'OPEN — 🪙 500', textcolor:'OPEN — 🪙 500', border:'OPEN — 🪙 500', hat:'OPEN — 🪙 500', theme:'OPEN — 🪙 500', void:'OPEN — 🪙 2,500', daily:'OPEN FREE', battle:'OPEN CASE', streak:'OPEN CASE' };
   const btn = document.getElementById('case-open-btn');
   btn.textContent = costLabel[type] || 'OPEN CASE';
