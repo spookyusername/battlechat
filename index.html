@@ -5882,13 +5882,10 @@ function refreshAllAvatars() {
 
 
 // ══════════════════════════════════════════════════════════════
-//  ✈️  AVIAMASTERS — BattleChat Edition  (v2 — full cinematic)
-// ══════════════════════════════════════════════════════════════
-// The plane starts on a carrier (left), launches, flies right
-// across a scrolling sky-sea world picking up tokens & dodging
-// rockets.  A second carrier waits at the end — land on it to
-// win, dip into the sea to crash.  Every frame is animated at
-// 60 fps; the whole journey takes 8–14 s regardless of outcome.
+//  ✈️  AVIAMASTERS — BattleChat Edition  (v3)
+//  - Multipliers shoot plane UPWARD (camera follows, sky scrolls)
+//  - Rockets slam plane DOWN hard
+//  - Landing: world stops, plane glides onto deck and halts
 // ══════════════════════════════════════════════════════════════
 
 let amBet = 0;
@@ -5897,7 +5894,6 @@ let amFlightActive = false;
 let amAnimFrame = null;
 let amMultiplier = 1.0;
 
-// ── helpers ──────────────────────────────────────────────────
 function amSyncBalance() {
   const n = (myProfile && myProfile.coins) ? myProfile.coins : 0;
   const el = document.getElementById('am-balance');
@@ -5909,22 +5905,15 @@ function amSetBet(n) {
   if (inp) inp.value = n;
   amClearErr();
 }
-function amSetBetAll() {
-  amSetBet((myProfile && myProfile.coins) ? myProfile.coins : 0);
-}
+function amSetBetAll() { amSetBet((myProfile && myProfile.coins) ? myProfile.coins : 0); }
 function amSyncBetInput() {
   const inp = document.getElementById('am-bet-input');
   if (inp) amBet = parseInt(inp.value) || 0;
   amClearErr();
 }
-function amClearErr() {
-  const el = document.getElementById('am-err'); if (el) el.textContent = '';
-}
-function amShowErr(msg) {
-  const el = document.getElementById('am-err'); if (el) el.textContent = msg;
-}
+function amClearErr() { const el = document.getElementById('am-err'); if (el) el.textContent = ''; }
+function amShowErr(msg) { const el = document.getElementById('am-err'); if (el) el.textContent = msg; }
 
-// ── START ─────────────────────────────────────────────────────
 window.amStartFlight = () => {
   if (!me) { showToast('Log in to play!'); return; }
   const coins = (myProfile && myProfile.coins) ? myProfile.coins : 0;
@@ -5948,656 +5937,571 @@ window.amStartFlight = () => {
   amRunFlight();
 };
 
-// ── MAIN ENGINE ───────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 function amRunFlight() {
   const canvas = document.getElementById('am-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-
-  // Resize canvas to its CSS layout size
   canvas.width  = canvas.offsetWidth  || 340;
   canvas.height = canvas.offsetHeight || 240;
   const W = canvas.width, H = canvas.height;
 
-  // ─── Pre-determine outcome & schedule events ─────────────────
-  // All times in milliseconds from launch
-  const willLand = Math.random() < 0.58;
+  // ── Outcome & event schedule ──────────────────────────────────
+  const willLand   = Math.random() < 0.58;
+  const TOTAL_MS   = 9000 + Math.random() * 5000;
+  const numEvents  = 5 + Math.floor(Math.random() * 6);
 
-  // Total flight duration: 9–14 s
-  const TOTAL_MS = 9000 + Math.random() * 5000;
+  // World scroll speed
+  const SCROLL_PX_S = W * 0.38;
 
-  // Generate token/rocket events spaced across the flight
-  const eventSchedule = []; // { time, type, value, lane } lane = 0..2 (top/mid/bot)
-  const numEvents = 5 + Math.floor(Math.random() * 6); // 5–10 pickups
+  // Plane is always drawn at fixed screen X; camera Y tracks it
+  const PLANE_SX = W * 0.25;
+
+  // Plane world position (planeWorldY = 0 means sea level)
+  // Positive = higher in the sky (screen coords inverted)
+  let planeWorldY  = 0;    // world Y: 0=sea level, positive=up
+  let planeVelY    = 0;    // world vel: positive=upward
+  let planeAngle   = 0;
+
+  // Camera: camY = world Y of the screen center
+  // Screen Y of an object at worldY = PLANE_SCREEN_Y - (worldY - camY)
+  const PLANE_SCREEN_Y = H * 0.60;  // plane's fixed screen Y
+  let camY = 0;   // world Y the camera is centred on
+
+  // Sea is at worldY=0; its screen Y = PLANE_SCREEN_Y + camY
+  // Sky has no ceiling in world space.
+
+  // ── Event schedule ────────────────────────────────────────────
+  const eventSchedule = [];
   for (let i = 0; i < numEvents; i++) {
-    const t = 1200 + (TOTAL_MS - 2400) * ((i + 0.5 + (Math.random() - 0.5) * 0.4) / numEvents);
+    const t = 1400 + (TOTAL_MS - 2800) * ((i + 0.5 + (Math.random()-0.5)*0.4) / numEvents);
     const roll = Math.random();
     let type, value;
-    if (roll < 0.30) {
-      type = 'add'; value = [1,1,2,2,2,3,3,5,5,10][Math.floor(Math.random()*10)];
-    } else if (roll < 0.55) {
-      type = 'mul'; value = [2,2,3,3,4,5][Math.floor(Math.random()*6)];
-    } else {
-      type = 'rocket'; value = 0;
-    }
-    const lane = Math.floor(Math.random() * 3); // 0=high 1=mid 2=low
-    eventSchedule.push({ time: t, type, value, lane, triggered: false });
+    if      (roll < 0.30) { type='add';    value=[1,1,2,2,2,3,3,5,5,10][Math.floor(Math.random()*10)]; }
+    else if (roll < 0.55) { type='mul';    value=[2,2,3,3,4,5][Math.floor(Math.random()*6)]; }
+    else                  { type='rocket'; value=0; }
+    // token world Y: spread at various altitudes so the plane has to chase them
+    const tokenWorldY = 30 + Math.random() * 120; // 30–150 above sea
+    eventSchedule.push({ time:t, type, value, tokenWorldY, triggered:false });
   }
-  eventSchedule.sort((a,b) => a.time - b.time);
+  eventSchedule.sort((a,b)=>a.time-b.time);
 
-  // ─── World / scroll state ────────────────────────────────────
-  // The world scrolls left; everything is in "world X" coords.
-  // Plane stays at ~22% from left edge (planeScreenX).
-  const PLANE_SCREEN_X = W * 0.22;
-  let worldX = 0; // how far world has scrolled (pixels)
-  const WORLD_SPEED_PX_S = W * 0.38; // world pixels per second the world scrolls
+  // Assign world X to each token
+  const LAND_WORLD_X = SCROLL_PX_S * (TOTAL_MS / 1000);
+  eventSchedule.forEach(ev => { ev.worldX = SCROLL_PX_S * (ev.time/1000); });
 
-  // Lane Y positions (screen Y) — plane targets these
-  const LANE_Y = [H * 0.22, H * 0.42, H * 0.60];
-  const SEA_Y  = H * 0.72;  // sea horizon
+  // Active token objects
+  const activeTokens = eventSchedule.map(ev => ({
+    ...ev, collected:false, collectTime:0
+  }));
 
-  // Plane physical state
-  let planeY    = H * 0.55; // start low on carrier
-  let planeVelY = 0;
-  let planeAngle = 0;
+  // ── Particles / popups / trail ─────────────────────────────────
+  let particles = [], trailPts = [], popups = [];
 
-  // PHASE:
-  //   'launch'  — on carrier, engine rev, 0–0.8s
-  //   'climb'   — gaining altitude, 0.8–2s
-  //   'cruise'  — main flight collecting tokens
-  //   'approach'— last 2s, glide toward target altitude
-  //   'land'    — plane touches carrier, brief pause
-  //   'sink'    — plane spirals down into sea
-  //   'done'    — game over
-  let phase      = 'launch';
-  let phaseTimer = 0; // ms into current phase
-  let elapsedMs  = 0;
-
-  // Target Y — plane tries to track this
-  let targetY = H * 0.55;
-
-  // ─── Carrier / world objects ─────────────────────────────────
-  // Launch carrier: fixed at world X=0, visible at start
-  // Landing carrier: at world X = WORLD_SPEED_PX_S * TOTAL_MS/1000
-  const LAND_WORLD_X = WORLD_SPEED_PX_S * (TOTAL_MS / 1000);
-
-  // Token objects (spawned just before their time)
-  const tokens = []; // { worldX, screenY, type, value, collected, alpha, scaleAnim }
-
-  // Pre-assign world X to each event based on schedule time
-  eventSchedule.forEach(ev => {
-    ev.worldX = WORLD_SPEED_PX_S * (ev.time / 1000);
-    ev.screenY = LANE_Y[ev.lane] + (Math.random() - 0.5) * 28;
-    ev.spawned = false;
-  });
-
-  // ─── Particles ───────────────────────────────────────────────
-  let particles = []; // general explosion/sparkle
-  let trailParts = []; // engine trail
-  let popups = []; // floating text
-
-  function spawnBurst(x, y, color, n=18, speed=3) {
-    for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const s = (0.5 + Math.random()) * speed;
-      particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s,
-                        alpha: 1, size: 2+Math.random()*3, color, life: 0 });
+  function spawnBurst(sx, sy, color, n=18, spd=3) {
+    for (let i=0;i<n;i++) {
+      const a=Math.random()*Math.PI*2, s=(0.5+Math.random())*spd;
+      particles.push({x:sx,y:sy,vx:Math.cos(a)*s,vy:Math.sin(a)*s,alpha:1,size:2+Math.random()*3,color});
     }
   }
-  function addPopup(x, y, text, color) {
-    popups.push({ x, y, text, color, alpha: 1, vy: -1.4 });
-  }
+  function addPopup(sx,sy,text,color) { popups.push({x:sx,y:sy,text,color,alpha:1,vy:-1.6}); }
+  function setStatus(msg) { const el=document.getElementById('am-status-bar'); if(el) el.textContent=msg; }
 
-  // ─── Drawing helpers ─────────────────────────────────────────
-  function drawBackground() {
-    // Sky gradient
-    const skyG = ctx.createLinearGradient(0, 0, 0, SEA_Y);
-    skyG.addColorStop(0,   '#08153a');
-    skyG.addColorStop(0.5, '#0d2757');
-    skyG.addColorStop(1,   '#1a4a7a');
-    ctx.fillStyle = skyG;
-    ctx.fillRect(0, 0, W, SEA_Y);
+  // ── World↔Screen Y helpers ─────────────────────────────────────
+  // screenY of a worldY: lower worldY (closer to 0=sea) = lower on screen
+  function w2s(wy) { return PLANE_SCREEN_Y - (wy - camY); }
+  function seaScreenY()    { return w2s(0); }
+  function skyTopScreenY() { return w2s(camY + H); } // always 0 basically
 
-    // Sea
-    const seaG = ctx.createLinearGradient(0, SEA_Y, 0, H);
-    seaG.addColorStop(0, '#0a2a4a');
-    seaG.addColorStop(1, '#041018');
-    ctx.fillStyle = seaG;
-    ctx.fillRect(0, SEA_Y, W, H - SEA_Y);
-
-    // Horizon glow
-    ctx.fillStyle = 'rgba(30,120,200,0.12)';
-    ctx.fillRect(0, SEA_Y - 4, W, 8);
-  }
-
-  // Tiled wave pattern
+  // ── Draw: background ──────────────────────────────────────────
   let waveT = 0;
-  function drawWaves() {
-    waveT += 0.03;
-    for (let row = 0; row < 3; row++) {
-      const wy = SEA_Y + 6 + row * 10;
-      ctx.beginPath();
-      ctx.moveTo(0, wy);
-      for (let x = 0; x <= W; x += 3) {
-        ctx.lineTo(x, wy + Math.sin((x * 0.025) + waveT + row * 1.2) * (2 - row * 0.4));
-      }
-      ctx.strokeStyle = `rgba(80,160,255,${0.18 - row * 0.04})`;
-      ctx.lineWidth   = 1;
-      ctx.stroke();
-    }
-  }
-
-  // Parallax cloud layers
   const cloudLayers = [
-    { speed: 0.12, y: H*0.08, items: Array.from({length:4}, (_,i)=>({ wx: i*260+80, w:60+Math.random()*50, h:14+Math.random()*10, puff:Math.floor(Math.random()*3)+2 })) },
-    { speed: 0.22, y: H*0.18, items: Array.from({length:5}, (_,i)=>({ wx: i*190+30, w:40+Math.random()*35, h:10+Math.random()*8,  puff:Math.floor(Math.random()*3)+2 })) },
-    { speed: 0.35, y: H*0.30, items: Array.from({length:6}, (_,i)=>({ wx: i*150+10, w:28+Math.random()*25, h: 7+Math.random()*6,  puff:Math.floor(Math.random()*2)+1 })) },
+    { speed:0.10, items: Array.from({length:5},(_,i)=>({wx:i*250+60+Math.random()*40, wy:60+Math.random()*80,  w:55+Math.random()*45, h:13+Math.random()*9})) },
+    { speed:0.20, items: Array.from({length:6},(_,i)=>({wx:i*180+20+Math.random()*30, wy:120+Math.random()*60, w:38+Math.random()*30, h:9 +Math.random()*7})) },
+    { speed:0.32, items: Array.from({length:7},(_,i)=>({wx:i*140+10+Math.random()*20, wy:180+Math.random()*40, w:24+Math.random()*22, h:6 +Math.random()*5})) },
   ];
 
-  function drawClouds(scrolled) {
+  function drawBg() {
+    const seaSY = seaScreenY();
+
+    // Sky — above sea
+    const skyH = Math.max(seaSY, 0);
+    if (skyH > 0) {
+      const sg = ctx.createLinearGradient(0, 0, 0, skyH);
+      sg.addColorStop(0,   '#03091f');
+      sg.addColorStop(0.4, '#08153a');
+      sg.addColorStop(1,   '#1a4a7a');
+      ctx.fillStyle = sg;
+      ctx.fillRect(0, 0, W, skyH);
+    }
+
+    // Sea — below sea horizon
+    if (seaSY < H) {
+      const seaG = ctx.createLinearGradient(0, seaSY, 0, H);
+      seaG.addColorStop(0, '#0a2a4a');
+      seaG.addColorStop(1, '#041018');
+      ctx.fillStyle = seaG;
+      ctx.fillRect(0, Math.max(0,seaSY), W, H - Math.max(0,seaSY));
+    }
+
+    // Horizon glow
+    ctx.fillStyle = 'rgba(30,120,220,0.13)';
+    ctx.fillRect(0, seaSY-4, W, 8);
+
+    // Waves
+    waveT += 0.03;
+    for (let row=0;row<3;row++) {
+      const wy = seaSY + 6 + row*10;
+      if (wy > H) continue;
+      ctx.beginPath(); ctx.moveTo(0,wy);
+      for (let x=0;x<=W;x+=3) ctx.lineTo(x, wy + Math.sin(x*0.025 + waveT + row*1.2)*(2-row*0.4));
+      ctx.strokeStyle=`rgba(80,160,255,${0.18-row*0.04})`; ctx.lineWidth=1; ctx.stroke();
+    }
+
+    // Stars (when high up — camY > 80)
+    if (camY > 40) {
+      const starAlpha = Math.min(1, (camY-40)/120) * 0.55;
+      if (starAlpha > 0.02) {
+        ctx.fillStyle = `rgba(255,255,255,${starAlpha})`;
+        // deterministic stars based on seed
+        for (let s=0;s<40;s++) {
+          const sx2 = ((s*137+31) % W);
+          const sy2 = ((s*97+13)  % (H*0.55));
+          ctx.beginPath(); ctx.arc(sx2,sy2,0.8,0,Math.PI*2); ctx.fill();
+        }
+      }
+    }
+  }
+
+  function drawClouds(worldScrollX) {
     cloudLayers.forEach(layer => {
-      const alpha = 0.07 + (1 - layer.speed) * 0.06;
+      const alpha = 0.06 + (1-layer.speed)*0.07;
       ctx.fillStyle = `rgba(255,255,255,${alpha})`;
       layer.items.forEach(cl => {
-        // screen X = cloud world X - scrolled * parallax factor
-        const sx = ((cl.wx - scrolled * layer.speed) % (W + cl.w + 40)) - cl.w * 0.5;
+        // cloud screen X: parallax scroll
+        const loopW = W + cl.w + 60;
+        const rawSX = cl.wx - worldScrollX * layer.speed;
+        const sx = ((rawSX % loopW) + loopW) % loopW - cl.w*0.5;
+        // cloud screen Y: based on its worldY
+        const sy = w2s(cl.wy);
+        if (sy < -20 || sy > H+20) return;
         ctx.beginPath();
-        ctx.ellipse(sx, layer.y, cl.w * 0.5, cl.h, 0, 0, Math.PI*2);
-        for (let p = 0; p < cl.puff; p++) {
-          ctx.ellipse(sx + (p-cl.puff/2)*cl.w*0.3,
-                      layer.y - cl.h * (0.4 + p*0.15),
-                      cl.w * (0.25 + p*0.05), cl.h * 0.7, 0, 0, Math.PI*2);
-        }
+        ctx.ellipse(sx, sy, cl.w*0.5, cl.h, 0,0,Math.PI*2);
+        ctx.ellipse(sx+cl.w*0.18, sy-cl.h*0.7, cl.w*0.3, cl.h*0.75, 0,0,Math.PI*2);
+        ctx.ellipse(sx-cl.w*0.18, sy-cl.h*0.5, cl.w*0.25, cl.h*0.65, 0,0,Math.PI*2);
         ctx.fill();
       });
     });
   }
 
-  function drawCarrier(screenX, screenY, isLanding) {
+  function drawCarrier(sx, sy, isLanding) {
     const S = isLanding ? 1.0 : 0.85;
-    ctx.save();
-    ctx.translate(screenX, screenY);
-
+    ctx.save(); ctx.translate(sx, sy);
     // Hull
-    ctx.fillStyle = '#2a3a50';
+    ctx.fillStyle='#2a3a50';
     ctx.beginPath();
-    ctx.moveTo(-55*S, 0); ctx.lineTo(55*S, 0);
-    ctx.lineTo(60*S, 8*S); ctx.lineTo(-60*S, 8*S); ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = '#3a4f6a'; ctx.lineWidth = 1; ctx.stroke();
-
+    ctx.moveTo(-55*S,0); ctx.lineTo(55*S,0);
+    ctx.lineTo(60*S,8*S); ctx.lineTo(-60*S,8*S); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='#3a4f6a'; ctx.lineWidth=1; ctx.stroke();
     // Deck
-    ctx.fillStyle = '#374858';
-    ctx.fillRect(-52*S, -5*S, 104*S, 5*S);
-
-    // Deck stripe
-    ctx.strokeStyle = 'rgba(255,240,100,0.35)';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([8,6]);
-    ctx.beginPath(); ctx.moveTo(-45*S,-3*S); ctx.lineTo(45*S,-3*S); ctx.stroke();
+    ctx.fillStyle='#374858'; ctx.fillRect(-52*S,-5*S,104*S,5*S);
+    // Landing strip
+    ctx.strokeStyle='rgba(255,240,100,0.4)'; ctx.lineWidth=1.5; ctx.setLineDash([7,5]);
+    ctx.beginPath(); ctx.moveTo(-44*S,-3*S); ctx.lineTo(44*S,-3*S); ctx.stroke();
     ctx.setLineDash([]);
-
-    // Island / tower
-    ctx.fillStyle = '#2c3e50';
-    ctx.fillRect(18*S, -22*S, 16*S, 17*S);
-    ctx.fillStyle = '#34495e';
-    ctx.fillRect(20*S, -28*S, 10*S, 7*S);
-    // antenna
-    ctx.strokeStyle = '#5a6a7a'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(25*S,-28*S); ctx.lineTo(25*S,-36*S); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(22*S,-33*S); ctx.lineTo(28*S,-33*S); ctx.stroke();
-
-    // Hull water reflection
-    const reflG = ctx.createLinearGradient(0, 8*S, 0, 20*S);
-    reflG.addColorStop(0, 'rgba(42,58,80,0.5)');
-    reflG.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = reflG;
-    ctx.fillRect(-50*S, 8*S, 100*S, 12*S);
-
-    // Wake if launch carrier (static)
-    if (!isLanding) {
-      ctx.strokeStyle = 'rgba(100,180,255,0.15)';
-      ctx.lineWidth = 1;
-      for (let w = 0; w < 3; w++) {
-        ctx.beginPath();
-        ctx.moveTo(55*S + w*12, 4*S);
-        ctx.quadraticCurveTo(90*S + w*10, 14*S, 130*S + w*8, 6*S);
-        ctx.stroke();
-      }
+    // Arrestor wire (on landing carrier)
+    if (isLanding) {
+      ctx.strokeStyle='rgba(255,200,50,0.7)'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(-30*S,-5*S); ctx.lineTo(-30*S,-1*S); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-10*S,-5*S); ctx.lineTo(-10*S,-1*S); ctx.stroke();
     }
-
+    // Island tower
+    ctx.fillStyle='#2c3e50'; ctx.fillRect(18*S,-22*S,16*S,17*S);
+    ctx.fillStyle='#34495e'; ctx.fillRect(20*S,-28*S,10*S,7*S);
+    ctx.strokeStyle='#5a6a7a'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(25*S,-28*S); ctx.lineTo(25*S,-38*S); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(22*S,-34*S); ctx.lineTo(28*S,-34*S); ctx.stroke();
+    // Reflection
+    const rg = ctx.createLinearGradient(0,8*S,0,22*S);
+    rg.addColorStop(0,'rgba(42,58,80,0.45)'); rg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=rg; ctx.fillRect(-50*S,8*S,100*S,14*S);
     ctx.restore();
   }
 
-  function drawPlane(x, y, angle, scale=1, alpha=1) {
+  function drawPlane(sx, sy, angle, alpha=1) {
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.translate(x, y);
+    ctx.translate(sx, sy);
     ctx.rotate(angle);
-    ctx.scale(scale, scale);
 
-    // Engine trail glow
-    const trailG = ctx.createRadialGradient(-22,0,0,-22,0,14);
-    trailG.addColorStop(0, 'rgba(255,140,40,0.55)');
-    trailG.addColorStop(1, 'rgba(255,80,0,0)');
-    ctx.fillStyle = trailG;
-    ctx.beginPath(); ctx.arc(-22,0,14,0,Math.PI*2); ctx.fill();
+    // Engine glow behind
+    const eg = ctx.createRadialGradient(-24,0,0,-24,0,16);
+    eg.addColorStop(0,'rgba(255,150,40,0.6)'); eg.addColorStop(1,'rgba(255,80,0,0)');
+    ctx.fillStyle=eg; ctx.beginPath(); ctx.arc(-24,0,16,0,Math.PI*2); ctx.fill();
 
     // Fuselage
-    ctx.fillStyle = '#d8dce8';
+    ctx.fillStyle='#d8dce8';
     ctx.beginPath();
-    ctx.moveTo(22, 0);
-    ctx.bezierCurveTo(16,-4, -14,-4, -18,0);
-    ctx.bezierCurveTo(-14, 4, 16, 4, 22, 0);
+    ctx.moveTo(24,0);
+    ctx.bezierCurveTo(18,-4,-14,-4,-18,0);
+    ctx.bezierCurveTo(-14,4,18,4,24,0);
     ctx.fill();
-
-    // Nose cone
-    ctx.fillStyle = '#b0b4c8';
-    ctx.beginPath(); ctx.moveTo(22,0); ctx.lineTo(30,-1); ctx.lineTo(30,1); ctx.closePath(); ctx.fill();
-
-    // Cockpit window
-    ctx.fillStyle = 'rgba(120,200,255,0.7)';
-    ctx.beginPath(); ctx.ellipse(12,-2,5,3,0,0,Math.PI*2); ctx.fill();
+    // Nose
+    ctx.fillStyle='#b0b4c8';
+    ctx.beginPath(); ctx.moveTo(24,0); ctx.lineTo(32,-1); ctx.lineTo(32,1); ctx.closePath(); ctx.fill();
+    // Cockpit
+    ctx.fillStyle='rgba(120,200,255,0.75)';
+    ctx.beginPath(); ctx.ellipse(14,-2,5,3,0,0,Math.PI*2); ctx.fill();
     ctx.strokeStyle='rgba(180,220,255,0.5)'; ctx.lineWidth=0.5; ctx.stroke();
-
     // Wings
-    ctx.fillStyle = '#a8b0c8';
-    ctx.beginPath();
-    ctx.moveTo(2, -1); ctx.lineTo(-6,-16); ctx.lineTo(-14,-15); ctx.lineTo(-10, 0); ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(2,  1); ctx.lineTo(-6, 16); ctx.lineTo(-14, 15); ctx.lineTo(-10, 0); ctx.closePath();
-    ctx.fill();
-
-    // Wing tips (winglet)
-    ctx.fillStyle = '#ff3b3b';
-    ctx.fillRect(-14,-17,3,2);
-    ctx.fillRect(-14, 15,3,2);
-
-    // Horizontal stabilizer
-    ctx.fillStyle = '#9098b8';
-    ctx.beginPath();
-    ctx.moveTo(-14,0); ctx.lineTo(-18,-8); ctx.lineTo(-20,-6); ctx.lineTo(-18,0); ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(-14,0); ctx.lineTo(-18, 8); ctx.lineTo(-20, 6); ctx.lineTo(-18,0); ctx.closePath();
-    ctx.fill();
-
-    // Vertical fin
-    ctx.fillStyle = '#7a82a8';
-    ctx.beginPath(); ctx.moveTo(-14,0); ctx.lineTo(-19,-10); ctx.lineTo(-18,-2); ctx.closePath(); ctx.fill();
-
-    // Engine nacelle
-    ctx.fillStyle = '#5a6080';
-    ctx.beginPath(); ctx.ellipse(-4,-10,5,3,0,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(-4, 10,5,3,0,0,Math.PI*2); ctx.fill();
-
-    // Engine glow
-    ctx.fillStyle = 'rgba(255,160,60,0.8)';
-    ctx.beginPath(); ctx.arc(-9,-10,2,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(-9, 10,2,0,Math.PI*2); ctx.fill();
-
-    // Red/white stripe on fuselage
-    ctx.fillStyle = '#ff3b3b';
-    ctx.fillRect(-4, -4, 18, 1.5);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(-4, -2, 18, 0.8);
+    ctx.fillStyle='#a8b0c8';
+    ctx.beginPath(); ctx.moveTo(4,-1); ctx.lineTo(-5,-17); ctx.lineTo(-13,-16); ctx.lineTo(-10,0); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(4, 1); ctx.lineTo(-5, 17); ctx.lineTo(-13, 16); ctx.lineTo(-10,0); ctx.closePath(); ctx.fill();
+    // Winglets
+    ctx.fillStyle='#ff3b3b'; ctx.fillRect(-14,-18,3,2); ctx.fillRect(-14,16,3,2);
+    // H-stab
+    ctx.fillStyle='#9098b8';
+    ctx.beginPath(); ctx.moveTo(-14,0); ctx.lineTo(-19,-9); ctx.lineTo(-20,-6); ctx.lineTo(-18,0); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-14,0); ctx.lineTo(-19, 9); ctx.lineTo(-20, 6); ctx.lineTo(-18,0); ctx.closePath(); ctx.fill();
+    // V-fin
+    ctx.fillStyle='#7a82a8';
+    ctx.beginPath(); ctx.moveTo(-14,0); ctx.lineTo(-20,-11); ctx.lineTo(-18,-2); ctx.closePath(); ctx.fill();
+    // Nacelles
+    ctx.fillStyle='#5a6080';
+    ctx.beginPath(); ctx.ellipse(-3,-11,5,3,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-3, 11,5,3,0,0,Math.PI*2); ctx.fill();
+    // Engine fire
+    ctx.fillStyle='rgba(255,160,60,0.85)';
+    ctx.beginPath(); ctx.arc(-8,-11,2.2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-8, 11,2.2,0,Math.PI*2); ctx.fill();
+    // Stripe
+    ctx.fillStyle='#ff3b3b'; ctx.fillRect(-2,-4,18,1.5);
+    ctx.fillStyle='#fff';    ctx.fillRect(-2,-2,18,0.8);
 
     ctx.restore();
   }
 
-  function drawRocketMissile(sx, sy, t) {
-    // Hovering, slight bob
-    const bob = Math.sin(t * 0.004) * 3;
-    ctx.save();
-    ctx.translate(sx, sy + bob);
-
-    // Glow aura
-    const glow = ctx.createRadialGradient(0,0,4,0,0,22);
-    glow.addColorStop(0,'rgba(255,60,60,0.3)');
-    glow.addColorStop(1,'rgba(255,0,0,0)');
-    ctx.fillStyle = glow;
-    ctx.beginPath(); ctx.arc(0,0,22,0,Math.PI*2); ctx.fill();
-
-    // Rocket body — pointing left (toward plane)
-    ctx.rotate(Math.PI); // nose points left
-    ctx.fillStyle = '#c0392b';
-    ctx.beginPath();
-    ctx.moveTo(0,-5); ctx.lineTo(12,-5); ctx.lineTo(14,0);
-    ctx.lineTo(12, 5); ctx.lineTo(0, 5); ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = '#e74c3c';
-    ctx.beginPath(); ctx.moveTo(14,0); ctx.lineTo(20,-2); ctx.lineTo(20,2); ctx.closePath(); ctx.fill();
-
-    // Fins
-    ctx.fillStyle = '#922b21';
-    ctx.beginPath(); ctx.moveTo(0,-5); ctx.lineTo(-4,-10); ctx.lineTo(0,-4); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(0, 5); ctx.lineTo(-4, 10); ctx.lineTo(0,  4); ctx.closePath(); ctx.fill();
-
-    // Exhaust flame
-    const fl = ctx.createRadialGradient(-2,0,0,-2,0,8);
-    fl.addColorStop(0,'rgba(255,220,80,0.9)');
-    fl.addColorStop(0.5,'rgba(255,100,20,0.7)');
-    fl.addColorStop(1,'rgba(255,40,0,0)');
-    ctx.fillStyle = fl;
-    ctx.beginPath(); ctx.ellipse(-6,0,8,4,0,0,Math.PI*2); ctx.fill();
-
-    ctx.restore();
-  }
-
-  function drawToken(sx, sy, type, value, t, collected, collectT) {
-    ctx.save();
-    ctx.translate(sx, sy);
-
-    let scale = 1;
+  function drawToken(sx, sy, type, value, tMs, collected, collectT) {
+    ctx.save(); ctx.translate(sx, sy);
+    let scale=1;
     if (collected) {
-      // scale up then fade
-      const age = t - collectT;
-      scale = 1 + age * 0.04;
-      ctx.globalAlpha = Math.max(0, 1 - age * 0.07);
+      const age=tMs-collectT; scale=1+age*0.035;
+      ctx.globalAlpha=Math.max(0,1-age*0.065);
     } else {
-      // gentle pulse
-      scale = 1 + Math.sin(t * 0.006) * 0.06;
+      scale=1+Math.sin(tMs*0.006)*0.07;
     }
-    ctx.scale(scale, scale);
-
-    const isRocket = (type === 'rocket');
-    const isMul    = (type === 'mul');
-    const color    = isRocket ? '#ff3b3b' : isMul ? '#ffd700' : '#4ade80';
-    const bgColor  = isRocket ? 'rgba(255,59,59,0.18)' : isMul ? 'rgba(255,215,0,0.18)' : 'rgba(74,222,128,0.18)';
-    const R = 16;
-
-    // Outer ring glow
-    const ringG = ctx.createRadialGradient(0,0,R-4,0,0,R+6);
-    ringG.addColorStop(0, color.replace(')',',0.3)').replace('rgb','rgba'));
-    ringG.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = ringG;
-    ctx.beginPath(); ctx.arc(0,0,R+6,0,Math.PI*2); ctx.fill();
-
-    // Main circle
-    ctx.fillStyle = bgColor;
+    ctx.scale(scale,scale);
+    const isR=type==='rocket', isM=type==='mul';
+    const color=isR?'#ff3b3b':isM?'#ffd700':'#4ade80';
+    const R=17;
+    // glow ring
+    const rg=ctx.createRadialGradient(0,0,R-4,0,0,R+8);
+    rg.addColorStop(0,isR?'rgba(255,59,59,0.35)':isM?'rgba(255,215,0,0.35)':'rgba(74,222,128,0.35)');
+    rg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=rg; ctx.beginPath(); ctx.arc(0,0,R+8,0,Math.PI*2); ctx.fill();
+    // circle
+    ctx.fillStyle=isR?'rgba(255,59,59,0.2)':isM?'rgba(255,215,0,0.2)':'rgba(74,222,128,0.2)';
     ctx.beginPath(); ctx.arc(0,0,R,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Inner icon / text
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 10px "Bebas Neue", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    if (isRocket) {
-      ctx.font = '13px sans-serif';
-      ctx.fillText('🚀', 0, 1);
-    } else if (isMul) {
-      ctx.fillStyle = '#ffd700';
-      ctx.font = 'bold 9px "Bebas Neue",sans-serif';
-      ctx.fillText('×' + value, 0, 1);
+    ctx.strokeStyle=color; ctx.lineWidth=2; ctx.stroke();
+    // label
+    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    if (isR) {
+      ctx.font='13px sans-serif'; ctx.fillText('🚀',0,1);
     } else {
-      ctx.fillStyle = '#4ade80';
-      ctx.font = 'bold 9px "Bebas Neue",sans-serif';
-      ctx.fillText('+' + value, 0, 1);
+      ctx.fillStyle=color; ctx.font='bold 9px "Bebas Neue",sans-serif';
+      ctx.fillText((isM?'×':'+')+value,0,1);
     }
-
     ctx.restore();
   }
 
   function drawParticles() {
-    particles = particles.filter(p => p.alpha > 0);
-    particles.forEach(p => {
-      ctx.save();
-      ctx.globalAlpha = p.alpha;
-      ctx.fillStyle = p.color;
-      ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
-      ctx.restore();
-      p.x += p.vx; p.y += p.vy;
-      p.vx *= 0.93; p.vy *= 0.93; p.vy += 0.04;
-      p.alpha -= 0.022;
+    particles=particles.filter(p=>p.alpha>0);
+    particles.forEach(p=>{
+      ctx.save(); ctx.globalAlpha=p.alpha; ctx.fillStyle=p.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill(); ctx.restore();
+      p.x+=p.vx; p.y+=p.vy; p.vx*=0.93; p.vy*=0.93; p.vy+=0.05; p.alpha-=0.022;
     });
   }
 
   function drawTrail() {
-    // Push new trail point
-    trailParts.push({ x: PLANE_SCREEN_X - 22, y: planeY, alpha: 0.55 });
-    if (trailParts.length > 28) trailParts.shift();
-    trailParts.forEach((tp, i) => {
+    // trail follows plane screen position
+    trailPts.push({x:PLANE_SX-26,y:PLANE_SCREEN_Y,alpha:0.6});
+    if(trailPts.length>32) trailPts.shift();
+    trailPts.forEach((tp,i)=>{
       ctx.save();
-      ctx.globalAlpha = tp.alpha * (i / trailParts.length);
-      const r = 3 * (i / trailParts.length);
-      const tg = ctx.createRadialGradient(tp.x,tp.y,0,tp.x,tp.y,r+2);
-      tg.addColorStop(0,'rgba(255,180,60,0.8)');
-      tg.addColorStop(1,'rgba(255,60,0,0)');
-      ctx.fillStyle = tg;
-      ctx.beginPath(); ctx.arc(tp.x,tp.y,r+2,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha=tp.alpha*(i/trailPts.length)*0.8;
+      const r=1+3*(i/trailPts.length);
+      const tg=ctx.createRadialGradient(tp.x,tp.y,0,tp.x,tp.y,r+2);
+      tg.addColorStop(0,'rgba(255,180,60,0.9)'); tg.addColorStop(1,'rgba(255,60,0,0)');
+      ctx.fillStyle=tg; ctx.beginPath(); ctx.arc(tp.x,tp.y,r+2,0,Math.PI*2); ctx.fill();
       ctx.restore();
-      tp.alpha -= 0.018;
+      tp.alpha-=0.016;
     });
-    trailParts = trailParts.filter(p => p.alpha > 0);
+    trailPts=trailPts.filter(p=>p.alpha>0);
   }
 
   function drawPopups() {
-    popups = popups.filter(p => p.alpha > 0);
-    popups.forEach(p => {
-      ctx.save();
-      ctx.globalAlpha = p.alpha;
-      ctx.font = 'bold 14px "Bebas Neue",sans-serif';
-      ctx.fillStyle = p.color;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      // outline
-      ctx.strokeStyle = 'rgba(0,0,0,0.6)';
-      ctx.lineWidth = 3;
-      ctx.strokeText(p.text, p.x, p.y);
-      ctx.fillText(p.text, p.x, p.y);
+    popups=popups.filter(p=>p.alpha>0);
+    popups.forEach(p=>{
+      ctx.save(); ctx.globalAlpha=p.alpha;
+      ctx.font='bold 15px "Bebas Neue",sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.strokeStyle='rgba(0,0,0,0.7)'; ctx.lineWidth=3;
+      ctx.strokeText(p.text,p.x,p.y); ctx.fillStyle=p.color; ctx.fillText(p.text,p.x,p.y);
       ctx.restore();
-      p.y += p.vy; p.alpha -= 0.018;
+      p.y+=p.vy; p.alpha-=0.016;
     });
   }
 
   function updateHUD() {
-    const el  = document.getElementById('am-multiplier-display');
-    const pot = document.getElementById('am-potential');
-    if (el) {
-      el.textContent = '×' + amMultiplier.toFixed(2);
-      el.style.color = amMultiplier >= 10 ? '#ffd700'
-                     : amMultiplier >= 5  ? '#ff8c00'
-                     : amMultiplier >= 2  ? '#b45aff'
-                     : amMultiplier >= 1.5? '#60a5fa'
-                     : '#ccc';
+    const el=document.getElementById('am-multiplier-display');
+    const pot=document.getElementById('am-potential');
+    if(el){
+      el.textContent='×'+amMultiplier.toFixed(2);
+      el.style.color=amMultiplier>=10?'#ffd700':amMultiplier>=5?'#ff8c00':amMultiplier>=2?'#b45aff':amMultiplier>=1.5?'#60a5fa':'#ccc';
     }
-    if (pot) pot.textContent = '🪙 ' + Math.floor(amBet * amMultiplier).toLocaleString();
+    if(pot) pot.textContent='🪙 '+Math.floor(amBet*amMultiplier).toLocaleString();
   }
 
-  function setStatus(msg) {
-    const el = document.getElementById('am-status-bar');
-    if (el) el.textContent = msg;
-  }
-
-  // ─── Token state array ────────────────────────────────────────
-  const activeTokens = eventSchedule.map(ev => ({
-    ...ev,
-    screenX: 0, // computed each frame from worldX
-    collected: false,
-    collectTime: 0,
-    visible: false,
-  }));
-
-  // ─── Animation state ─────────────────────────────────────────
-  let startTime   = null;
-  let lastTime    = null;
+  // ── State machine ──────────────────────────────────────────────
+  // phase: 'launch' | 'cruise' | 'land_approach' | 'landing' | 'crash_dive' | 'done'
+  let phase       = 'launch';
+  let elapsedMs   = 0;
+  let startTime   = null, lastTime = null;
   let gameEnded   = false;
+  let endPhaseMs  = 0;
+  let sinkProg    = 0;
 
-  // Land carrier — screen X based on world position
-  // Starts off-screen right, scrolls in toward end
-  let endResult = null; // 'land' or 'sink'
-  let endPhaseTimer = 0;
+  // Camera Y smoothly tracks planeWorldY with some lag
+  let camVelY = 0;
 
-  // Plane flicker on crash
-  let crashFlicker = 0;
-  let sinkProgress = 0; // 0→1 during sink animation
+  // World X scroll (paused once landing starts)
+  let worldX = 0;
+  let scrollFrozen = false;
+  let scrollFreezeX = 0;
 
-  // Launch smoke puffs
+  // Landing approach: once carrier is close, we stop the world
+  // and drive the plane onto the deck
+  let landingStartPlaneWorldY = 0;
+  let landingDeckWorldY = 8; // deck is slightly above sea level
+
   let launchSmoke = [];
+  let carrierLandSX = W + 200; // updated each frame
+  const DECK_WORLD_Y = 8; // world Y of deck surface
 
-  // ─── MAIN LOOP ────────────────────────────────────────────────
+  // ── MAIN LOOP ──────────────────────────────────────────────────
   function frame(ts) {
-    if (!startTime) { startTime = ts; lastTime = ts; }
-    const dt  = Math.min(ts - lastTime, 50); // cap dt at 50ms
-    lastTime  = ts;
+    if (!startTime) { startTime=ts; lastTime=ts; }
+    const dt = Math.min(ts-lastTime, 50);
+    lastTime = ts;
     elapsedMs += dt;
 
-    worldX = (elapsedMs / 1000) * WORLD_SPEED_PX_S;
+    // World scroll — stops when landing sequence begins
+    if (!scrollFrozen) {
+      worldX = (elapsedMs/1000) * SCROLL_PX_S;
+    }
 
-    ctx.clearRect(0, 0, W, H);
-    drawBackground();
+    // ── Camera smoothly follows plane world Y ───────────────────
+    // Target: keep plane at PLANE_SCREEN_Y
+    // camY should = planeWorldY so that w2s(planeWorldY) == PLANE_SCREEN_Y
+    const camTarget = planeWorldY;
+    const camSpring = 0.04, camDamp = 0.80;
+    camVelY += (camTarget - camY) * camSpring;
+    camVelY *= camDamp;
+    camY    += camVelY;
+
+    // ── Draw world ──────────────────────────────────────────────
+    ctx.clearRect(0,0,W,H);
+    drawBg();
     drawClouds(worldX);
-    drawWaves();
 
-    // ── Launch carrier (stays at world X=0, scrolls left) ──────
-    const launchCarrierSX = PLANE_SCREEN_X - 10 - worldX * 1.0;
-    if (launchCarrierSX > -120) {
-      drawCarrier(launchCarrierSX, SEA_Y - 2, false);
-    }
+    // Launch carrier screen pos
+    const launchSX = PLANE_SX - worldX * 1.0;
+    const launchSY = w2s(DECK_WORLD_Y);
+    if (launchSX > -130) drawCarrier(launchSX, launchSY, false);
 
-    // ── Landing carrier ─────────────────────────────────────────
-    const landCarrierWorldX = LAND_WORLD_X;
-    const landCarrierSX = PLANE_SCREEN_X + (landCarrierWorldX - worldX);
-    const landCarrierSY = SEA_Y - 2;
-    // Only draw when approaching
-    if (landCarrierSX < W + 150 && landCarrierSX > -120) {
-      drawCarrier(landCarrierSX, landCarrierSY, true);
-    }
+    // Landing carrier screen pos
+    const landWorldX = LAND_WORLD_X;
+    carrierLandSX = PLANE_SX + (landWorldX - worldX);
+    const carrierLandSY = w2s(DECK_WORLD_Y);
+    if (carrierLandSX < W+160 && carrierLandSX > -130) drawCarrier(carrierLandSX, carrierLandSY, true);
 
     // ── Tokens ──────────────────────────────────────────────────
     activeTokens.forEach(tok => {
-      if (gameEnded && !tok.collected) return; // don't draw uncollected if done
-      const sx = PLANE_SCREEN_X + (tok.worldX - worldX);
-      tok.screenX = sx;
-      if (sx > -30 && sx < W + 30) {
-        tok.visible = true;
-        if (!tok.collected) {
-          drawToken(sx, tok.screenY, tok.type, tok.value, elapsedMs, false, 0);
-          // Collision check — within reach of plane
-          if (!gameEnded &&
-              Math.abs(sx - PLANE_SCREEN_X) < 28 &&
-              Math.abs(tok.screenY - planeY) < 28) {
-            tok.collected   = true;
-            tok.collectTime = elapsedMs;
-            if (tok.type === 'add') {
-              amMultiplier = Math.round((amMultiplier + tok.value) * 100) / 100;
-              addPopup(PLANE_SCREEN_X, planeY - 24, '+' + tok.value, '#4ade80');
-              spawnBurst(PLANE_SCREEN_X, planeY, '#4ade80', 12, 2.5);
-              setStatus('+' + tok.value + ' multiplier collected!');
-            } else if (tok.type === 'mul') {
-              amMultiplier = Math.round(amMultiplier * tok.value * 100) / 100;
-              addPopup(PLANE_SCREEN_X, planeY - 24, '×' + tok.value + '!', '#ffd700');
-              spawnBurst(PLANE_SCREEN_X, planeY, '#ffd700', 16, 3);
-              setStatus('×' + tok.value + ' MULTIPLIER!');
-            } else {
-              amMultiplier = Math.max(0.5, Math.round(amMultiplier / 2 * 100) / 100);
-              addPopup(PLANE_SCREEN_X, planeY - 24, '÷2 HIT!', '#ff4444');
-              spawnBurst(PLANE_SCREEN_X, planeY, '#ff4444', 20, 3.5);
-              planeVelY += 26; // jerk down
-              setStatus('🚀 Rocket hit! Multiplier halved!');
-            }
-            updateHUD();
+      const sx = PLANE_SX + (tok.worldX - worldX);
+      // Token screen Y = w2s(tok.tokenWorldY) — it stays at fixed world Y
+      const sy = w2s(tok.tokenWorldY);
+      if (sx < -30 || sx > W+30) return;
+      if (gameEnded && !tok.collected) return;
+      if (!tok.collected) {
+        drawToken(sx, sy, tok.type, tok.value, elapsedMs, false, 0);
+        // Collision: token at screen (sx,sy), plane always at (PLANE_SX, PLANE_SCREEN_Y)
+        if (!gameEnded && Math.abs(sx-PLANE_SX)<30 && Math.abs(sy-PLANE_SCREEN_Y)<30) {
+          tok.collected   = true;
+          tok.collectTime = elapsedMs;
+          if (tok.type==='add') {
+            amMultiplier=Math.round((amMultiplier+tok.value)*100)/100;
+            addPopup(PLANE_SX, PLANE_SCREEN_Y-26, '+'+tok.value, '#4ade80');
+            spawnBurst(PLANE_SX, PLANE_SCREEN_Y, '#4ade80', 14, 2.5);
+            // BOOST UP: impulse in world Y (positive = up)
+            planeVelY += 28 + tok.value * 3.5;
+            setStatus('+'+tok.value+' — PLANE CLIMBS!');
+          } else if (tok.type==='mul') {
+            amMultiplier=Math.round(amMultiplier*tok.value*100)/100;
+            addPopup(PLANE_SX, PLANE_SCREEN_Y-26, '×'+tok.value+'!', '#ffd700');
+            spawnBurst(PLANE_SX, PLANE_SCREEN_Y, '#ffd700', 20, 3.5);
+            // BIG BOOST UP
+            planeVelY += 45 + tok.value * 8;
+            setStatus('×'+tok.value+' — MASSIVE CLIMB!');
+          } else {
+            // ROCKET: slam down
+            amMultiplier=Math.max(0.5,Math.round(amMultiplier/2*100)/100);
+            addPopup(PLANE_SX, PLANE_SCREEN_Y-26, '💥 ÷2', '#ff4444');
+            spawnBurst(PLANE_SX, PLANE_SCREEN_Y, '#ff4444', 22, 4);
+            spawnBurst(PLANE_SX+8, PLANE_SCREEN_Y-6, '#ff8800', 12, 2.5);
+            planeVelY -= 40; // slam DOWN hard (negative = downward in world Y)
+            setStatus('🚀 ROCKET HIT — NOSEDIVE!');
           }
-        } else {
-          // Brief collect flash animation
-          const age = elapsedMs - tok.collectTime;
-          if (age < 500) drawToken(sx, tok.screenY, tok.type, tok.value, elapsedMs, true, tok.collectTime);
+          updateHUD();
         }
+      } else {
+        const age=elapsedMs-tok.collectTime;
+        if(age<500) drawToken(sx,sy,tok.type,tok.value,elapsedMs,true,tok.collectTime);
       }
     });
 
-    // ── Plane physics ────────────────────────────────────────────
-    if (!gameEnded) {
-      // Progress 0→1
-      const prog = Math.min(elapsedMs / TOTAL_MS, 1);
+    // ── Phase / plane physics ────────────────────────────────────
+    const GRAVITY   = -0.55; // world Y: negative = pull down each frame
+    const DAMPING   = 0.97;  // velocity keeps most momentum
 
+    if (!gameEnded) {
       if (elapsedMs < 800) {
-        // LAUNCH PHASE — rev on carrier
+        // LAUNCH: sit on carrier, rev engine
         phase = 'launch';
-        targetY = SEA_Y - 30;
-        // Launch smoke puffs
-        if (Math.random() < 0.25) {
-          launchSmoke.push({ x: launchCarrierSX + 55, y: SEA_Y - 25,
-                             vx: 1.5 + Math.random(), vy: -0.8 - Math.random(),
-                             alpha: 0.5, size: 4 + Math.random()*4 });
+        planeWorldY = DECK_WORLD_Y + 4;
+        planeVelY   = 0;
+        if (Math.random()<0.3) {
+          launchSmoke.push({x:launchSX+52,y:launchSY-22,vx:1.2+Math.random(),vy:-0.7-Math.random()*0.5,alpha:0.5,size:4+Math.random()*4});
         }
-      } else if (elapsedMs < 2200) {
-        // CLIMB
-        phase = 'climb';
-        const t = (elapsedMs - 800) / 1400;
-        targetY = (SEA_Y - 30) * (1 - t) + LANE_Y[1] * t;
-      } else if (prog < 0.82) {
-        // CRUISE — track nearest upcoming token Y or wander
-        phase = 'cruise';
-        const nextTok = activeTokens.find(t => !t.collected && t.worldX > worldX && t.worldX < worldX + W * 1.2);
-        if (nextTok) {
-          targetY = nextTok.screenY;
-        } else {
-          // gentle sine wander
-          targetY = LANE_Y[1] + Math.sin(elapsedMs * 0.0009) * (H * 0.18);
-        }
+      } else if (elapsedMs < 2000) {
+        // TAKEOFF CLIMB — initial strong upward push
+        phase='cruise';
+        if (elapsedMs < 850) { planeVelY = 18; } // initial thrust
+        // Apply gravity + damping
+        planeVelY += GRAVITY;
+        planeVelY *= DAMPING;
+        planeWorldY += planeVelY;
+        // Don't let plane go below sea during initial climb
+        if (planeWorldY < DECK_WORLD_Y + 2) { planeWorldY = DECK_WORLD_Y + 2; planeVelY = Math.max(0, planeVelY); }
       } else {
-        // APPROACH — glide toward carrier deck
-        phase = 'approach';
-        const t = (prog - 0.82) / 0.18;
-        if (willLand) {
-          targetY = LANE_Y[1] * (1-t) + (landCarrierSY - 12) * t;
+        // CRUISE: physics-driven, gravity pulls down, tokens push up or slam down
+        phase = 'cruise';
+        const prog = elapsedMs / TOTAL_MS;
+
+        if (prog >= 0.83 && willLand) {
+          // APPROACH: gradually guide plane down toward deck height
+          phase = 'approach';
+          const deckTarget = DECK_WORLD_Y + 6;
+          const approachT  = (prog - 0.83) / 0.17;
+          // gentle gravity-assisted descent
+          const approachTarget = planeWorldY + (deckTarget - planeWorldY) * approachT * 0.04;
+          planeVelY += (approachTarget - planeWorldY) * 0.025;
+          planeVelY += GRAVITY * 0.6; // reduced gravity on approach
+          planeVelY *= 0.88; // more damping approaching
+          planeWorldY += planeVelY;
+        } else if (prog >= 0.83 && !willLand) {
+          // CRASH APPROACH: let gravity take over
+          planeVelY += GRAVITY * 1.6; // extra strong pull toward sea
+          planeVelY *= DAMPING;
+          planeWorldY += planeVelY;
         } else {
-          // heading toward sea — arc down
-          targetY = LANE_Y[2] * (1-t) + (SEA_Y + 30) * t;
+          // Normal cruise physics
+          planeVelY += GRAVITY;
+          planeVelY *= DAMPING;
+          planeWorldY += planeVelY;
+        }
+
+        // FLOOR: can't go below sea during normal flight
+        if (!willLand && prog < 0.83 && planeWorldY < DECK_WORLD_Y) {
+          planeWorldY = DECK_WORLD_Y;
+          planeVelY = Math.max(0, planeVelY);
+        }
+        if (willLand && planeWorldY < DECK_WORLD_Y) {
+          planeWorldY = DECK_WORLD_Y;
+          planeVelY = Math.max(0, planeVelY);
         }
       }
 
-      // Spring physics toward target
-      const spring = 0.045;
-      const damping = 0.78;
-      planeVelY += (targetY - planeY) * spring;
-      planeVelY *= damping;
-      planeY    += planeVelY;
-      planeAngle = Math.atan2(planeVelY * 0.08, 1) * 0.7;
+      // Angle = based on velocity (positive vel = climbing = nose up = negative angle)
+      planeAngle = Math.atan2(-planeVelY * 0.065, 1) * 0.75;
 
-      // ── Check end condition ─────────────────────────────────
+      // ── End check ──────────────────────────────────────────────
       if (elapsedMs >= TOTAL_MS && !gameEnded) {
-        gameEnded  = true;
-        endResult  = willLand ? 'land' : 'sink';
-        endPhaseTimer = 0;
+        gameEnded    = true;
+        endPhaseMs   = 0;
         if (willLand) {
+          // FREEZE world scroll, begin landing sequence
+          scrollFrozen  = true;
+          scrollFreezeX = worldX;
           setStatus('🛬 LANDING!');
         } else {
           setStatus('💥 GOING DOWN!');
-          spawnBurst(PLANE_SCREEN_X, planeY, '#ff4444', 25, 4);
-          spawnBurst(PLANE_SCREEN_X+12, planeY-8, '#ff8800', 20, 3);
+          spawnBurst(PLANE_SX, PLANE_SCREEN_Y, '#ff4444', 28, 4.5);
+          spawnBurst(PLANE_SX+10, PLANE_SCREEN_Y-8, '#ff8800', 18, 3);
         }
       }
+
     } else {
-      // END PHASE ANIMATION
-      endPhaseTimer += dt;
-      if (endResult === 'land') {
-        // Plane slows and glides down to deck
-        planeY += (landCarrierSY - 18 - planeY) * 0.06;
-        planeAngle = -0.12;
-        // After 1.5s show result
-        if (endPhaseTimer > 1500) {
-          amPendingWin = Math.floor(amBet * amMultiplier);
-          amFlightActive = false;
-          cancelAnimationFrame(amAnimFrame);
-          setTimeout(() => amShowResult(true), 100);
-          return;
+      // ── END PHASES ───────────────────────────────────────────
+      endPhaseMs += dt;
+
+      if (willLand) {
+        // LANDING SEQUENCE
+        // Carrier is frozen at carrierLandSX (world frozen).
+        // Drive plane world Y down to DECK_WORLD_Y, and screen X toward carrier center.
+        const deckY      = DECK_WORLD_Y + 2;
+        const deckSX     = carrierLandSX; // carrier screen X is frozen since scroll frozen
+
+        // Horizontally glide plane toward carrier center
+        // We do this by nudging worldX so plane appears to glide right onto carrier
+        const targetScreenX = deckSX - 5; // land slightly left of center
+        const screenXDiff   = targetScreenX - PLANE_SX;
+
+        if (endPhaseMs < 200) {
+          // Brief moment before starting glide
+        } else if (endPhaseMs < 1200) {
+          // Glide: move world to bring carrier under plane
+          // Ease world X so carrier slides under plane
+          const lerpT = (endPhaseMs - 200) / 1000;
+          worldX = scrollFreezeX + screenXDiff * lerpT;
+          // Simultaneously bring plane down to deck
+          planeVelY += (deckY - planeWorldY) * 0.06;
+          planeVelY *= 0.80;
+          planeWorldY += planeVelY;
+          planeAngle = -0.10;
+        } else {
+          // Plane on deck — stop
+          planeWorldY = deckY;
+          planeVelY   = 0;
+          planeAngle  = 0;
+          if (endPhaseMs > 1500) {
+            amPendingWin = Math.floor(amBet * amMultiplier);
+            amFlightActive = false;
+            cancelAnimationFrame(amAnimFrame);
+            setTimeout(() => amShowResult(true), 100);
+            return;
+          }
         }
       } else {
-        // Crash — spiral downward
-        sinkProgress = Math.min(endPhaseTimer / 1800, 1);
-        planeY += 3.5 + sinkProgress * 4;
-        planeAngle = Math.PI * 0.25 * sinkProgress;
-        planeVelY  = 5;
-        // Continue exploding
-        if (Math.random() < 0.3) spawnBurst(PLANE_SCREEN_X, planeY, Math.random()<0.5?'#ff4444':'#ff8800', 6, 2);
-        if (endPhaseTimer > 1800) {
+        // CRASH: spiral into sea
+        sinkProg = Math.min(endPhaseMs / 2000, 1);
+        planeVelY  -= 3 + sinkProg * 3.5; // accelerating fall
+        planeWorldY += planeVelY;
+        planeAngle   = Math.PI * 0.30 * sinkProg + 0.1;
+        if (Math.random() < 0.28) {
+          spawnBurst(PLANE_SX, PLANE_SCREEN_Y, Math.random()<0.5?'#ff4444':'#ff8800', 8, 2.5);
+        }
+        if (endPhaseMs > 2000) {
           amPendingWin = 0;
           amFlightActive = false;
           cancelAnimationFrame(amAnimFrame);
@@ -6607,117 +6511,94 @@ function amRunFlight() {
       }
     }
 
-    // ── Smoke launch puffs ──────────────────────────────────────
-    launchSmoke = launchSmoke.filter(s => s.alpha > 0);
-    launchSmoke.forEach(s => {
-      ctx.save();
-      ctx.globalAlpha = s.alpha * 0.6;
-      ctx.fillStyle = 'rgba(200,200,200,1)';
-      ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI*2); ctx.fill();
-      ctx.restore();
-      s.x += s.vx; s.y += s.vy; s.size += 0.4; s.alpha -= 0.025;
+    // ── Launch smoke ────────────────────────────────────────────
+    launchSmoke=launchSmoke.filter(s=>s.alpha>0);
+    launchSmoke.forEach(s=>{
+      ctx.save(); ctx.globalAlpha=s.alpha*0.55; ctx.fillStyle='rgba(210,210,210,1)';
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.size,0,Math.PI*2); ctx.fill(); ctx.restore();
+      s.x+=s.vx; s.y+=s.vy; s.size+=0.5; s.alpha-=0.022;
     });
 
-    // ── Draw everything in z-order ─────────────────────────────
+    // ── Composite draw ──────────────────────────────────────────
     drawParticles();
     drawTrail();
     drawPopups();
 
-    const drawAlpha = (gameEnded && endResult==='sink') ?
-      (1 - Math.pow(sinkProgress,2) * 0.85) : 1;
-    if (planeY < H + 40) {
-      drawPlane(PLANE_SCREEN_X, planeY, planeAngle, 1, drawAlpha);
-    }
+    // Plane alpha fades on crash
+    const planeAlpha = (gameEnded && !willLand) ? Math.max(0.05, 1 - sinkProg*0.9) : 1;
+    drawPlane(PLANE_SX, PLANE_SCREEN_Y, planeAngle, planeAlpha);
 
     updateHUD();
-
     amAnimFrame = requestAnimationFrame(frame);
   }
 
   amAnimFrame = requestAnimationFrame(frame);
 }
 
-// ── RESULT SCREEN ─────────────────────────────────────────────
+// ── RESULT ────────────────────────────────────────────────────
 function amShowResult(won) {
   document.getElementById('am-game-screen').style.display    = 'none';
   document.getElementById('am-result-screen').style.display  = 'block';
-
-  const icon   = document.getElementById('am-result-icon');
-  const title  = document.getElementById('am-result-title');
-  const amount = document.getElementById('am-result-amount');
-  const detail = document.getElementById('am-result-detail');
-
+  const icon=document.getElementById('am-result-icon');
+  const title=document.getElementById('am-result-title');
+  const amount=document.getElementById('am-result-amount');
+  const detail=document.getElementById('am-result-detail');
   if (won) {
-    icon.textContent   = '🛬';
-    title.textContent  = 'LANDED!';
-    title.style.color  = '#4ade80';
-    amount.textContent = '+🪙 ' + amPendingWin.toLocaleString();
-    amount.style.color = '#4ade80';
-    detail.textContent = '×' + amMultiplier.toFixed(2) + ' on 🪙 ' + amBet.toLocaleString();
+    icon.textContent='🛬'; title.textContent='LANDED!'; title.style.color='#4ade80';
+    amount.textContent='+🪙 '+amPendingWin.toLocaleString(); amount.style.color='#4ade80';
+    detail.textContent='×'+amMultiplier.toFixed(2)+' on 🪙 '+amBet.toLocaleString();
     amCoinShower();
   } else {
-    icon.textContent   = '💥';
-    title.textContent  = 'CRASHED!';
-    title.style.color  = '#ff4444';
-    amount.textContent = '-🪙 ' + amBet.toLocaleString();
-    amount.style.color = '#ff4444';
-    detail.textContent = 'The plane sank into the sea.';
+    icon.textContent='💥'; title.textContent='CRASHED!'; title.style.color='#ff4444';
+    amount.textContent='-🪙 '+amBet.toLocaleString(); amount.style.color='#ff4444';
+    detail.textContent='The plane sank into the sea.';
   }
-
-  const btn = document.getElementById('am-claim-btn');
-  if (btn) btn.textContent = won ? 'COLLECT 🪙 ' + amPendingWin.toLocaleString() : 'PLAY AGAIN';
+  const btn=document.getElementById('am-claim-btn');
+  if(btn) btn.textContent=won?'COLLECT 🪙 '+amPendingWin.toLocaleString():'PLAY AGAIN';
 }
 
-// ── COIN SHOWER ───────────────────────────────────────────────
 function amCoinShower() {
-  const canvas = document.getElementById('am-coin-canvas');
-  if (!canvas) return;
-  const ctx2 = canvas.getContext('2d');
-  const W2 = canvas.offsetWidth||320, H2 = canvas.offsetHeight||200;
-  canvas.width = W2; canvas.height = H2;
-  const coins2 = Array.from({length:35},()=>({
-    x:Math.random()*W2, y:-20-Math.random()*80,
-    vy:2+Math.random()*4, vx:(Math.random()-0.5)*2.5,
-    r:5+Math.random()*7, alpha:1, rot:Math.random()*Math.PI*2
+  const canvas=document.getElementById('am-coin-canvas'); if(!canvas) return;
+  const ctx2=canvas.getContext('2d');
+  const W2=canvas.offsetWidth||320, H2=canvas.offsetHeight||200;
+  canvas.width=W2; canvas.height=H2;
+  const coins2=Array.from({length:38},()=>({
+    x:Math.random()*W2,y:-20-Math.random()*80,
+    vy:2+Math.random()*4,vx:(Math.random()-0.5)*2.8,
+    r:5+Math.random()*7,alpha:1,rot:Math.random()*Math.PI*2
   }));
   function fall() {
     ctx2.clearRect(0,0,W2,H2);
-    let allGone = true;
-    coins2.forEach(co => {
+    let allGone=true;
+    coins2.forEach(co=>{
       co.y+=co.vy; co.x+=co.vx; co.rot+=0.1; co.vy+=0.12;
-      if (co.y>H2) co.alpha=Math.max(0,co.alpha-0.06);
-      if (co.alpha>0) allGone = false;
+      if(co.y>H2) co.alpha=Math.max(0,co.alpha-0.06);
+      if(co.alpha>0) allGone=false;
       ctx2.save(); ctx2.globalAlpha=co.alpha;
       ctx2.translate(co.x,co.y); ctx2.rotate(co.rot);
       ctx2.fillStyle='#ffd700';
       ctx2.beginPath(); ctx2.ellipse(0,0,co.r,co.r*0.55,0,0,Math.PI*2); ctx2.fill();
       ctx2.strokeStyle='#b8860b'; ctx2.lineWidth=1; ctx2.stroke();
-      // $
-      ctx2.fillStyle='rgba(0,0,0,0.4)'; ctx2.font=`bold ${Math.max(6,co.r*0.9)}px sans-serif`;
-      ctx2.textAlign='center'; ctx2.textBaseline='middle';
-      ctx2.fillText('🪙',0,0);
       ctx2.restore();
     });
-    if (!allGone) requestAnimationFrame(fall);
-    else ctx2.clearRect(0,0,W2,H2);
+    if(!allGone) requestAnimationFrame(fall); else ctx2.clearRect(0,0,W2,H2);
   }
   requestAnimationFrame(fall);
 }
 
-// ── CLAIM ─────────────────────────────────────────────────────
 window.amClaim = async () => {
-  if (amPendingWin > 0) {
-    const newCoins = (myProfile.coins||0) + amPendingWin;
-    myProfile.coins = newCoins;
-    await pb.updateUser(me.uid, { coins: newCoins }).catch(()=>{});
-    updateCoinDisplays(newCoins);
-    amPendingWin = 0;
+  if (amPendingWin>0) {
+    const nc=(myProfile.coins||0)+amPendingWin;
+    myProfile.coins=nc;
+    await pb.updateUser(me.uid,{coins:nc}).catch(()=>{});
+    updateCoinDisplays(nc);
+    amPendingWin=0;
   }
-  amFlightActive = false;
-  if (amAnimFrame) { cancelAnimationFrame(amAnimFrame); amAnimFrame = null; }
-  document.getElementById('am-result-screen').style.display = 'none';
-  document.getElementById('am-game-screen').style.display   = 'none';
-  document.getElementById('am-bet-screen').style.display    = 'block';
+  amFlightActive=false;
+  if(amAnimFrame){cancelAnimationFrame(amAnimFrame);amAnimFrame=null;}
+  document.getElementById('am-result-screen').style.display='none';
+  document.getElementById('am-game-screen').style.display='none';
+  document.getElementById('am-bet-screen').style.display='block';
   amSyncBalance();
 };
 
