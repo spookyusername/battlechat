@@ -2136,6 +2136,7 @@
     <div class="gamble-selector">
       <button class="gamble-game-btn active" id="gbtn-blackjack" onclick="switchGambleGame('blackjack')">🃏 BLACKJACK</button>
       <button class="gamble-game-btn" id="gbtn-flappy" onclick="switchGambleGame('flappy')">🐦 FLAPPY ADAM</button>
+      <button class="gamble-game-btn" id="gbtn-aviamasters" onclick="switchGambleGame('aviamasters')">✈️ AVIAMASTERS</button>
     </div>
 
     <div id="gamble-blackjack">
@@ -2234,6 +2235,58 @@
         <button class="bj-claim-btn" id="fa-claim-btn" onclick="faClaim()">COLLECT WINNINGS</button>
       </div>
     </div>
+
+    <!-- AVIAMASTERS GAME -->
+    <div id="gamble-aviamasters" style="display:none;">
+      <div class="bj-header">
+        <div class="bj-title">✈️ AVIAMASTERS</div>
+        <div class="bj-subtitle">Fly through the sky — collect multipliers — LAND to win</div>
+        <div class="bj-balance">Balance: <span class="bj-balance-num" id="am-balance">🪙 0</span></div>
+      </div>
+
+      <!-- BET SCREEN -->
+      <div id="am-bet-screen">
+        <div class="bj-bet-label">Place your bet</div>
+        <div class="bj-bet-presets">
+          <button class="bj-preset" onclick="amSetBet(10)">10</button>
+          <button class="bj-preset" onclick="amSetBet(25)">25</button>
+          <button class="bj-preset" onclick="amSetBet(50)">50</button>
+          <button class="bj-preset" onclick="amSetBet(100)">100</button>
+          <button class="bj-preset" onclick="amSetBet(250)">250</button>
+          <button class="bj-preset bj-preset-all" onclick="amSetBetAll()">ALL IN</button>
+        </div>
+        <div class="bj-custom-row">
+          <input class="bj-input" id="am-bet-input" type="number" min="1" placeholder="Custom amount" oninput="amSyncBetInput()">
+          <span class="bj-coin-icon">🪙</span>
+        </div>
+        <div class="bj-err" id="am-err"></div>
+        <button class="bj-deal-btn" id="am-fly-btn" onclick="amStartFlight()">✈️ FLY</button>
+      </div>
+
+      <!-- FLIGHT CANVAS SCREEN -->
+      <div id="am-game-screen" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.65rem;letter-spacing:2px;color:var(--muted);">BET <span id="am-bet-display" style="color:var(--gold);">🪙 0</span></div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:3px;" id="am-multiplier-display">×1.00</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.65rem;letter-spacing:2px;color:var(--muted);">POTENTIAL <span id="am-potential" style="color:#4ade80;">🪙 0</span></div>
+        </div>
+        <canvas id="am-canvas" width="320" height="220" style="width:100%;border:1px solid rgba(255,255,255,0.08);background:#0a0e1a;display:block;"></canvas>
+        <div id="am-status-bar" style="font-family:'Barlow Condensed',sans-serif;font-size:0.6rem;letter-spacing:2px;color:var(--muted);text-align:center;margin-top:5px;height:14px;"></div>
+      </div>
+
+      <!-- RESULT SCREEN -->
+      <div id="am-result-screen" style="display:none;position:relative;overflow:hidden;">
+        <canvas id="am-coin-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:10;"></canvas>
+        <div style="text-align:center;padding:16px 0 8px;">
+          <div class="bj-result-icon" id="am-result-icon">✈️</div>
+          <div class="bj-result-title" id="am-result-title">—</div>
+          <div class="bj-result-amount" id="am-result-amount"></div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.65rem;letter-spacing:2px;color:var(--muted);margin-top:6px;" id="am-result-detail"></div>
+        </div>
+        <button class="bj-claim-btn" id="am-claim-btn" onclick="amClaim()">COLLECT WINNINGS</button>
+      </div>
+    </div>
+
   </div>
 
   <!-- LEADERBOARD TAB -->
@@ -5827,13 +5880,542 @@ function refreshAllAvatars() {
   }
 }
 
+
+// ══════════════════════════════════════════════════════════════
+//  ✈️  AVIAMASTERS — BattleChat Edition
+//  Plane flies, collects multipliers/rockets, must LAND to win
+// ══════════════════════════════════════════════════════════════
+
+let amBet = 0;
+let amPendingWin = 0;
+let amFlightActive = false;
+let amAnimFrame = null;
+let amMultiplier = 1.0;
+
+// ── Balance sync ──
+function amSyncBalance() {
+  const coins = (myProfile && myProfile.coins) ? myProfile.coins : 0;
+  const el = document.getElementById('am-balance');
+  if (el) el.textContent = '🪙 ' + coins.toLocaleString();
+}
+
+function amSetBet(n) {
+  amBet = n;
+  const inp = document.getElementById('am-bet-input');
+  if (inp) inp.value = n;
+  amClearErr();
+}
+
+function amSetBetAll() {
+  const coins = (myProfile && myProfile.coins) ? myProfile.coins : 0;
+  amSetBet(coins);
+}
+
+function amSyncBetInput() {
+  const inp = document.getElementById('am-bet-input');
+  if (inp) amBet = parseInt(inp.value) || 0;
+  amClearErr();
+}
+
+function amClearErr() {
+  const el = document.getElementById('am-err');
+  if (el) el.textContent = '';
+}
+
+function amShowErr(msg) {
+  const el = document.getElementById('am-err');
+  if (el) el.textContent = msg;
+}
+
+// ── Start Flight ──
+window.amStartFlight = () => {
+  if (!me) { showToast('Log in to play!'); return; }
+  const coins = (myProfile && myProfile.coins) ? myProfile.coins : 0;
+  if (!amBet || amBet < 1)   { amShowErr('Set a bet first!'); return; }
+  if (amBet > coins)          { amShowErr('Not enough coins!'); return; }
+  if (amFlightActive)         { return; }
+
+  // Deduct bet immediately
+  myProfile.coins = coins - amBet;
+  pb.updateUser(me.uid, { coins: myProfile.coins }).catch(() => {});
+  updateCoinDisplays(myProfile.coins);
+  amSyncBalance();
+
+  document.getElementById('am-bet-screen').style.display  = 'none';
+  document.getElementById('am-result-screen').style.display = 'none';
+  document.getElementById('am-game-screen').style.display   = 'block';
+  document.getElementById('am-bet-display').textContent = '🪙 ' + amBet.toLocaleString();
+
+  amFlightActive = true;
+  amMultiplier   = 1.0;
+  amPendingWin   = 0;
+  amRunFlight();
+};
+
+// ── Flight Simulation ──
+function amRunFlight() {
+  const canvas = document.getElementById('am-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  // ── Randomise the flight path ──
+  // sequence of events: array of {type, x, y, value}
+  // types: 'mult_add' (+1..+10), 'mult_mul' (x2..x5), 'rocket' (÷2), 'land', 'sink'
+  const events = amGenerateFlight();
+
+  // plane state
+  let planeX = 60, planeY = H * 0.55;
+  let velY = 0;
+  let eventIdx = 0;
+  let tickCount = 0;
+  const totalTicks = events[events.length - 1].tick + 30;
+  let landed = false, crashed = false;
+  let resultType = null;
+  let activePopups = []; // {x,y,text,color,alpha,vy}
+
+  // clouds
+  const clouds = Array.from({length: 5}, (_, i) => ({
+    x: 80 + i * 60, y: 20 + Math.random() * 60, w: 40 + Math.random() * 40, speed: 0.3 + Math.random() * 0.3
+  }));
+
+  // sea surface
+  let waveOffset = 0;
+
+  function drawSky() {
+    // gradient sky
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.65);
+    sky.addColorStop(0, '#0d1b4b');
+    sky.addColorStop(1, '#1a3a6e');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H * 0.65);
+  }
+
+  function drawSea() {
+    waveOffset += 0.04;
+    const sea = ctx.createLinearGradient(0, H * 0.65, 0, H);
+    sea.addColorStop(0, '#0a2a4a');
+    sea.addColorStop(1, '#051520');
+    ctx.fillStyle = sea;
+    ctx.fillRect(0, H * 0.65, W, H * 0.35);
+    // wave line
+    ctx.beginPath();
+    ctx.moveTo(0, H * 0.65);
+    for (let x = 0; x <= W; x += 4) {
+      ctx.lineTo(x, H * 0.65 + Math.sin(x * 0.04 + waveOffset) * 3);
+    }
+    ctx.strokeStyle = 'rgba(100,180,255,0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  function drawClouds() {
+    ctx.fillStyle = 'rgba(255,255,255,0.07)';
+    clouds.forEach(cl => {
+      cl.x -= cl.speed;
+      if (cl.x + cl.w < 0) cl.x = W + 20;
+      ctx.beginPath();
+      ctx.ellipse(cl.x, cl.y, cl.w * 0.5, 14, 0, 0, Math.PI * 2);
+      ctx.ellipse(cl.x + cl.w * 0.2, cl.y - 8, cl.w * 0.3, 10, 0, 0, Math.PI * 2);
+      ctx.ellipse(cl.x - cl.w * 0.15, cl.y - 5, cl.w * 0.28, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  function drawCarrier(x, y) {
+    // aircraft carrier silhouette
+    ctx.fillStyle = '#334';
+    ctx.fillRect(x - 30, y - 4, 60, 8);
+    ctx.fillStyle = '#445';
+    ctx.fillRect(x - 20, y - 10, 40, 6);
+    ctx.fillStyle = '#556';
+    ctx.fillRect(x + 5, y - 16, 12, 6); // tower
+    // deck line
+    ctx.strokeStyle = 'rgba(255,255,200,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x - 28, y - 4); ctx.lineTo(x + 28, y - 4); ctx.stroke();
+  }
+
+  function drawPlane(x, y, angle) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    // fuselage
+    ctx.fillStyle = '#e8e8f0';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 16, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // nose
+    ctx.fillStyle = '#c0c0d0';
+    ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(22, 0); ctx.lineTo(16, 3); ctx.closePath(); ctx.fill();
+    // wings
+    ctx.fillStyle = '#aab0c8';
+    ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(-8, -14); ctx.lineTo(-14, -12); ctx.lineTo(-10, 0); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(-8, 14); ctx.lineTo(-14, 12); ctx.lineTo(-10, 0); ctx.closePath(); ctx.fill();
+    // tail
+    ctx.fillStyle = '#9098b8';
+    ctx.beginPath(); ctx.moveTo(-14, 0); ctx.lineTo(-18, -8); ctx.lineTo(-16, 0); ctx.closePath(); ctx.fill();
+    // engine glow
+    ctx.fillStyle = 'rgba(255,140,40,0.7)';
+    ctx.beginPath(); ctx.arc(-18, 0, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawRocket(x, y) {
+    ctx.save();
+    ctx.translate(x, y);
+    // rocket body
+    ctx.fillStyle = '#c0392b';
+    ctx.beginPath(); ctx.ellipse(0, 0, 6, 14, 0, 0, Math.PI * 2); ctx.fill();
+    // tip
+    ctx.fillStyle = '#e74c3c';
+    ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(-4, -6); ctx.lineTo(4, -6); ctx.closePath(); ctx.fill();
+    // fins
+    ctx.fillStyle = '#922b21';
+    ctx.beginPath(); ctx.moveTo(-6, 10); ctx.lineTo(-10, 18); ctx.lineTo(-2, 12); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(6, 10); ctx.lineTo(10, 18); ctx.lineTo(2, 12); ctx.closePath(); ctx.fill();
+    // flame
+    ctx.fillStyle = 'rgba(255,160,40,0.8)';
+    ctx.beginPath(); ctx.ellipse(0, 20, 3, 5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawMultToken(x, y, text, color) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = color + 'cc';
+    ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 9px "Barlow Condensed", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 0, 0);
+    ctx.restore();
+  }
+
+  function drawPopups() {
+    activePopups = activePopups.filter(p => p.alpha > 0);
+    activePopups.forEach(p => {
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.font = 'bold 13px "Bebas Neue", sans-serif';
+      ctx.fillStyle = p.color;
+      ctx.textAlign = 'center';
+      ctx.fillText(p.text, p.x, p.y);
+      ctx.restore();
+      p.y += p.vy;
+      p.alpha -= 0.025;
+    });
+  }
+
+  function updateMultiplierDisplay() {
+    const el = document.getElementById('am-multiplier-display');
+    const pot = document.getElementById('am-potential');
+    if (el) {
+      el.textContent = '×' + amMultiplier.toFixed(2);
+      const color = amMultiplier >= 5 ? '#ffd700' : amMultiplier >= 2 ? '#b45aff' : amMultiplier >= 1.5 ? '#60a5fa' : '#ccc';
+      el.style.color = color;
+    }
+    if (pot) pot.textContent = '🪙 ' + Math.floor(amBet * amMultiplier).toLocaleString();
+  }
+
+  // visible tokens on screen
+  let visibleTokens = [];
+  let visibleRockets = [];
+
+  function spawnTokens(tick) {
+    // Add upcoming events into visible pool
+    while (eventIdx < events.length && events[eventIdx].tick <= tick + 60) {
+      const ev = events[eventIdx];
+      if (ev.type !== 'land' && ev.type !== 'sink') {
+        visibleTokens.push({ ...ev, screenX: W + 20, screenY: ev.y, collected: false });
+      }
+      eventIdx++;
+    }
+  }
+
+  let explosionParticles = [];
+  function spawnExplosion(x, y, color) {
+    for (let i = 0; i < 18; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1.5 + Math.random() * 3;
+      explosionParticles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, alpha: 1, color, size: 2 + Math.random() * 3 });
+    }
+  }
+
+  function drawExplosions() {
+    explosionParticles = explosionParticles.filter(p => p.alpha > 0);
+    explosionParticles.forEach(p => {
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      p.x += p.vx; p.y += p.vy; p.vx *= 0.92; p.vy *= 0.92; p.alpha -= 0.03;
+    });
+  }
+
+  let statusTimer = 0;
+  function setStatus(msg) {
+    const el = document.getElementById('am-status-bar');
+    if (el) { el.textContent = msg; statusTimer = 80; }
+  }
+
+  // Precompute carrier positions
+  const numCarriers = events.filter(e => e.type === 'land' || e.type === 'sink').length;
+  const landEvent = events.find(e => e.type === 'land');
+  const sinkEvent = events.find(e => e.type === 'sink');
+  const endEvent  = landEvent || sinkEvent;
+
+  // ── Main animation loop ──
+  function tick() {
+    if (!amFlightActive) return;
+    tickCount++;
+
+    ctx.clearRect(0, 0, W, H);
+    drawSky();
+    drawSea();
+    drawClouds();
+
+    // Draw carrier near end of flight
+    if (endEvent) {
+      const ticksLeft = endEvent.tick - tickCount;
+      const carrierX = W * 0.85 - Math.max(0, ticksLeft - 40) * 1.2;
+      const carrierY = H * 0.65 - 4;
+      drawCarrier(Math.min(W * 0.82, carrierX), carrierY);
+    }
+
+    // Move tokens left
+    visibleTokens = visibleTokens.filter(t => t.screenX > -30 || t.collected);
+    visibleTokens.forEach(t => {
+      if (t.collected) return;
+      t.screenX -= 2.2;
+      // collision with plane
+      if (!t.collected && Math.abs(t.screenX - planeX) < 20 && Math.abs(t.screenY - planeY) < 20) {
+        t.collected = true;
+        if (t.type === 'mult_add') {
+          amMultiplier = Math.round((amMultiplier + t.value) * 100) / 100;
+          activePopups.push({ x: planeX, y: planeY - 20, text: '+' + t.value, color: '#4ade80', alpha: 1, vy: -1 });
+          setStatus('✚' + t.value + ' multiplier!');
+          spawnExplosion(t.screenX, t.screenY, '#4ade80');
+        } else if (t.type === 'mult_mul') {
+          amMultiplier = Math.round(amMultiplier * t.value * 100) / 100;
+          activePopups.push({ x: planeX, y: planeY - 20, text: '×' + t.value, color: '#ffd700', alpha: 1, vy: -1.2 });
+          setStatus('×' + t.value + ' multiplier!');
+          spawnExplosion(t.screenX, t.screenY, '#ffd700');
+        } else if (t.type === 'rocket') {
+          amMultiplier = Math.max(0.5, Math.round(amMultiplier / 2 * 100) / 100);
+          velY += 18; // plane dips
+          activePopups.push({ x: planeX, y: planeY - 20, text: '÷2 ROCKET!', color: '#ff4444', alpha: 1, vy: -0.8 });
+          setStatus('🚀 Rocket hit! Multiplier halved!');
+          spawnExplosion(planeX, planeY, '#ff4444');
+        }
+        updateMultiplierDisplay();
+      }
+      // draw token
+      if (!t.collected) {
+        if (t.type === 'rocket') {
+          drawRocket(t.screenX, t.screenY);
+        } else {
+          const col = t.type === 'mult_mul' ? '#ffd700' : '#4ade80';
+          const lbl = t.type === 'mult_mul' ? '×' + t.value : '+' + t.value;
+          drawMultToken(t.screenX, t.screenY, lbl, col);
+        }
+      }
+    });
+
+    // Spawn new tokens
+    spawnTokens(tickCount);
+
+    // Plane physics — gentle sine wave + events
+    velY *= 0.88;
+    planeY += velY;
+    planeY = Math.max(18, Math.min(H * 0.62, planeY));
+    // subtle floating
+    planeY += Math.sin(tickCount * 0.06) * 0.4;
+    const angle = Math.atan2(velY * 0.06, 1) * 0.6;
+
+    drawExplosions();
+    drawPopups();
+    drawPlane(planeX, planeY, angle);
+
+    // status timer
+    if (statusTimer > 0) { statusTimer--; if (statusTimer === 0) { const el = document.getElementById('am-status-bar'); if (el) el.textContent = ''; } }
+
+    updateMultiplierDisplay();
+
+    // Check end condition
+    if (endEvent && tickCount >= endEvent.tick && !landed && !crashed) {
+      if (endEvent.type === 'land') {
+        landed = true;
+        amFlightActive = false;
+        // Win!
+        amPendingWin = Math.floor(amBet * amMultiplier);
+        setTimeout(() => amShowResult(true), 400);
+      } else {
+        crashed = true;
+        amFlightActive = false;
+        spawnExplosion(planeX, planeY, '#ff4444');
+        spawnExplosion(planeX + 10, planeY - 5, '#ff8800');
+        // Lose
+        amPendingWin = 0;
+        setTimeout(() => amShowResult(false), 800);
+      }
+    }
+
+    if (amFlightActive || explosionParticles.length > 0) {
+      amAnimFrame = requestAnimationFrame(tick);
+    } else if (!landed && !crashed) {
+      amAnimFrame = requestAnimationFrame(tick);
+    }
+  }
+
+  amAnimFrame = requestAnimationFrame(tick);
+}
+
+// ── Generate a random flight path ──
+function amGenerateFlight() {
+  // Decide outcome: 60% land (win), 40% sink (lose) — slightly player-favored
+  const willLand = Math.random() < 0.58;
+  const events = [];
+  let tick = 30;
+
+  // Number of events before end
+  const numEvents = 4 + Math.floor(Math.random() * 7); // 4–10 events
+
+  for (let i = 0; i < numEvents; i++) {
+    tick += 20 + Math.floor(Math.random() * 25);
+    const roll = Math.random();
+    let type, value;
+    if (roll < 0.35) {
+      // mult_add: +1..+10
+      type = 'mult_add';
+      value = [1, 1, 2, 2, 2, 3, 3, 5, 5, 10][Math.floor(Math.random() * 10)];
+    } else if (roll < 0.60) {
+      // mult_mul: ×2..×5
+      type = 'mult_mul';
+      value = [2, 2, 3, 3, 4, 5][Math.floor(Math.random() * 6)];
+    } else {
+      // rocket ÷2
+      type = 'rocket';
+      value = 0.5;
+    }
+    events.push({ type, value, tick, y: 30 + Math.random() * 140 });
+  }
+
+  // Final event
+  tick += 35 + Math.floor(Math.random() * 30);
+  events.push({ type: willLand ? 'land' : 'sink', value: 0, tick, y: 0 });
+
+  return events;
+}
+
+// ── Show result ──
+function amShowResult(won) {
+  if (amAnimFrame) { cancelAnimationFrame(amAnimFrame); amAnimFrame = null; }
+  document.getElementById('am-game-screen').style.display   = 'none';
+  document.getElementById('am-result-screen').style.display = 'block';
+
+  const icon   = document.getElementById('am-result-icon');
+  const title  = document.getElementById('am-result-title');
+  const amount = document.getElementById('am-result-amount');
+  const detail = document.getElementById('am-result-detail');
+
+  if (won) {
+    icon.textContent   = '🛬';
+    title.textContent  = 'LANDED!';
+    title.style.color  = '#4ade80';
+    amount.textContent = '+🪙 ' + amPendingWin.toLocaleString();
+    amount.style.color = '#4ade80';
+    detail.textContent = '×' + amMultiplier.toFixed(2) + ' multiplier on 🪙 ' + amBet.toLocaleString();
+    // Coin shower
+    amCoinShower();
+  } else {
+    icon.textContent   = '💥';
+    title.textContent  = 'CRASHED!';
+    title.style.color  = '#ff4444';
+    amount.textContent = '-🪙 ' + amBet.toLocaleString();
+    amount.style.color = '#ff4444';
+    detail.textContent = 'The plane sank. Better luck next time.';
+    amPendingWin = 0;
+  }
+
+  const claimBtn = document.getElementById('am-claim-btn');
+  if (claimBtn) {
+    claimBtn.textContent = won ? 'COLLECT 🪙 ' + amPendingWin.toLocaleString() : 'PLAY AGAIN';
+  }
+}
+
+// ── Coin shower animation ──
+function amCoinShower() {
+  const canvas = document.getElementById('am-coin-canvas');
+  if (!canvas) return;
+  const ctx2 = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 320, H = canvas.offsetHeight || 200;
+  canvas.width = W; canvas.height = H;
+  const coins2 = Array.from({ length: 30 }, () => ({
+    x: Math.random() * W, y: -20 - Math.random() * 60,
+    vy: 2 + Math.random() * 3, vx: (Math.random() - 0.5) * 2,
+    r: 6 + Math.random() * 6, alpha: 1, rot: Math.random() * Math.PI
+  }));
+  let done = false;
+  function fall() {
+    if (done) return;
+    ctx2.clearRect(0, 0, W, H);
+    coins2.forEach(coin => {
+      coin.y += coin.vy; coin.x += coin.vx; coin.rot += 0.1; coin.vy += 0.1;
+      if (coin.y > H) coin.alpha = Math.max(0, coin.alpha - 0.05);
+      ctx2.save();
+      ctx2.globalAlpha = coin.alpha;
+      ctx2.translate(coin.x, coin.y);
+      ctx2.rotate(coin.rot);
+      ctx2.fillStyle = '#ffd700';
+      ctx2.beginPath();
+      ctx2.ellipse(0, 0, coin.r, coin.r * 0.55, 0, 0, Math.PI * 2);
+      ctx2.fill();
+      ctx2.strokeStyle = '#b8860b';
+      ctx2.lineWidth = 1;
+      ctx2.stroke();
+      ctx2.restore();
+    });
+    if (coins2.every(c => c.alpha <= 0)) { done = true; ctx2.clearRect(0, 0, W, H); return; }
+    requestAnimationFrame(fall);
+  }
+  requestAnimationFrame(fall);
+}
+
+// ── Claim / Play Again ──
+window.amClaim = async () => {
+  if (amPendingWin > 0) {
+    // Add winnings
+    const newCoins = (myProfile.coins || 0) + amPendingWin;
+    myProfile.coins = newCoins;
+    await pb.updateUser(me.uid, { coins: newCoins }).catch(() => {});
+    updateCoinDisplays(newCoins);
+    amPendingWin = 0;
+  }
+  // Reset to bet screen
+  amFlightActive = false;
+  if (amAnimFrame) { cancelAnimationFrame(amAnimFrame); amAnimFrame = null; }
+  document.getElementById('am-result-screen').style.display = 'none';
+  document.getElementById('am-game-screen').style.display   = 'none';
+  document.getElementById('am-bet-screen').style.display    = 'block';
+  amSyncBalance();
+};
+
+
 // ── GAMBLE GAME SWITCHER ──
 window.switchGambleGame = (game) => {
-  document.getElementById('gamble-blackjack').style.display = game === 'blackjack' ? 'block' : 'none';
-  document.getElementById('gamble-flappy').style.display    = game === 'flappy'    ? 'block' : 'none';
+  document.getElementById('gamble-blackjack').style.display    = game === 'blackjack'    ? 'block' : 'none';
+  document.getElementById('gamble-flappy').style.display       = game === 'flappy'       ? 'block' : 'none';
+  document.getElementById('gamble-aviamasters').style.display  = game === 'aviamasters'  ? 'block' : 'none';
   document.querySelectorAll('.gamble-game-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('gbtn-' + game).classList.add('active');
   if (game === 'flappy') fasyncBalance();
+  if (game === 'aviamasters') amSyncBalance();
   if (game === 'blackjack') syncBjBalance();
 };
 
