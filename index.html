@@ -2270,7 +2270,7 @@
           <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:3px;" id="am-multiplier-display">×1.00</div>
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.65rem;letter-spacing:2px;color:var(--muted);">POTENTIAL <span id="am-potential" style="color:#4ade80;">🪙 0</span></div>
         </div>
-        <canvas id="am-canvas" width="320" height="220" style="width:100%;border:1px solid rgba(255,255,255,0.08);background:#0a0e1a;display:block;"></canvas>
+        <canvas id="am-canvas" style="width:100%;height:240px;border:1px solid rgba(255,255,255,0.1);background:#08153a;display:block;border-radius:2px;"></canvas>
         <div id="am-status-bar" style="font-family:'Barlow Condensed',sans-serif;font-size:0.6rem;letter-spacing:2px;color:var(--muted);text-align:center;margin-top:5px;height:14px;"></div>
       </div>
 
@@ -5882,8 +5882,13 @@ function refreshAllAvatars() {
 
 
 // ══════════════════════════════════════════════════════════════
-//  ✈️  AVIAMASTERS — BattleChat Edition
-//  Plane flies, collects multipliers/rockets, must LAND to win
+//  ✈️  AVIAMASTERS — BattleChat Edition  (v2 — full cinematic)
+// ══════════════════════════════════════════════════════════════
+// The plane starts on a carrier (left), launches, flies right
+// across a scrolling sky-sea world picking up tokens & dodging
+// rockets.  A second carrier waits at the end — land on it to
+// win, dip into the sea to crash.  Every frame is animated at
+// 60 fps; the whole journey takes 8–14 s regardless of outcome.
 // ══════════════════════════════════════════════════════════════
 
 let amBet = 0;
@@ -5892,59 +5897,50 @@ let amFlightActive = false;
 let amAnimFrame = null;
 let amMultiplier = 1.0;
 
-// ── Balance sync ──
+// ── helpers ──────────────────────────────────────────────────
 function amSyncBalance() {
-  const coins = (myProfile && myProfile.coins) ? myProfile.coins : 0;
+  const n = (myProfile && myProfile.coins) ? myProfile.coins : 0;
   const el = document.getElementById('am-balance');
-  if (el) el.textContent = '🪙 ' + coins.toLocaleString();
+  if (el) el.textContent = '🪙 ' + n.toLocaleString();
 }
-
 function amSetBet(n) {
   amBet = n;
   const inp = document.getElementById('am-bet-input');
   if (inp) inp.value = n;
   amClearErr();
 }
-
 function amSetBetAll() {
-  const coins = (myProfile && myProfile.coins) ? myProfile.coins : 0;
-  amSetBet(coins);
+  amSetBet((myProfile && myProfile.coins) ? myProfile.coins : 0);
 }
-
 function amSyncBetInput() {
   const inp = document.getElementById('am-bet-input');
   if (inp) amBet = parseInt(inp.value) || 0;
   amClearErr();
 }
-
 function amClearErr() {
-  const el = document.getElementById('am-err');
-  if (el) el.textContent = '';
+  const el = document.getElementById('am-err'); if (el) el.textContent = '';
 }
-
 function amShowErr(msg) {
-  const el = document.getElementById('am-err');
-  if (el) el.textContent = msg;
+  const el = document.getElementById('am-err'); if (el) el.textContent = msg;
 }
 
-// ── Start Flight ──
+// ── START ─────────────────────────────────────────────────────
 window.amStartFlight = () => {
   if (!me) { showToast('Log in to play!'); return; }
   const coins = (myProfile && myProfile.coins) ? myProfile.coins : 0;
-  if (!amBet || amBet < 1)   { amShowErr('Set a bet first!'); return; }
-  if (amBet > coins)          { amShowErr('Not enough coins!'); return; }
-  if (amFlightActive)         { return; }
+  if (!amBet || amBet < 1)  { amShowErr('Set a bet first!'); return; }
+  if (amBet > coins)         { amShowErr('Not enough coins!'); return; }
+  if (amFlightActive)        { return; }
 
-  // Deduct bet immediately
   myProfile.coins = coins - amBet;
   pb.updateUser(me.uid, { coins: myProfile.coins }).catch(() => {});
   updateCoinDisplays(myProfile.coins);
   amSyncBalance();
 
-  document.getElementById('am-bet-screen').style.display  = 'none';
+  document.getElementById('am-bet-screen').style.display    = 'none';
   document.getElementById('am-result-screen').style.display = 'none';
   document.getElementById('am-game-screen').style.display   = 'block';
-  document.getElementById('am-bet-display').textContent = '🪙 ' + amBet.toLocaleString();
+  document.getElementById('am-bet-display').textContent     = '🪙 ' + amBet.toLocaleString();
 
   amFlightActive = true;
   amMultiplier   = 1.0;
@@ -5952,372 +5948,699 @@ window.amStartFlight = () => {
   amRunFlight();
 };
 
-// ── Flight Simulation ──
+// ── MAIN ENGINE ───────────────────────────────────────────────
 function amRunFlight() {
   const canvas = document.getElementById('am-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
+
+  // Resize canvas to its CSS layout size
+  canvas.width  = canvas.offsetWidth  || 340;
+  canvas.height = canvas.offsetHeight || 240;
   const W = canvas.width, H = canvas.height;
 
-  // ── Randomise the flight path ──
-  // sequence of events: array of {type, x, y, value}
-  // types: 'mult_add' (+1..+10), 'mult_mul' (x2..x5), 'rocket' (÷2), 'land', 'sink'
-  const events = amGenerateFlight();
+  // ─── Pre-determine outcome & schedule events ─────────────────
+  // All times in milliseconds from launch
+  const willLand = Math.random() < 0.58;
 
-  // plane state
-  let planeX = 60, planeY = H * 0.55;
-  let velY = 0;
-  let eventIdx = 0;
-  let tickCount = 0;
-  const totalTicks = events[events.length - 1].tick + 30;
-  let landed = false, crashed = false;
-  let resultType = null;
-  let activePopups = []; // {x,y,text,color,alpha,vy}
+  // Total flight duration: 9–14 s
+  const TOTAL_MS = 9000 + Math.random() * 5000;
 
-  // clouds
-  const clouds = Array.from({length: 5}, (_, i) => ({
-    x: 80 + i * 60, y: 20 + Math.random() * 60, w: 40 + Math.random() * 40, speed: 0.3 + Math.random() * 0.3
-  }));
-
-  // sea surface
-  let waveOffset = 0;
-
-  function drawSky() {
-    // gradient sky
-    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.65);
-    sky.addColorStop(0, '#0d1b4b');
-    sky.addColorStop(1, '#1a3a6e');
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, W, H * 0.65);
-  }
-
-  function drawSea() {
-    waveOffset += 0.04;
-    const sea = ctx.createLinearGradient(0, H * 0.65, 0, H);
-    sea.addColorStop(0, '#0a2a4a');
-    sea.addColorStop(1, '#051520');
-    ctx.fillStyle = sea;
-    ctx.fillRect(0, H * 0.65, W, H * 0.35);
-    // wave line
-    ctx.beginPath();
-    ctx.moveTo(0, H * 0.65);
-    for (let x = 0; x <= W; x += 4) {
-      ctx.lineTo(x, H * 0.65 + Math.sin(x * 0.04 + waveOffset) * 3);
+  // Generate token/rocket events spaced across the flight
+  const eventSchedule = []; // { time, type, value, lane } lane = 0..2 (top/mid/bot)
+  const numEvents = 5 + Math.floor(Math.random() * 6); // 5–10 pickups
+  for (let i = 0; i < numEvents; i++) {
+    const t = 1200 + (TOTAL_MS - 2400) * ((i + 0.5 + (Math.random() - 0.5) * 0.4) / numEvents);
+    const roll = Math.random();
+    let type, value;
+    if (roll < 0.30) {
+      type = 'add'; value = [1,1,2,2,2,3,3,5,5,10][Math.floor(Math.random()*10)];
+    } else if (roll < 0.55) {
+      type = 'mul'; value = [2,2,3,3,4,5][Math.floor(Math.random()*6)];
+    } else {
+      type = 'rocket'; value = 0;
     }
-    ctx.strokeStyle = 'rgba(100,180,255,0.35)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    const lane = Math.floor(Math.random() * 3); // 0=high 1=mid 2=low
+    eventSchedule.push({ time: t, type, value, lane, triggered: false });
+  }
+  eventSchedule.sort((a,b) => a.time - b.time);
+
+  // ─── World / scroll state ────────────────────────────────────
+  // The world scrolls left; everything is in "world X" coords.
+  // Plane stays at ~22% from left edge (planeScreenX).
+  const PLANE_SCREEN_X = W * 0.22;
+  let worldX = 0; // how far world has scrolled (pixels)
+  const WORLD_SPEED_PX_S = W * 0.38; // world pixels per second the world scrolls
+
+  // Lane Y positions (screen Y) — plane targets these
+  const LANE_Y = [H * 0.22, H * 0.42, H * 0.60];
+  const SEA_Y  = H * 0.72;  // sea horizon
+
+  // Plane physical state
+  let planeY    = H * 0.55; // start low on carrier
+  let planeVelY = 0;
+  let planeAngle = 0;
+
+  // PHASE:
+  //   'launch'  — on carrier, engine rev, 0–0.8s
+  //   'climb'   — gaining altitude, 0.8–2s
+  //   'cruise'  — main flight collecting tokens
+  //   'approach'— last 2s, glide toward target altitude
+  //   'land'    — plane touches carrier, brief pause
+  //   'sink'    — plane spirals down into sea
+  //   'done'    — game over
+  let phase      = 'launch';
+  let phaseTimer = 0; // ms into current phase
+  let elapsedMs  = 0;
+
+  // Target Y — plane tries to track this
+  let targetY = H * 0.55;
+
+  // ─── Carrier / world objects ─────────────────────────────────
+  // Launch carrier: fixed at world X=0, visible at start
+  // Landing carrier: at world X = WORLD_SPEED_PX_S * TOTAL_MS/1000
+  const LAND_WORLD_X = WORLD_SPEED_PX_S * (TOTAL_MS / 1000);
+
+  // Token objects (spawned just before their time)
+  const tokens = []; // { worldX, screenY, type, value, collected, alpha, scaleAnim }
+
+  // Pre-assign world X to each event based on schedule time
+  eventSchedule.forEach(ev => {
+    ev.worldX = WORLD_SPEED_PX_S * (ev.time / 1000);
+    ev.screenY = LANE_Y[ev.lane] + (Math.random() - 0.5) * 28;
+    ev.spawned = false;
+  });
+
+  // ─── Particles ───────────────────────────────────────────────
+  let particles = []; // general explosion/sparkle
+  let trailParts = []; // engine trail
+  let popups = []; // floating text
+
+  function spawnBurst(x, y, color, n=18, speed=3) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = (0.5 + Math.random()) * speed;
+      particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s,
+                        alpha: 1, size: 2+Math.random()*3, color, life: 0 });
+    }
+  }
+  function addPopup(x, y, text, color) {
+    popups.push({ x, y, text, color, alpha: 1, vy: -1.4 });
   }
 
-  function drawClouds() {
-    ctx.fillStyle = 'rgba(255,255,255,0.07)';
-    clouds.forEach(cl => {
-      cl.x -= cl.speed;
-      if (cl.x + cl.w < 0) cl.x = W + 20;
+  // ─── Drawing helpers ─────────────────────────────────────────
+  function drawBackground() {
+    // Sky gradient
+    const skyG = ctx.createLinearGradient(0, 0, 0, SEA_Y);
+    skyG.addColorStop(0,   '#08153a');
+    skyG.addColorStop(0.5, '#0d2757');
+    skyG.addColorStop(1,   '#1a4a7a');
+    ctx.fillStyle = skyG;
+    ctx.fillRect(0, 0, W, SEA_Y);
+
+    // Sea
+    const seaG = ctx.createLinearGradient(0, SEA_Y, 0, H);
+    seaG.addColorStop(0, '#0a2a4a');
+    seaG.addColorStop(1, '#041018');
+    ctx.fillStyle = seaG;
+    ctx.fillRect(0, SEA_Y, W, H - SEA_Y);
+
+    // Horizon glow
+    ctx.fillStyle = 'rgba(30,120,200,0.12)';
+    ctx.fillRect(0, SEA_Y - 4, W, 8);
+  }
+
+  // Tiled wave pattern
+  let waveT = 0;
+  function drawWaves() {
+    waveT += 0.03;
+    for (let row = 0; row < 3; row++) {
+      const wy = SEA_Y + 6 + row * 10;
       ctx.beginPath();
-      ctx.ellipse(cl.x, cl.y, cl.w * 0.5, 14, 0, 0, Math.PI * 2);
-      ctx.ellipse(cl.x + cl.w * 0.2, cl.y - 8, cl.w * 0.3, 10, 0, 0, Math.PI * 2);
-      ctx.ellipse(cl.x - cl.w * 0.15, cl.y - 5, cl.w * 0.28, 9, 0, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(0, wy);
+      for (let x = 0; x <= W; x += 3) {
+        ctx.lineTo(x, wy + Math.sin((x * 0.025) + waveT + row * 1.2) * (2 - row * 0.4));
+      }
+      ctx.strokeStyle = `rgba(80,160,255,${0.18 - row * 0.04})`;
+      ctx.lineWidth   = 1;
+      ctx.stroke();
+    }
+  }
+
+  // Parallax cloud layers
+  const cloudLayers = [
+    { speed: 0.12, y: H*0.08, items: Array.from({length:4}, (_,i)=>({ wx: i*260+80, w:60+Math.random()*50, h:14+Math.random()*10, puff:Math.floor(Math.random()*3)+2 })) },
+    { speed: 0.22, y: H*0.18, items: Array.from({length:5}, (_,i)=>({ wx: i*190+30, w:40+Math.random()*35, h:10+Math.random()*8,  puff:Math.floor(Math.random()*3)+2 })) },
+    { speed: 0.35, y: H*0.30, items: Array.from({length:6}, (_,i)=>({ wx: i*150+10, w:28+Math.random()*25, h: 7+Math.random()*6,  puff:Math.floor(Math.random()*2)+1 })) },
+  ];
+
+  function drawClouds(scrolled) {
+    cloudLayers.forEach(layer => {
+      const alpha = 0.07 + (1 - layer.speed) * 0.06;
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      layer.items.forEach(cl => {
+        // screen X = cloud world X - scrolled * parallax factor
+        const sx = ((cl.wx - scrolled * layer.speed) % (W + cl.w + 40)) - cl.w * 0.5;
+        ctx.beginPath();
+        ctx.ellipse(sx, layer.y, cl.w * 0.5, cl.h, 0, 0, Math.PI*2);
+        for (let p = 0; p < cl.puff; p++) {
+          ctx.ellipse(sx + (p-cl.puff/2)*cl.w*0.3,
+                      layer.y - cl.h * (0.4 + p*0.15),
+                      cl.w * (0.25 + p*0.05), cl.h * 0.7, 0, 0, Math.PI*2);
+        }
+        ctx.fill();
+      });
     });
   }
 
-  function drawCarrier(x, y) {
-    // aircraft carrier silhouette
-    ctx.fillStyle = '#334';
-    ctx.fillRect(x - 30, y - 4, 60, 8);
-    ctx.fillStyle = '#445';
-    ctx.fillRect(x - 20, y - 10, 40, 6);
-    ctx.fillStyle = '#556';
-    ctx.fillRect(x + 5, y - 16, 12, 6); // tower
-    // deck line
-    ctx.strokeStyle = 'rgba(255,255,200,0.3)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(x - 28, y - 4); ctx.lineTo(x + 28, y - 4); ctx.stroke();
+  function drawCarrier(screenX, screenY, isLanding) {
+    const S = isLanding ? 1.0 : 0.85;
+    ctx.save();
+    ctx.translate(screenX, screenY);
+
+    // Hull
+    ctx.fillStyle = '#2a3a50';
+    ctx.beginPath();
+    ctx.moveTo(-55*S, 0); ctx.lineTo(55*S, 0);
+    ctx.lineTo(60*S, 8*S); ctx.lineTo(-60*S, 8*S); ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#3a4f6a'; ctx.lineWidth = 1; ctx.stroke();
+
+    // Deck
+    ctx.fillStyle = '#374858';
+    ctx.fillRect(-52*S, -5*S, 104*S, 5*S);
+
+    // Deck stripe
+    ctx.strokeStyle = 'rgba(255,240,100,0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([8,6]);
+    ctx.beginPath(); ctx.moveTo(-45*S,-3*S); ctx.lineTo(45*S,-3*S); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Island / tower
+    ctx.fillStyle = '#2c3e50';
+    ctx.fillRect(18*S, -22*S, 16*S, 17*S);
+    ctx.fillStyle = '#34495e';
+    ctx.fillRect(20*S, -28*S, 10*S, 7*S);
+    // antenna
+    ctx.strokeStyle = '#5a6a7a'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(25*S,-28*S); ctx.lineTo(25*S,-36*S); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(22*S,-33*S); ctx.lineTo(28*S,-33*S); ctx.stroke();
+
+    // Hull water reflection
+    const reflG = ctx.createLinearGradient(0, 8*S, 0, 20*S);
+    reflG.addColorStop(0, 'rgba(42,58,80,0.5)');
+    reflG.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = reflG;
+    ctx.fillRect(-50*S, 8*S, 100*S, 12*S);
+
+    // Wake if launch carrier (static)
+    if (!isLanding) {
+      ctx.strokeStyle = 'rgba(100,180,255,0.15)';
+      ctx.lineWidth = 1;
+      for (let w = 0; w < 3; w++) {
+        ctx.beginPath();
+        ctx.moveTo(55*S + w*12, 4*S);
+        ctx.quadraticCurveTo(90*S + w*10, 14*S, 130*S + w*8, 6*S);
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
   }
 
-  function drawPlane(x, y, angle) {
+  function drawPlane(x, y, angle, scale=1, alpha=1) {
     ctx.save();
+    ctx.globalAlpha = alpha;
     ctx.translate(x, y);
     ctx.rotate(angle);
-    // fuselage
-    ctx.fillStyle = '#e8e8f0';
+    ctx.scale(scale, scale);
+
+    // Engine trail glow
+    const trailG = ctx.createRadialGradient(-22,0,0,-22,0,14);
+    trailG.addColorStop(0, 'rgba(255,140,40,0.55)');
+    trailG.addColorStop(1, 'rgba(255,80,0,0)');
+    ctx.fillStyle = trailG;
+    ctx.beginPath(); ctx.arc(-22,0,14,0,Math.PI*2); ctx.fill();
+
+    // Fuselage
+    ctx.fillStyle = '#d8dce8';
     ctx.beginPath();
-    ctx.ellipse(0, 0, 16, 5, 0, 0, Math.PI * 2);
+    ctx.moveTo(22, 0);
+    ctx.bezierCurveTo(16,-4, -14,-4, -18,0);
+    ctx.bezierCurveTo(-14, 4, 16, 4, 22, 0);
     ctx.fill();
-    // nose
-    ctx.fillStyle = '#c0c0d0';
-    ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(22, 0); ctx.lineTo(16, 3); ctx.closePath(); ctx.fill();
-    // wings
-    ctx.fillStyle = '#aab0c8';
-    ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(-8, -14); ctx.lineTo(-14, -12); ctx.lineTo(-10, 0); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(-8, 14); ctx.lineTo(-14, 12); ctx.lineTo(-10, 0); ctx.closePath(); ctx.fill();
-    // tail
+
+    // Nose cone
+    ctx.fillStyle = '#b0b4c8';
+    ctx.beginPath(); ctx.moveTo(22,0); ctx.lineTo(30,-1); ctx.lineTo(30,1); ctx.closePath(); ctx.fill();
+
+    // Cockpit window
+    ctx.fillStyle = 'rgba(120,200,255,0.7)';
+    ctx.beginPath(); ctx.ellipse(12,-2,5,3,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='rgba(180,220,255,0.5)'; ctx.lineWidth=0.5; ctx.stroke();
+
+    // Wings
+    ctx.fillStyle = '#a8b0c8';
+    ctx.beginPath();
+    ctx.moveTo(2, -1); ctx.lineTo(-6,-16); ctx.lineTo(-14,-15); ctx.lineTo(-10, 0); ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(2,  1); ctx.lineTo(-6, 16); ctx.lineTo(-14, 15); ctx.lineTo(-10, 0); ctx.closePath();
+    ctx.fill();
+
+    // Wing tips (winglet)
+    ctx.fillStyle = '#ff3b3b';
+    ctx.fillRect(-14,-17,3,2);
+    ctx.fillRect(-14, 15,3,2);
+
+    // Horizontal stabilizer
     ctx.fillStyle = '#9098b8';
-    ctx.beginPath(); ctx.moveTo(-14, 0); ctx.lineTo(-18, -8); ctx.lineTo(-16, 0); ctx.closePath(); ctx.fill();
-    // engine glow
-    ctx.fillStyle = 'rgba(255,140,40,0.7)';
-    ctx.beginPath(); ctx.arc(-18, 0, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-14,0); ctx.lineTo(-18,-8); ctx.lineTo(-20,-6); ctx.lineTo(-18,0); ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-14,0); ctx.lineTo(-18, 8); ctx.lineTo(-20, 6); ctx.lineTo(-18,0); ctx.closePath();
+    ctx.fill();
+
+    // Vertical fin
+    ctx.fillStyle = '#7a82a8';
+    ctx.beginPath(); ctx.moveTo(-14,0); ctx.lineTo(-19,-10); ctx.lineTo(-18,-2); ctx.closePath(); ctx.fill();
+
+    // Engine nacelle
+    ctx.fillStyle = '#5a6080';
+    ctx.beginPath(); ctx.ellipse(-4,-10,5,3,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-4, 10,5,3,0,0,Math.PI*2); ctx.fill();
+
+    // Engine glow
+    ctx.fillStyle = 'rgba(255,160,60,0.8)';
+    ctx.beginPath(); ctx.arc(-9,-10,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-9, 10,2,0,Math.PI*2); ctx.fill();
+
+    // Red/white stripe on fuselage
+    ctx.fillStyle = '#ff3b3b';
+    ctx.fillRect(-4, -4, 18, 1.5);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-4, -2, 18, 0.8);
+
     ctx.restore();
   }
 
-  function drawRocket(x, y) {
+  function drawRocketMissile(sx, sy, t) {
+    // Hovering, slight bob
+    const bob = Math.sin(t * 0.004) * 3;
     ctx.save();
-    ctx.translate(x, y);
-    // rocket body
+    ctx.translate(sx, sy + bob);
+
+    // Glow aura
+    const glow = ctx.createRadialGradient(0,0,4,0,0,22);
+    glow.addColorStop(0,'rgba(255,60,60,0.3)');
+    glow.addColorStop(1,'rgba(255,0,0,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(0,0,22,0,Math.PI*2); ctx.fill();
+
+    // Rocket body — pointing left (toward plane)
+    ctx.rotate(Math.PI); // nose points left
     ctx.fillStyle = '#c0392b';
-    ctx.beginPath(); ctx.ellipse(0, 0, 6, 14, 0, 0, Math.PI * 2); ctx.fill();
-    // tip
+    ctx.beginPath();
+    ctx.moveTo(0,-5); ctx.lineTo(12,-5); ctx.lineTo(14,0);
+    ctx.lineTo(12, 5); ctx.lineTo(0, 5); ctx.closePath();
+    ctx.fill();
+
     ctx.fillStyle = '#e74c3c';
-    ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(-4, -6); ctx.lineTo(4, -6); ctx.closePath(); ctx.fill();
-    // fins
+    ctx.beginPath(); ctx.moveTo(14,0); ctx.lineTo(20,-2); ctx.lineTo(20,2); ctx.closePath(); ctx.fill();
+
+    // Fins
     ctx.fillStyle = '#922b21';
-    ctx.beginPath(); ctx.moveTo(-6, 10); ctx.lineTo(-10, 18); ctx.lineTo(-2, 12); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(6, 10); ctx.lineTo(10, 18); ctx.lineTo(2, 12); ctx.closePath(); ctx.fill();
-    // flame
-    ctx.fillStyle = 'rgba(255,160,40,0.8)';
-    ctx.beginPath(); ctx.ellipse(0, 20, 3, 5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0,-5); ctx.lineTo(-4,-10); ctx.lineTo(0,-4); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0, 5); ctx.lineTo(-4, 10); ctx.lineTo(0,  4); ctx.closePath(); ctx.fill();
+
+    // Exhaust flame
+    const fl = ctx.createRadialGradient(-2,0,0,-2,0,8);
+    fl.addColorStop(0,'rgba(255,220,80,0.9)');
+    fl.addColorStop(0.5,'rgba(255,100,20,0.7)');
+    fl.addColorStop(1,'rgba(255,40,0,0)');
+    ctx.fillStyle = fl;
+    ctx.beginPath(); ctx.ellipse(-6,0,8,4,0,0,Math.PI*2); ctx.fill();
+
     ctx.restore();
   }
 
-  function drawMultToken(x, y, text, color) {
+  function drawToken(sx, sy, type, value, t, collected, collectT) {
     ctx.save();
-    ctx.translate(x, y);
-    ctx.fillStyle = color + 'cc';
-    ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.fill();
+    ctx.translate(sx, sy);
+
+    let scale = 1;
+    if (collected) {
+      // scale up then fade
+      const age = t - collectT;
+      scale = 1 + age * 0.04;
+      ctx.globalAlpha = Math.max(0, 1 - age * 0.07);
+    } else {
+      // gentle pulse
+      scale = 1 + Math.sin(t * 0.006) * 0.06;
+    }
+    ctx.scale(scale, scale);
+
+    const isRocket = (type === 'rocket');
+    const isMul    = (type === 'mul');
+    const color    = isRocket ? '#ff3b3b' : isMul ? '#ffd700' : '#4ade80';
+    const bgColor  = isRocket ? 'rgba(255,59,59,0.18)' : isMul ? 'rgba(255,215,0,0.18)' : 'rgba(74,222,128,0.18)';
+    const R = 16;
+
+    // Outer ring glow
+    const ringG = ctx.createRadialGradient(0,0,R-4,0,0,R+6);
+    ringG.addColorStop(0, color.replace(')',',0.3)').replace('rgb','rgba'));
+    ringG.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = ringG;
+    ctx.beginPath(); ctx.arc(0,0,R+6,0,Math.PI*2); ctx.fill();
+
+    // Main circle
+    ctx.fillStyle = bgColor;
+    ctx.beginPath(); ctx.arc(0,0,R,0,Math.PI*2); ctx.fill();
     ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 2;
     ctx.stroke();
+
+    // Inner icon / text
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 9px "Barlow Condensed", sans-serif';
+    ctx.font = 'bold 10px "Bebas Neue", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, 0, 0);
+    if (isRocket) {
+      ctx.font = '13px sans-serif';
+      ctx.fillText('🚀', 0, 1);
+    } else if (isMul) {
+      ctx.fillStyle = '#ffd700';
+      ctx.font = 'bold 9px "Bebas Neue",sans-serif';
+      ctx.fillText('×' + value, 0, 1);
+    } else {
+      ctx.fillStyle = '#4ade80';
+      ctx.font = 'bold 9px "Bebas Neue",sans-serif';
+      ctx.fillText('+' + value, 0, 1);
+    }
+
     ctx.restore();
+  }
+
+  function drawParticles() {
+    particles = particles.filter(p => p.alpha > 0);
+    particles.forEach(p => {
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      p.x += p.vx; p.y += p.vy;
+      p.vx *= 0.93; p.vy *= 0.93; p.vy += 0.04;
+      p.alpha -= 0.022;
+    });
+  }
+
+  function drawTrail() {
+    // Push new trail point
+    trailParts.push({ x: PLANE_SCREEN_X - 22, y: planeY, alpha: 0.55 });
+    if (trailParts.length > 28) trailParts.shift();
+    trailParts.forEach((tp, i) => {
+      ctx.save();
+      ctx.globalAlpha = tp.alpha * (i / trailParts.length);
+      const r = 3 * (i / trailParts.length);
+      const tg = ctx.createRadialGradient(tp.x,tp.y,0,tp.x,tp.y,r+2);
+      tg.addColorStop(0,'rgba(255,180,60,0.8)');
+      tg.addColorStop(1,'rgba(255,60,0,0)');
+      ctx.fillStyle = tg;
+      ctx.beginPath(); ctx.arc(tp.x,tp.y,r+2,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      tp.alpha -= 0.018;
+    });
+    trailParts = trailParts.filter(p => p.alpha > 0);
   }
 
   function drawPopups() {
-    activePopups = activePopups.filter(p => p.alpha > 0);
-    activePopups.forEach(p => {
+    popups = popups.filter(p => p.alpha > 0);
+    popups.forEach(p => {
       ctx.save();
       ctx.globalAlpha = p.alpha;
-      ctx.font = 'bold 13px "Bebas Neue", sans-serif';
+      ctx.font = 'bold 14px "Bebas Neue",sans-serif';
       ctx.fillStyle = p.color;
       ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      // outline
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+      ctx.lineWidth = 3;
+      ctx.strokeText(p.text, p.x, p.y);
       ctx.fillText(p.text, p.x, p.y);
       ctx.restore();
-      p.y += p.vy;
-      p.alpha -= 0.025;
+      p.y += p.vy; p.alpha -= 0.018;
     });
   }
 
-  function updateMultiplierDisplay() {
-    const el = document.getElementById('am-multiplier-display');
+  function updateHUD() {
+    const el  = document.getElementById('am-multiplier-display');
     const pot = document.getElementById('am-potential');
     if (el) {
       el.textContent = '×' + amMultiplier.toFixed(2);
-      const color = amMultiplier >= 5 ? '#ffd700' : amMultiplier >= 2 ? '#b45aff' : amMultiplier >= 1.5 ? '#60a5fa' : '#ccc';
-      el.style.color = color;
+      el.style.color = amMultiplier >= 10 ? '#ffd700'
+                     : amMultiplier >= 5  ? '#ff8c00'
+                     : amMultiplier >= 2  ? '#b45aff'
+                     : amMultiplier >= 1.5? '#60a5fa'
+                     : '#ccc';
     }
     if (pot) pot.textContent = '🪙 ' + Math.floor(amBet * amMultiplier).toLocaleString();
   }
 
-  // visible tokens on screen
-  let visibleTokens = [];
-  let visibleRockets = [];
-
-  function spawnTokens(tick) {
-    // Add upcoming events into visible pool
-    while (eventIdx < events.length && events[eventIdx].tick <= tick + 60) {
-      const ev = events[eventIdx];
-      if (ev.type !== 'land' && ev.type !== 'sink') {
-        visibleTokens.push({ ...ev, screenX: W + 20, screenY: ev.y, collected: false });
-      }
-      eventIdx++;
-    }
-  }
-
-  let explosionParticles = [];
-  function spawnExplosion(x, y, color) {
-    for (let i = 0; i < 18; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 1.5 + Math.random() * 3;
-      explosionParticles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, alpha: 1, color, size: 2 + Math.random() * 3 });
-    }
-  }
-
-  function drawExplosions() {
-    explosionParticles = explosionParticles.filter(p => p.alpha > 0);
-    explosionParticles.forEach(p => {
-      ctx.save();
-      ctx.globalAlpha = p.alpha;
-      ctx.fillStyle = p.color;
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-      p.x += p.vx; p.y += p.vy; p.vx *= 0.92; p.vy *= 0.92; p.alpha -= 0.03;
-    });
-  }
-
-  let statusTimer = 0;
   function setStatus(msg) {
     const el = document.getElementById('am-status-bar');
-    if (el) { el.textContent = msg; statusTimer = 80; }
+    if (el) el.textContent = msg;
   }
 
-  // Precompute carrier positions
-  const numCarriers = events.filter(e => e.type === 'land' || e.type === 'sink').length;
-  const landEvent = events.find(e => e.type === 'land');
-  const sinkEvent = events.find(e => e.type === 'sink');
-  const endEvent  = landEvent || sinkEvent;
+  // ─── Token state array ────────────────────────────────────────
+  const activeTokens = eventSchedule.map(ev => ({
+    ...ev,
+    screenX: 0, // computed each frame from worldX
+    collected: false,
+    collectTime: 0,
+    visible: false,
+  }));
 
-  // ── Main animation loop ──
-  function tick() {
-    if (!amFlightActive) return;
-    tickCount++;
+  // ─── Animation state ─────────────────────────────────────────
+  let startTime   = null;
+  let lastTime    = null;
+  let gameEnded   = false;
+
+  // Land carrier — screen X based on world position
+  // Starts off-screen right, scrolls in toward end
+  let endResult = null; // 'land' or 'sink'
+  let endPhaseTimer = 0;
+
+  // Plane flicker on crash
+  let crashFlicker = 0;
+  let sinkProgress = 0; // 0→1 during sink animation
+
+  // Launch smoke puffs
+  let launchSmoke = [];
+
+  // ─── MAIN LOOP ────────────────────────────────────────────────
+  function frame(ts) {
+    if (!startTime) { startTime = ts; lastTime = ts; }
+    const dt  = Math.min(ts - lastTime, 50); // cap dt at 50ms
+    lastTime  = ts;
+    elapsedMs += dt;
+
+    worldX = (elapsedMs / 1000) * WORLD_SPEED_PX_S;
 
     ctx.clearRect(0, 0, W, H);
-    drawSky();
-    drawSea();
-    drawClouds();
+    drawBackground();
+    drawClouds(worldX);
+    drawWaves();
 
-    // Draw carrier near end of flight
-    if (endEvent) {
-      const ticksLeft = endEvent.tick - tickCount;
-      const carrierX = W * 0.85 - Math.max(0, ticksLeft - 40) * 1.2;
-      const carrierY = H * 0.65 - 4;
-      drawCarrier(Math.min(W * 0.82, carrierX), carrierY);
+    // ── Launch carrier (stays at world X=0, scrolls left) ──────
+    const launchCarrierSX = PLANE_SCREEN_X - 10 - worldX * 1.0;
+    if (launchCarrierSX > -120) {
+      drawCarrier(launchCarrierSX, SEA_Y - 2, false);
     }
 
-    // Move tokens left
-    visibleTokens = visibleTokens.filter(t => t.screenX > -30 || t.collected);
-    visibleTokens.forEach(t => {
-      if (t.collected) return;
-      t.screenX -= 2.2;
-      // collision with plane
-      if (!t.collected && Math.abs(t.screenX - planeX) < 20 && Math.abs(t.screenY - planeY) < 20) {
-        t.collected = true;
-        if (t.type === 'mult_add') {
-          amMultiplier = Math.round((amMultiplier + t.value) * 100) / 100;
-          activePopups.push({ x: planeX, y: planeY - 20, text: '+' + t.value, color: '#4ade80', alpha: 1, vy: -1 });
-          setStatus('✚' + t.value + ' multiplier!');
-          spawnExplosion(t.screenX, t.screenY, '#4ade80');
-        } else if (t.type === 'mult_mul') {
-          amMultiplier = Math.round(amMultiplier * t.value * 100) / 100;
-          activePopups.push({ x: planeX, y: planeY - 20, text: '×' + t.value, color: '#ffd700', alpha: 1, vy: -1.2 });
-          setStatus('×' + t.value + ' multiplier!');
-          spawnExplosion(t.screenX, t.screenY, '#ffd700');
-        } else if (t.type === 'rocket') {
-          amMultiplier = Math.max(0.5, Math.round(amMultiplier / 2 * 100) / 100);
-          velY += 18; // plane dips
-          activePopups.push({ x: planeX, y: planeY - 20, text: '÷2 ROCKET!', color: '#ff4444', alpha: 1, vy: -0.8 });
-          setStatus('🚀 Rocket hit! Multiplier halved!');
-          spawnExplosion(planeX, planeY, '#ff4444');
-        }
-        updateMultiplierDisplay();
-      }
-      // draw token
-      if (!t.collected) {
-        if (t.type === 'rocket') {
-          drawRocket(t.screenX, t.screenY);
+    // ── Landing carrier ─────────────────────────────────────────
+    const landCarrierWorldX = LAND_WORLD_X;
+    const landCarrierSX = PLANE_SCREEN_X + (landCarrierWorldX - worldX);
+    const landCarrierSY = SEA_Y - 2;
+    // Only draw when approaching
+    if (landCarrierSX < W + 150 && landCarrierSX > -120) {
+      drawCarrier(landCarrierSX, landCarrierSY, true);
+    }
+
+    // ── Tokens ──────────────────────────────────────────────────
+    activeTokens.forEach(tok => {
+      if (gameEnded && !tok.collected) return; // don't draw uncollected if done
+      const sx = PLANE_SCREEN_X + (tok.worldX - worldX);
+      tok.screenX = sx;
+      if (sx > -30 && sx < W + 30) {
+        tok.visible = true;
+        if (!tok.collected) {
+          drawToken(sx, tok.screenY, tok.type, tok.value, elapsedMs, false, 0);
+          // Collision check — within reach of plane
+          if (!gameEnded &&
+              Math.abs(sx - PLANE_SCREEN_X) < 28 &&
+              Math.abs(tok.screenY - planeY) < 28) {
+            tok.collected   = true;
+            tok.collectTime = elapsedMs;
+            if (tok.type === 'add') {
+              amMultiplier = Math.round((amMultiplier + tok.value) * 100) / 100;
+              addPopup(PLANE_SCREEN_X, planeY - 24, '+' + tok.value, '#4ade80');
+              spawnBurst(PLANE_SCREEN_X, planeY, '#4ade80', 12, 2.5);
+              setStatus('+' + tok.value + ' multiplier collected!');
+            } else if (tok.type === 'mul') {
+              amMultiplier = Math.round(amMultiplier * tok.value * 100) / 100;
+              addPopup(PLANE_SCREEN_X, planeY - 24, '×' + tok.value + '!', '#ffd700');
+              spawnBurst(PLANE_SCREEN_X, planeY, '#ffd700', 16, 3);
+              setStatus('×' + tok.value + ' MULTIPLIER!');
+            } else {
+              amMultiplier = Math.max(0.5, Math.round(amMultiplier / 2 * 100) / 100);
+              addPopup(PLANE_SCREEN_X, planeY - 24, '÷2 HIT!', '#ff4444');
+              spawnBurst(PLANE_SCREEN_X, planeY, '#ff4444', 20, 3.5);
+              planeVelY += 26; // jerk down
+              setStatus('🚀 Rocket hit! Multiplier halved!');
+            }
+            updateHUD();
+          }
         } else {
-          const col = t.type === 'mult_mul' ? '#ffd700' : '#4ade80';
-          const lbl = t.type === 'mult_mul' ? '×' + t.value : '+' + t.value;
-          drawMultToken(t.screenX, t.screenY, lbl, col);
+          // Brief collect flash animation
+          const age = elapsedMs - tok.collectTime;
+          if (age < 500) drawToken(sx, tok.screenY, tok.type, tok.value, elapsedMs, true, tok.collectTime);
         }
       }
     });
 
-    // Spawn new tokens
-    spawnTokens(tickCount);
+    // ── Plane physics ────────────────────────────────────────────
+    if (!gameEnded) {
+      // Progress 0→1
+      const prog = Math.min(elapsedMs / TOTAL_MS, 1);
 
-    // Plane physics — gentle sine wave + events
-    velY *= 0.88;
-    planeY += velY;
-    planeY = Math.max(18, Math.min(H * 0.62, planeY));
-    // subtle floating
-    planeY += Math.sin(tickCount * 0.06) * 0.4;
-    const angle = Math.atan2(velY * 0.06, 1) * 0.6;
-
-    drawExplosions();
-    drawPopups();
-    drawPlane(planeX, planeY, angle);
-
-    // status timer
-    if (statusTimer > 0) { statusTimer--; if (statusTimer === 0) { const el = document.getElementById('am-status-bar'); if (el) el.textContent = ''; } }
-
-    updateMultiplierDisplay();
-
-    // Check end condition
-    if (endEvent && tickCount >= endEvent.tick && !landed && !crashed) {
-      if (endEvent.type === 'land') {
-        landed = true;
-        amFlightActive = false;
-        // Win!
-        amPendingWin = Math.floor(amBet * amMultiplier);
-        setTimeout(() => amShowResult(true), 400);
+      if (elapsedMs < 800) {
+        // LAUNCH PHASE — rev on carrier
+        phase = 'launch';
+        targetY = SEA_Y - 30;
+        // Launch smoke puffs
+        if (Math.random() < 0.25) {
+          launchSmoke.push({ x: launchCarrierSX + 55, y: SEA_Y - 25,
+                             vx: 1.5 + Math.random(), vy: -0.8 - Math.random(),
+                             alpha: 0.5, size: 4 + Math.random()*4 });
+        }
+      } else if (elapsedMs < 2200) {
+        // CLIMB
+        phase = 'climb';
+        const t = (elapsedMs - 800) / 1400;
+        targetY = (SEA_Y - 30) * (1 - t) + LANE_Y[1] * t;
+      } else if (prog < 0.82) {
+        // CRUISE — track nearest upcoming token Y or wander
+        phase = 'cruise';
+        const nextTok = activeTokens.find(t => !t.collected && t.worldX > worldX && t.worldX < worldX + W * 1.2);
+        if (nextTok) {
+          targetY = nextTok.screenY;
+        } else {
+          // gentle sine wander
+          targetY = LANE_Y[1] + Math.sin(elapsedMs * 0.0009) * (H * 0.18);
+        }
       } else {
-        crashed = true;
-        amFlightActive = false;
-        spawnExplosion(planeX, planeY, '#ff4444');
-        spawnExplosion(planeX + 10, planeY - 5, '#ff8800');
-        // Lose
-        amPendingWin = 0;
-        setTimeout(() => amShowResult(false), 800);
+        // APPROACH — glide toward carrier deck
+        phase = 'approach';
+        const t = (prog - 0.82) / 0.18;
+        if (willLand) {
+          targetY = LANE_Y[1] * (1-t) + (landCarrierSY - 12) * t;
+        } else {
+          // heading toward sea — arc down
+          targetY = LANE_Y[2] * (1-t) + (SEA_Y + 30) * t;
+        }
+      }
+
+      // Spring physics toward target
+      const spring = 0.045;
+      const damping = 0.78;
+      planeVelY += (targetY - planeY) * spring;
+      planeVelY *= damping;
+      planeY    += planeVelY;
+      planeAngle = Math.atan2(planeVelY * 0.08, 1) * 0.7;
+
+      // ── Check end condition ─────────────────────────────────
+      if (elapsedMs >= TOTAL_MS && !gameEnded) {
+        gameEnded  = true;
+        endResult  = willLand ? 'land' : 'sink';
+        endPhaseTimer = 0;
+        if (willLand) {
+          setStatus('🛬 LANDING!');
+        } else {
+          setStatus('💥 GOING DOWN!');
+          spawnBurst(PLANE_SCREEN_X, planeY, '#ff4444', 25, 4);
+          spawnBurst(PLANE_SCREEN_X+12, planeY-8, '#ff8800', 20, 3);
+        }
+      }
+    } else {
+      // END PHASE ANIMATION
+      endPhaseTimer += dt;
+      if (endResult === 'land') {
+        // Plane slows and glides down to deck
+        planeY += (landCarrierSY - 18 - planeY) * 0.06;
+        planeAngle = -0.12;
+        // After 1.5s show result
+        if (endPhaseTimer > 1500) {
+          amPendingWin = Math.floor(amBet * amMultiplier);
+          amFlightActive = false;
+          cancelAnimationFrame(amAnimFrame);
+          setTimeout(() => amShowResult(true), 100);
+          return;
+        }
+      } else {
+        // Crash — spiral downward
+        sinkProgress = Math.min(endPhaseTimer / 1800, 1);
+        planeY += 3.5 + sinkProgress * 4;
+        planeAngle = Math.PI * 0.25 * sinkProgress;
+        planeVelY  = 5;
+        // Continue exploding
+        if (Math.random() < 0.3) spawnBurst(PLANE_SCREEN_X, planeY, Math.random()<0.5?'#ff4444':'#ff8800', 6, 2);
+        if (endPhaseTimer > 1800) {
+          amPendingWin = 0;
+          amFlightActive = false;
+          cancelAnimationFrame(amAnimFrame);
+          setTimeout(() => amShowResult(false), 100);
+          return;
+        }
       }
     }
 
-    if (amFlightActive || explosionParticles.length > 0) {
-      amAnimFrame = requestAnimationFrame(tick);
-    } else if (!landed && !crashed) {
-      amAnimFrame = requestAnimationFrame(tick);
+    // ── Smoke launch puffs ──────────────────────────────────────
+    launchSmoke = launchSmoke.filter(s => s.alpha > 0);
+    launchSmoke.forEach(s => {
+      ctx.save();
+      ctx.globalAlpha = s.alpha * 0.6;
+      ctx.fillStyle = 'rgba(200,200,200,1)';
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+      s.x += s.vx; s.y += s.vy; s.size += 0.4; s.alpha -= 0.025;
+    });
+
+    // ── Draw everything in z-order ─────────────────────────────
+    drawParticles();
+    drawTrail();
+    drawPopups();
+
+    const drawAlpha = (gameEnded && endResult==='sink') ?
+      (1 - Math.pow(sinkProgress,2) * 0.85) : 1;
+    if (planeY < H + 40) {
+      drawPlane(PLANE_SCREEN_X, planeY, planeAngle, 1, drawAlpha);
     }
+
+    updateHUD();
+
+    amAnimFrame = requestAnimationFrame(frame);
   }
 
-  amAnimFrame = requestAnimationFrame(tick);
+  amAnimFrame = requestAnimationFrame(frame);
 }
 
-// ── Generate a random flight path ──
-function amGenerateFlight() {
-  // Decide outcome: 60% land (win), 40% sink (lose) — slightly player-favored
-  const willLand = Math.random() < 0.58;
-  const events = [];
-  let tick = 30;
-
-  // Number of events before end
-  const numEvents = 4 + Math.floor(Math.random() * 7); // 4–10 events
-
-  for (let i = 0; i < numEvents; i++) {
-    tick += 20 + Math.floor(Math.random() * 25);
-    const roll = Math.random();
-    let type, value;
-    if (roll < 0.35) {
-      // mult_add: +1..+10
-      type = 'mult_add';
-      value = [1, 1, 2, 2, 2, 3, 3, 5, 5, 10][Math.floor(Math.random() * 10)];
-    } else if (roll < 0.60) {
-      // mult_mul: ×2..×5
-      type = 'mult_mul';
-      value = [2, 2, 3, 3, 4, 5][Math.floor(Math.random() * 6)];
-    } else {
-      // rocket ÷2
-      type = 'rocket';
-      value = 0.5;
-    }
-    events.push({ type, value, tick, y: 30 + Math.random() * 140 });
-  }
-
-  // Final event
-  tick += 35 + Math.floor(Math.random() * 30);
-  events.push({ type: willLand ? 'land' : 'sink', value: 0, tick, y: 0 });
-
-  return events;
-}
-
-// ── Show result ──
+// ── RESULT SCREEN ─────────────────────────────────────────────
 function amShowResult(won) {
-  if (amAnimFrame) { cancelAnimationFrame(amAnimFrame); amAnimFrame = null; }
-  document.getElementById('am-game-screen').style.display   = 'none';
-  document.getElementById('am-result-screen').style.display = 'block';
+  document.getElementById('am-game-screen').style.display    = 'none';
+  document.getElementById('am-result-screen').style.display  = 'block';
 
   const icon   = document.getElementById('am-result-icon');
   const title  = document.getElementById('am-result-title');
@@ -6330,8 +6653,7 @@ function amShowResult(won) {
     title.style.color  = '#4ade80';
     amount.textContent = '+🪙 ' + amPendingWin.toLocaleString();
     amount.style.color = '#4ade80';
-    detail.textContent = '×' + amMultiplier.toFixed(2) + ' multiplier on 🪙 ' + amBet.toLocaleString();
-    // Coin shower
+    detail.textContent = '×' + amMultiplier.toFixed(2) + ' on 🪙 ' + amBet.toLocaleString();
     amCoinShower();
   } else {
     icon.textContent   = '💥';
@@ -6339,65 +6661,58 @@ function amShowResult(won) {
     title.style.color  = '#ff4444';
     amount.textContent = '-🪙 ' + amBet.toLocaleString();
     amount.style.color = '#ff4444';
-    detail.textContent = 'The plane sank. Better luck next time.';
-    amPendingWin = 0;
+    detail.textContent = 'The plane sank into the sea.';
   }
 
-  const claimBtn = document.getElementById('am-claim-btn');
-  if (claimBtn) {
-    claimBtn.textContent = won ? 'COLLECT 🪙 ' + amPendingWin.toLocaleString() : 'PLAY AGAIN';
-  }
+  const btn = document.getElementById('am-claim-btn');
+  if (btn) btn.textContent = won ? 'COLLECT 🪙 ' + amPendingWin.toLocaleString() : 'PLAY AGAIN';
 }
 
-// ── Coin shower animation ──
+// ── COIN SHOWER ───────────────────────────────────────────────
 function amCoinShower() {
   const canvas = document.getElementById('am-coin-canvas');
   if (!canvas) return;
   const ctx2 = canvas.getContext('2d');
-  const W = canvas.offsetWidth || 320, H = canvas.offsetHeight || 200;
-  canvas.width = W; canvas.height = H;
-  const coins2 = Array.from({ length: 30 }, () => ({
-    x: Math.random() * W, y: -20 - Math.random() * 60,
-    vy: 2 + Math.random() * 3, vx: (Math.random() - 0.5) * 2,
-    r: 6 + Math.random() * 6, alpha: 1, rot: Math.random() * Math.PI
+  const W2 = canvas.offsetWidth||320, H2 = canvas.offsetHeight||200;
+  canvas.width = W2; canvas.height = H2;
+  const coins2 = Array.from({length:35},()=>({
+    x:Math.random()*W2, y:-20-Math.random()*80,
+    vy:2+Math.random()*4, vx:(Math.random()-0.5)*2.5,
+    r:5+Math.random()*7, alpha:1, rot:Math.random()*Math.PI*2
   }));
-  let done = false;
   function fall() {
-    if (done) return;
-    ctx2.clearRect(0, 0, W, H);
-    coins2.forEach(coin => {
-      coin.y += coin.vy; coin.x += coin.vx; coin.rot += 0.1; coin.vy += 0.1;
-      if (coin.y > H) coin.alpha = Math.max(0, coin.alpha - 0.05);
-      ctx2.save();
-      ctx2.globalAlpha = coin.alpha;
-      ctx2.translate(coin.x, coin.y);
-      ctx2.rotate(coin.rot);
-      ctx2.fillStyle = '#ffd700';
-      ctx2.beginPath();
-      ctx2.ellipse(0, 0, coin.r, coin.r * 0.55, 0, 0, Math.PI * 2);
-      ctx2.fill();
-      ctx2.strokeStyle = '#b8860b';
-      ctx2.lineWidth = 1;
-      ctx2.stroke();
+    ctx2.clearRect(0,0,W2,H2);
+    let allGone = true;
+    coins2.forEach(co => {
+      co.y+=co.vy; co.x+=co.vx; co.rot+=0.1; co.vy+=0.12;
+      if (co.y>H2) co.alpha=Math.max(0,co.alpha-0.06);
+      if (co.alpha>0) allGone = false;
+      ctx2.save(); ctx2.globalAlpha=co.alpha;
+      ctx2.translate(co.x,co.y); ctx2.rotate(co.rot);
+      ctx2.fillStyle='#ffd700';
+      ctx2.beginPath(); ctx2.ellipse(0,0,co.r,co.r*0.55,0,0,Math.PI*2); ctx2.fill();
+      ctx2.strokeStyle='#b8860b'; ctx2.lineWidth=1; ctx2.stroke();
+      // $
+      ctx2.fillStyle='rgba(0,0,0,0.4)'; ctx2.font=`bold ${Math.max(6,co.r*0.9)}px sans-serif`;
+      ctx2.textAlign='center'; ctx2.textBaseline='middle';
+      ctx2.fillText('🪙',0,0);
       ctx2.restore();
     });
-    if (coins2.every(c => c.alpha <= 0)) { done = true; ctx2.clearRect(0, 0, W, H); return; }
-    requestAnimationFrame(fall);
+    if (!allGone) requestAnimationFrame(fall);
+    else ctx2.clearRect(0,0,W2,H2);
   }
   requestAnimationFrame(fall);
 }
 
-// ── Claim / Play Again ──
+// ── CLAIM ─────────────────────────────────────────────────────
 window.amClaim = async () => {
   if (amPendingWin > 0) {
-    // Add winnings
-    const newCoins = (myProfile.coins || 0) + amPendingWin;
+    const newCoins = (myProfile.coins||0) + amPendingWin;
     myProfile.coins = newCoins;
-    await pb.updateUser(me.uid, { coins: newCoins }).catch(() => {});
+    await pb.updateUser(me.uid, { coins: newCoins }).catch(()=>{});
     updateCoinDisplays(newCoins);
     amPendingWin = 0;
   }
-  // Reset to bet screen
   amFlightActive = false;
   if (amAnimFrame) { cancelAnimationFrame(amAnimFrame); amAnimFrame = null; }
   document.getElementById('am-result-screen').style.display = 'none';
@@ -6405,6 +6720,7 @@ window.amClaim = async () => {
   document.getElementById('am-bet-screen').style.display    = 'block';
   amSyncBalance();
 };
+
 
 
 // ── GAMBLE GAME SWITCHER ──
