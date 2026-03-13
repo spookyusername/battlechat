@@ -630,6 +630,98 @@
   .shop-coins-bar span { font-family: 'Barlow Condensed', sans-serif; font-size: 0.8rem; color: var(--muted); letter-spacing: 1px; }
   .shop-coins-num { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--gold); }
 
+  /* ── RARITY TIERS ── */
+  .rarity-badge { display:inline-block; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:0.52rem; letter-spacing:2px; text-transform:uppercase; padding:2px 6px; border-radius:2px; margin-top:3px; }
+  .rarity-common   { background:rgba(180,180,180,0.12); color:#aaa; border:1px solid rgba(180,180,180,0.25); }
+  .rarity-rare     { background:rgba(96,165,250,0.12);  color:#60a5fa; border:1px solid rgba(96,165,250,0.3); }
+  .rarity-epic     { background:rgba(180,90,255,0.12);  color:#b45aff; border:1px solid rgba(180,90,255,0.3); }
+  .rarity-legendary{ background:rgba(201,168,76,0.15);  color:var(--gold); border:1px solid rgba(201,168,76,0.4); box-shadow:0 0 6px rgba(201,168,76,0.2); }
+  .rarity-ultra    { background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.3); animation:ultraGlow 2s ease-in-out infinite; }
+  @keyframes ultraGlow { 0%,100%{box-shadow:0 0 4px rgba(255,255,255,0.3)} 50%{box-shadow:0 0 12px rgba(255,255,255,0.7),0 0 20px rgba(255,255,255,0.2)} }
+  .shop-item .rarity-badge { display:block; }
+
+  /* ── SMOOTH GLOBAL ANIMATIONS ── */
+  .menu-tab { animation: tabSlideIn 0.28s cubic-bezier(0.22,1,0.36,1) both; }
+  @keyframes tabSlideIn { from{opacity:0;transform:translateX(14px)} to{opacity:1;transform:translateX(0)} }
+  .modal-overlay.open .modal { animation: modalDrop 0.32s cubic-bezier(0.22,1,0.36,1) both; }
+  @keyframes modalDrop { from{opacity:0;transform:translateY(20px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+  .chat-msg { animation: msgSlide 0.22s ease both; }
+  @keyframes msgSlide { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  .gamble-game-btn { transition: all 0.18s cubic-bezier(0.22,1,0.36,1); }
+  .gamble-game-btn.active { transform: translateY(-1px); }
+  .menu-rail-btn { transition: color 0.15s, background 0.15s, border-color 0.15s, transform 0.15s; }
+  .menu-rail-btn:hover { transform: translateX(2px); }
+  .menu-rail-btn.active { transform: translateX(3px); }
+  .shop-item { transition: border-color 0.18s, transform 0.18s cubic-bezier(0.22,1,0.36,1), box-shadow 0.18s; }
+  .shop-item:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+  .bj-preset { transition: border-color 0.15s, background 0.15s, transform 0.12s cubic-bezier(0.22,1,0.36,1); }
+  .case-card { transition: border-color 0.2s, transform 0.18s cubic-bezier(0.22,1,0.36,1), box-shadow 0.18s; }
+  .case-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+  .vote-btn { transition: background 0.18s, border-color 0.18s, transform 0.12s cubic-bezier(0.22,1,0.36,1), box-shadow 0.18s; }
+  .topbar-btn { transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.12s; }
+  .topbar-btn:active { transform: scale(0.96); }
+  .chat-tab { transition: color 0.2s, border-color 0.2s; }
+
+  /* ── COINFLIP GAME ── */
+  .cf-coin-wrap { display:flex; flex-direction:column; align-items:center; gap:18px; margin:20px 0; }
+  .cf-coin { width:90px; height:90px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:3rem; border:3px solid var(--border); position:relative; transition:all 0.3s; }
+  .cf-coin.heads { background:radial-gradient(circle at 35% 35%, rgba(201,168,76,0.3), rgba(201,168,76,0.05)); border-color:rgba(201,168,76,0.5); box-shadow:0 0 20px rgba(201,168,76,0.2); }
+  .cf-coin.tails { background:radial-gradient(circle at 35% 35%, rgba(150,150,150,0.2), rgba(100,100,100,0.05)); border-color:rgba(200,200,200,0.3); }
+  @keyframes coinFlip { 0%{transform:rotateY(0)} 50%{transform:rotateY(1800deg) scaleX(0.1)} 100%{transform:rotateY(3600deg)} }
+  .cf-coin.flipping { animation:coinFlip 1.2s cubic-bezier(0.22,1,0.36,1) forwards; }
+  .cf-pick-row { display:flex; gap:10px; }
+  .cf-pick-btn { flex:1; font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:3px; padding:12px 0; cursor:pointer; border:2px solid; transition:all 0.18s; }
+  .cf-pick-btn.heads { background:rgba(201,168,76,0.1); border-color:rgba(201,168,76,0.4); color:var(--gold); }
+  .cf-pick-btn.heads:hover { background:rgba(201,168,76,0.22); border-color:var(--gold); }
+  .cf-pick-btn.tails { background:rgba(150,150,150,0.08); border-color:rgba(200,200,200,0.3); color:#ccc; }
+  .cf-pick-btn.tails:hover { background:rgba(200,200,200,0.15); border-color:rgba(200,200,200,0.6); }
+  .cf-pick-btn.selected { box-shadow:0 0 14px currentColor; }
+
+  /* ── DICE GAME ── */
+  .dice-wrap { display:flex; justify-content:center; gap:14px; margin:16px 0; }
+  .dice-face { width:64px; height:64px; background:var(--dark3); border:2px solid var(--border); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:2rem; transition:all 0.2s; }
+  .dice-face.rolling { animation:diceRoll 0.8s cubic-bezier(0.22,1,0.36,1) forwards; }
+  @keyframes diceRoll { 0%{transform:rotateZ(0) scale(1)} 30%{transform:rotateZ(180deg) scale(1.15)} 60%{transform:rotateZ(320deg) scale(0.9)} 100%{transform:rotateZ(360deg) scale(1)} }
+  .dice-face.player { border-color:rgba(96,165,250,0.5); background:rgba(96,165,250,0.07); }
+  .dice-face.house { border-color:rgba(217,43,43,0.5); background:rgba(217,43,43,0.07); }
+  .dice-vs { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; color:var(--muted); display:flex; align-items:center; }
+
+  /* ── ROULETTE GAME ── */
+  .roulette-track-wrap { position:relative; width:100%; height:60px; overflow:hidden; background:var(--dark3); border:1px solid var(--border); border-radius:3px; margin:16px 0; }
+  .roulette-track { display:flex; gap:4px; padding:8px 4px; position:absolute; will-change:transform; }
+  .roulette-num { width:44px; height:44px; flex-shrink:0; border-radius:3px; display:flex; align-items:center; justify-content:center; font-family:'Bebas Neue',sans-serif; font-size:1rem; font-weight:700; }
+  .roulette-num.red { background:#8b0000; color:#ff6666; }
+  .roulette-num.black { background:#111; color:#ccc; }
+  .roulette-num.green { background:#004400; color:#39ff14; }
+  .roulette-center-line { position:absolute; top:0; bottom:0; left:50%; width:2px; background:var(--gold); transform:translateX(-50%); z-index:3; box-shadow:0 0 8px var(--gold); pointer-events:none; }
+  .roulette-bet-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:10px; }
+  .roulette-bet-btn { font-family:'Bebas Neue',sans-serif; font-size:0.85rem; letter-spacing:2px; padding:9px 0; cursor:pointer; border:2px solid; transition:all 0.18s; text-align:center; }
+  .roulette-bet-btn.red   { background:rgba(139,0,0,0.15); border-color:rgba(217,43,43,0.4); color:var(--red-hot); }
+  .roulette-bet-btn.black { background:rgba(50,50,50,0.2); border-color:rgba(150,150,150,0.3); color:#ccc; }
+  .roulette-bet-btn.green { background:rgba(0,68,0,0.15); border-color:rgba(57,255,20,0.3); color:#39ff14; }
+  .roulette-bet-btn.selected, .roulette-bet-btn:hover { filter:brightness(1.3); }
+  .roulette-bet-btn.selected { box-shadow:0 0 10px currentColor; }
+
+  /* ── PVP WAGER ── */
+  .pvp-wager-modal { max-width:380px; }
+  .pvp-challenge-btn { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:0.68rem; letter-spacing:1.5px; text-transform:uppercase; padding:3px 8px; background:rgba(201,168,76,0.1); border:1px solid rgba(201,168,76,0.3); color:var(--gold); cursor:pointer; transition:all 0.15s; }
+  .pvp-challenge-btn:hover { background:rgba(201,168,76,0.22); border-color:var(--gold); }
+  .pvp-incoming-banner { display:none; position:fixed; bottom:80px; right:290px; background:var(--dark2); border:1px solid var(--gold); padding:12px 16px; z-index:500; box-shadow:0 4px 24px rgba(0,0,0,0.6); min-width:260px; animation:pvpBannerIn 0.3s cubic-bezier(0.22,1,0.36,1); }
+  @keyframes pvpBannerIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .pvp-incoming-banner.visible { display:block; }
+  .pvp-banner-title { font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:3px; color:var(--gold); margin-bottom:6px; }
+  .pvp-banner-sub { font-family:'Barlow Condensed',sans-serif; font-size:0.8rem; color:var(--muted); margin-bottom:10px; }
+  .pvp-banner-btns { display:flex; gap:8px; }
+  .pvp-accept-btn { flex:1; font-family:'Bebas Neue',sans-serif; font-size:0.9rem; letter-spacing:2px; background:rgba(76,175,80,0.15); border:1px solid #4CAF50; color:#4CAF50; padding:8px 0; cursor:pointer; transition:all 0.15s; }
+  .pvp-accept-btn:hover { background:rgba(76,175,80,0.28); }
+  .pvp-decline-btn { flex:1; font-family:'Bebas Neue',sans-serif; font-size:0.9rem; letter-spacing:2px; background:transparent; border:1px solid var(--border); color:var(--muted); padding:8px 0; cursor:pointer; transition:all 0.15s; }
+  .pvp-decline-btn:hover { border-color:var(--red); color:var(--red-hot); }
+
+  /* ── TIPPING ── */
+  .tip-btn { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:0.65rem; letter-spacing:1px; text-transform:uppercase; padding:2px 7px; background:rgba(201,168,76,0.08); border:1px solid rgba(201,168,76,0.2); color:rgba(201,168,76,0.6); cursor:pointer; transition:all 0.15s; opacity:0; }
+  .chat-msg:hover .tip-btn { opacity:1; }
+  .tip-btn:hover { background:rgba(201,168,76,0.2); border-color:var(--gold); color:var(--gold); }
+
   /* SETTINGS */
   .settings-group { background: var(--dark3); border: 1px solid var(--border); overflow: hidden; margin-bottom: 12px; }
   .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.15s; gap: 12px; }
@@ -1455,7 +1547,6 @@
 
   <!-- LEFT ICON RAIL -->
   <div class="menu-rail">
-    <div class="menu-rail-logo">BC</div>
     <button class="menu-rail-btn active" id="mrb-shop"     onclick="switchMenuTab(this,'shop')"     data-tab="shop">
       <span class="mrb-icon">🏪</span>
       <span class="mrb-label">Shop</span>
@@ -1471,6 +1562,10 @@
     <button class="menu-rail-btn" id="mrb-inv" onclick="switchMenuTab(this,'inv')" data-tab="inv">
       <span class="mrb-icon">🎒</span>
       <span class="mrb-label">Items</span>
+    </button>
+    <button class="menu-rail-btn" id="mrb-pvp" onclick="switchMenuTab(this,'pvp')" data-tab="pvp">
+      <span class="mrb-icon">⚔️</span>
+      <span class="mrb-label">Wager</span>
     </button>
     <button class="menu-rail-btn" id="mrb-settings" onclick="switchMenuTab(this,'settings')" data-tab="settings">
       <span class="mrb-icon">⚙️</span>
@@ -2133,10 +2228,15 @@
 
   <!-- GAMBLE TAB -->
   <div class="menu-tab" id="mtab-gamble" style="display:none;">
-    <div class="gamble-selector">
-      <button class="gamble-game-btn active" id="gbtn-blackjack" onclick="switchGambleGame('blackjack')">🃏 BLACKJACK</button>
-      <button class="gamble-game-btn" id="gbtn-flappy" onclick="switchGambleGame('flappy')">🐦 FLAPPY ADAM</button>
-      <button class="gamble-game-btn" id="gbtn-aviamasters" onclick="switchGambleGame('aviamasters')">✈️ AVIAMASTERS</button>
+    <div class="gamble-selector" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px;">
+      <button class="gamble-game-btn active" id="gbtn-blackjack" onclick="switchGambleGame('blackjack')">🃏 BJ</button>
+      <button class="gamble-game-btn" id="gbtn-coinflip" onclick="switchGambleGame('coinflip')">🪙 FLIP</button>
+      <button class="gamble-game-btn" id="gbtn-dice" onclick="switchGambleGame('dice')">🎲 DICE</button>
+    </div>
+    <div class="gamble-selector" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:16px;">
+      <button class="gamble-game-btn" id="gbtn-roulette" onclick="switchGambleGame('roulette')">🎰 ROULETTE</button>
+      <button class="gamble-game-btn" id="gbtn-flappy" onclick="switchGambleGame('flappy')">🐦 FLAPPY</button>
+      <button class="gamble-game-btn" id="gbtn-aviamasters" onclick="switchGambleGame('aviamasters')">✈️ CRASH</button>
     </div>
 
     <div id="gamble-blackjack">
@@ -2289,7 +2389,160 @@
 
   </div>
 
-  <!-- LEADERBOARD TAB -->
+  <!-- COINFLIP GAME -->
+  <div id="gamble-coinflip" style="display:none;">
+    <div class="bj-header">
+      <div class="bj-title">🪙 COINFLIP</div>
+      <div class="bj-subtitle">Heads or tails — 2× your bet on a win</div>
+      <div class="bj-balance">Balance: <span class="bj-balance-num" id="cf-balance">🪙 0</span></div>
+    </div>
+    <div id="cf-bet-screen">
+      <div class="bj-bet-label">Place your bet</div>
+      <div class="bj-bet-presets">
+        <button class="bj-preset" onclick="cfSetBet(10)">10</button>
+        <button class="bj-preset" onclick="cfSetBet(25)">25</button>
+        <button class="bj-preset" onclick="cfSetBet(50)">50</button>
+        <button class="bj-preset" onclick="cfSetBet(100)">100</button>
+        <button class="bj-preset" onclick="cfSetBet(250)">250</button>
+        <button class="bj-preset bj-preset-all" onclick="cfSetBetAll()">ALL IN</button>
+      </div>
+      <div class="bj-custom-row">
+        <input class="bj-input" id="cf-bet-input" type="number" min="1" placeholder="Custom amount" oninput="cfSyncBet()">
+        <span class="bj-coin-icon">🪙</span>
+      </div>
+      <div class="bj-err" id="cf-err"></div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.72rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Pick your side</div>
+      <div class="cf-pick-row" id="cf-pick-row">
+        <button class="cf-pick-btn heads" id="cf-btn-heads" onclick="cfPick('heads')">🪙 HEADS</button>
+        <button class="cf-pick-btn tails" id="cf-btn-tails" onclick="cfPick('tails')">💀 TAILS</button>
+      </div>
+      <button class="bj-deal-btn" style="margin-top:14px;" onclick="cfFlip()">FLIP COIN</button>
+    </div>
+    <div id="cf-game-screen" style="display:none;">
+      <div class="cf-coin-wrap">
+        <div class="cf-coin" id="cf-coin">🪙</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:4px;color:var(--muted);" id="cf-spin-label">FLIPPING...</div>
+      </div>
+    </div>
+    <div id="cf-result-screen" style="display:none;position:relative;overflow:hidden;">
+      <canvas id="cf-coin-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:10;"></canvas>
+      <div style="text-align:center;padding:16px 0 8px;">
+        <div class="bj-result-icon" id="cf-result-icon">🪙</div>
+        <div class="bj-result-title" id="cf-result-title">—</div>
+        <div class="bj-result-amount" id="cf-result-amount"></div>
+      </div>
+      <button class="bj-claim-btn" id="cf-claim-btn" onclick="cfClaim()">COLLECT</button>
+      <button class="bj-new-game-btn" onclick="cfReset()" style="margin-top:8px;">FLIP AGAIN</button>
+    </div>
+  </div>
+
+  <!-- DICE GAME -->
+  <div id="gamble-dice" style="display:none;">
+    <div class="bj-header">
+      <div class="bj-title">🎲 HIGH-LOW DICE</div>
+      <div class="bj-subtitle">Roll higher than the house — or predict the sum</div>
+      <div class="bj-balance">Balance: <span class="bj-balance-num" id="dc-balance">🪙 0</span></div>
+    </div>
+    <div id="dc-bet-screen">
+      <div class="bj-bet-label">Place your bet</div>
+      <div class="bj-bet-presets">
+        <button class="bj-preset" onclick="dcSetBet(10)">10</button>
+        <button class="bj-preset" onclick="dcSetBet(25)">25</button>
+        <button class="bj-preset" onclick="dcSetBet(50)">50</button>
+        <button class="bj-preset" onclick="dcSetBet(100)">100</button>
+        <button class="bj-preset" onclick="dcSetBet(250)">250</button>
+        <button class="bj-preset bj-preset-all" onclick="dcSetBetAll()">ALL IN</button>
+      </div>
+      <div class="bj-custom-row">
+        <input class="bj-input" id="dc-bet-input" type="number" min="1" placeholder="Custom amount" oninput="dcSyncBet()">
+        <span class="bj-coin-icon">🪙</span>
+      </div>
+      <div class="bj-err" id="dc-err"></div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.72rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Bet type</div>
+      <div class="cf-pick-row" style="grid-template-columns:1fr 1fr 1fr;">
+        <button class="cf-pick-btn heads" id="dc-btn-high" onclick="dcPick('high')" style="border-color:rgba(76,175,80,0.5);color:#4CAF50;background:rgba(76,175,80,0.08);">⬆ HIGH (2×)</button>
+        <button class="cf-pick-btn tails" id="dc-btn-low" onclick="dcPick('low')" style="border-color:rgba(217,43,43,0.5);color:var(--red-hot);background:rgba(217,43,43,0.08);">⬇ LOW (2×)</button>
+        <button class="cf-pick-btn tails" id="dc-btn-seven" onclick="dcPick('seven')" style="border-color:rgba(201,168,76,0.5);color:var(--gold);background:rgba(201,168,76,0.08);">7 (5×)</button>
+      </div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);margin-top:6px;text-align:center;">High = 8-12 · Low = 2-6 · Seven = exactly 7</div>
+      <button class="bj-deal-btn" style="margin-top:14px;" onclick="dcRoll()">ROLL DICE</button>
+    </div>
+    <div id="dc-game-screen" style="display:none;">
+      <div class="dice-wrap">
+        <div class="dice-face player" id="dc-p1">⚀</div>
+        <div class="dice-face player" id="dc-p2">⚀</div>
+        <div class="dice-vs">VS</div>
+        <div class="dice-face house" id="dc-h1">⚀</div>
+        <div class="dice-face house" id="dc-h2">⚀</div>
+      </div>
+      <div style="display:flex;justify-content:space-around;font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);margin-bottom:8px;">
+        <span style="color:#60a5fa;">YOU</span><span style="color:var(--red-hot);">HOUSE</span>
+      </div>
+    </div>
+    <div id="dc-result-screen" style="display:none;position:relative;overflow:hidden;">
+      <canvas id="dc-coin-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:10;"></canvas>
+      <div style="text-align:center;padding:16px 0 8px;">
+        <div class="bj-result-icon" id="dc-result-icon">🎲</div>
+        <div class="bj-result-title" id="dc-result-title">—</div>
+        <div class="bj-result-amount" id="dc-result-amount"></div>
+        <div class="bj-final-hands" id="dc-result-detail"></div>
+      </div>
+      <button class="bj-claim-btn" id="dc-claim-btn" onclick="dcClaim()">COLLECT</button>
+      <button class="bj-new-game-btn" onclick="dcReset()" style="margin-top:8px;">ROLL AGAIN</button>
+    </div>
+  </div>
+
+  <!-- ROULETTE GAME -->
+  <div id="gamble-roulette" style="display:none;">
+    <div class="bj-header">
+      <div class="bj-title">🎰 ROULETTE</div>
+      <div class="bj-subtitle">Red/Black 2× · Green 14× · Watch the wheel spin</div>
+      <div class="bj-balance">Balance: <span class="bj-balance-num" id="rl-balance">🪙 0</span></div>
+    </div>
+    <div id="rl-bet-screen">
+      <div class="bj-bet-label">Place your bet</div>
+      <div class="bj-bet-presets">
+        <button class="bj-preset" onclick="rlSetBet(10)">10</button>
+        <button class="bj-preset" onclick="rlSetBet(25)">25</button>
+        <button class="bj-preset" onclick="rlSetBet(50)">50</button>
+        <button class="bj-preset" onclick="rlSetBet(100)">100</button>
+        <button class="bj-preset" onclick="rlSetBet(250)">250</button>
+        <button class="bj-preset bj-preset-all" onclick="rlSetBetAll()">ALL IN</button>
+      </div>
+      <div class="bj-custom-row">
+        <input class="bj-input" id="rl-bet-input" type="number" min="1" placeholder="Custom amount" oninput="rlSyncBet()">
+        <span class="bj-coin-icon">🪙</span>
+      </div>
+      <div class="bj-err" id="rl-err"></div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.72rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Pick your bet</div>
+      <div class="roulette-bet-row">
+        <button class="roulette-bet-btn red" id="rl-btn-red" onclick="rlPick('red')">🔴 RED (2×)</button>
+        <button class="roulette-bet-btn black" id="rl-btn-black" onclick="rlPick('black')">⚫ BLACK (2×)</button>
+        <button class="roulette-bet-btn green" id="rl-btn-green" onclick="rlPick('green')">🟢 GREEN (14×)</button>
+      </div>
+      <button class="bj-deal-btn" onclick="rlSpin()">SPIN</button>
+    </div>
+    <div id="rl-game-screen" style="display:none;">
+      <div class="roulette-track-wrap">
+        <div class="roulette-track" id="rl-track"></div>
+        <div class="roulette-center-line"></div>
+      </div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:0.9rem;letter-spacing:4px;color:var(--muted);text-align:center;" id="rl-spin-label">SPINNING...</div>
+    </div>
+    <div id="rl-result-screen" style="display:none;position:relative;overflow:hidden;">
+      <canvas id="rl-coin-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:10;"></canvas>
+      <div style="text-align:center;padding:16px 0 8px;">
+        <div class="bj-result-icon" id="rl-result-icon">🎰</div>
+        <div class="bj-result-title" id="rl-result-title">—</div>
+        <div class="bj-result-amount" id="rl-result-amount"></div>
+        <div class="bj-final-hands" id="rl-result-detail"></div>
+      </div>
+      <button class="bj-claim-btn" id="rl-claim-btn" onclick="rlClaim()">COLLECT</button>
+      <button class="bj-new-game-btn" onclick="rlReset()" style="margin-top:8px;">SPIN AGAIN</button>
+    </div>
+  </div>
+
+  
   <div class="menu-tab" id="mtab-lb" style="display:none;">
     <div style="display:flex;border-bottom:1px solid var(--border);margin-bottom:12px;flex-shrink:0;">
       <button class="lb-tab-btn active" id="lbmenu-wins" onclick="switchMenuLb(this,'wins')" style="flex:1;padding:8px 0;font-family:'Bebas Neue',sans-serif;font-size:0.8rem;letter-spacing:1.5px;background:none;border:none;border-bottom:2px solid var(--red-hot);color:var(--text);cursor:pointer;">⚔️ WINS</button>
@@ -2299,6 +2552,47 @@
     </div>
     <div id="lbmenu-list" style="display:flex;flex-direction:column;gap:2px;">
       <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:20px 0;">Loading...</div>
+    </div>
+  </div>
+
+  <!-- PVP WAGER TAB -->
+  <div class="menu-tab" id="mtab-pvp" style="display:none;">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;color:var(--muted);line-height:1.7;margin-bottom:16px;">
+      Challenge another user to a coin duel. Set your bet, they accept, winner takes the pot minus a <span style="color:var(--gold);">5% house cut</span>.
+    </div>
+    <div class="menu-section-title">Create a Challenge</div>
+    <div style="background:var(--dark3);border:1px solid var(--border);padding:14px;">
+      <div class="field-group" style="margin-bottom:10px;">
+        <div class="field-label">Opponent Username</div>
+        <input class="field-input" id="pvp-target-input" type="text" placeholder="Enter username..." maxlength="20">
+        <div class="field-error" id="pvp-target-err"></div>
+      </div>
+      <div class="field-group" style="margin-bottom:10px;">
+        <div class="field-label">Wager Amount 🪙</div>
+        <div class="bj-bet-presets" style="margin-bottom:8px;">
+          <button class="bj-preset" onclick="pvpSetBet(50)">50</button>
+          <button class="bj-preset" onclick="pvpSetBet(100)">100</button>
+          <button class="bj-preset" onclick="pvpSetBet(250)">250</button>
+          <button class="bj-preset" onclick="pvpSetBet(500)">500</button>
+          <button class="bj-preset" onclick="pvpSetBet(1000)">1000</button>
+          <button class="bj-preset bj-preset-all" onclick="pvpSetBetAll()">ALL IN</button>
+        </div>
+        <div class="bj-custom-row">
+          <input class="bj-input" id="pvp-bet-input" type="number" min="10" placeholder="Custom amount" oninput="pvpSyncBet()">
+          <span class="bj-coin-icon">🪙</span>
+        </div>
+        <div class="bj-err" id="pvp-bet-err"></div>
+      </div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);margin-bottom:12px;padding:8px 10px;background:rgba(201,168,76,0.05);border:1px solid rgba(201,168,76,0.15);">
+        Winner takes: <span id="pvp-pot-preview" style="color:var(--gold);">—</span> (after 5% house cut)<br>
+        Your balance: <span id="pvp-balance-label" style="color:var(--gold);">🪙 0</span>
+      </div>
+      <button class="bj-deal-btn" onclick="pvpChallenge()">⚔️ SEND CHALLENGE</button>
+      <div class="bj-err" id="pvp-err" style="margin-top:8px;"></div>
+    </div>
+    <div class="menu-section-title" style="margin-top:20px;">Active Challenges</div>
+    <div id="pvp-challenges-list" style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:16px 0;">No active challenges</div>
     </div>
   </div>
 
@@ -2320,6 +2614,36 @@
   <!-- INVENTORY TAB -->
   <div class="menu-tab" id="mtab-inv" style="display:none;">
     <div class="inv-equipped-bar" id="inv-equipped-bar">
+      <div style="width:100%;padding:0 0 10px;border-bottom:1px solid var(--border);margin-bottom:10px;">
+        <div class="menu-section-title" style="margin-bottom:8px;">Active Customizations</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div>
+            <div class="field-label" style="margin-bottom:4px;">🎨 Theme</div>
+            <select class="settings-select" id="theme-select" onchange="applyTheme(this.value)" style="width:100%;">
+              <option value="default">Default</option>
+              <option value="void">Brown Skidmark</option>
+              <option value="ice">Blue Balls</option>
+              <option value="toxic">Green Septic</option>
+              <option value="gold">Yellow Earwax</option>
+              <option value="coal">Black Mold</option>
+              <option value="rash">Red Rash</option>
+            </select>
+          </div>
+          <div>
+            <div class="field-label" style="margin-bottom:4px;">🖊️ Name Color</div>
+            <select class="settings-select" id="namecolor-select" onchange="applyNameColor(this.value)" style="width:100%;">
+              <option value="default">Default</option>
+              <option value="color_crimson">Period Blood</option>
+              <option value="color_gold">Piss Yellow</option>
+              <option value="color_cyan">Bonnie Blue</option>
+              <option value="color_violet">Purple Bruise</option>
+              <option value="color_toxic">Vomit Green</option>
+              <option value="color_white">Cum White</option>
+              <option value="color_black">Void Black</option>
+            </select>
+          </div>
+        </div>
+      </div>
       <div class="inv-equipped-slot" id="inv-slot-hat"       onclick="invScrollTo('hats')">
         <div class="inv-slot-icon"  id="inv-slot-hat-icon">🎩</div>
         <div class="inv-slot-label">Hat</div>
@@ -2373,7 +2697,7 @@
         </div>
         <span class="settings-arrow">›</span>
       </div>
-      <div class="settings-row" id="settings-theme-row">
+      <div class="settings-row" id="settings-theme-row" style="display:none;">
         <div class="settings-row-left">
           <div class="settings-row-icon">🎨</div>
           <div>
@@ -2391,7 +2715,7 @@
           <option value="rash">Red Rash</option>
         </select>
       </div>
-      <div class="settings-row" id="settings-namecolor-row">
+      <div class="settings-row" id="settings-namecolor-row" style="display:none;">
         <div class="settings-row-left">
           <div class="settings-row-icon">🖊️</div>
           <div>
@@ -3190,7 +3514,10 @@ function addChatBubble(msg) {
     ? `<div class="avatar-wrap"><div class="avatar-img-clip">${avImg}</div>${msgHat}</div>`
     : avImg;
   const tsStr = msg.ts ? (() => { const d=new Date(msg.ts); const h=d.getHours()%12||12; const m=String(d.getMinutes()).padStart(2,'0'); const ap=d.getHours()>=12?'pm':'am'; return h+':'+m+ap; })() : '';
-  div.innerHTML=`<div class="msg-avatar" data-uid="${msg.uid}" onclick="openProfileByUid('${msg.uid}')">${avHtml}${lvlBadge}</div><div class="msg-body"><span class="msg-name ${color}" ${nameStyle} onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.displayName)}</span><span class="msg-text ${txtColorClass}">${escHtml(msg.text)}</span><span class="msg-ts">${tsStr}</span></div>`;
+  const tipBtn = (msg.uid && me && msg.uid !== me.uid) 
+    ? `<button class="tip-btn" onclick="openTipModal('${msg.uid}','${escHtml(msg.displayName)}')">💸 TIP</button>` 
+    : '';
+  div.innerHTML=`<div class="msg-avatar" data-uid="${msg.uid}" onclick="openProfileByUid('${msg.uid}')">${avHtml}${lvlBadge}</div><div class="msg-body"><span class="msg-name ${color}" ${nameStyle} onclick="openProfileByUid('${msg.uid}')">${escHtml(msg.displayName)}</span>${tipBtn}<span class="msg-text ${txtColorClass}">${escHtml(msg.text)}</span><span class="msg-ts">${tsStr}</span></div>`;
   view.appendChild(div); view.scrollTop=view.scrollHeight;
   while(view.children.length>100) view.removeChild(view.firstChild);
 }
@@ -5738,6 +6065,14 @@ window.switchMenuTab = (btn, tab) => {
   if (tab === 'gamble') syncBjBalance();
   if (tab === 'lb') loadMenuLb(_menuLbTab);
   if (tab === 'shop') refreshShopOwned();
+  if (tab === 'pvp') { pvpRefreshChallenges(); pvpUpdatePreview(); }
+  // Update titles for new tabs
+  const extraTitles = { pvp:'PVP WAGER' };
+  const extraSubs   = { pvp:'CHALLENGE OTHERS FOR COINS' };
+  const titleEl = document.getElementById('menu-content-title');
+  const subEl   = document.getElementById('menu-content-sub');
+  if (extraTitles[tab] && titleEl) titleEl.textContent = extraTitles[tab];
+  if (extraSubs[tab]   && subEl)   subEl.textContent   = extraSubs[tab];
 };
 
 // ── AVATAR SYSTEM ──
@@ -7783,17 +8118,433 @@ function _updateDailyBtn() {
 // Update daily btn when menu opens
 // ── UTIL ──
 function escHtml(s='') { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── GAMBLE GAME SWITCHING (extended) ──
+const _gambleGames = ['blackjack','flappy','aviamasters','coinflip','dice','roulette'];
+window.switchGambleGame = function(game) {
+  _gambleGames.forEach(g => {
+    const el = document.getElementById('gamble-' + g);
+    if (el) el.style.display = g === game ? 'block' : 'none';
+    const btn = document.getElementById('gbtn-' + g);
+    if (btn) btn.classList.toggle('active', g === game);
+  });
+  // Refresh balances
+  const coins = myProfile?.coins || 0;
+  ['cf','dc','rl'].forEach(pfx => {
+    const el = document.getElementById(pfx + '-balance');
+    if (el) el.textContent = '🪙 ' + coins;
+  });
+};
+
+// ── COINFLIP GAME ──
+let _cfBet = 0, _cfPick = null, _cfPending = 0;
+window.cfSetBet = (n) => { _cfBet = n; const inp = document.getElementById('cf-bet-input'); if(inp) inp.value = n; };
+window.cfSetBetAll = () => { const c = myProfile?.coins||0; cfSetBet(c); };
+window.cfSyncBet = () => { _cfBet = parseInt(document.getElementById('cf-bet-input')?.value)||0; };
+window.cfPick = (side) => {
+  _cfPick = side;
+  document.getElementById('cf-btn-heads')?.classList.toggle('selected', side==='heads');
+  document.getElementById('cf-btn-tails')?.classList.toggle('selected', side==='tails');
+};
+window.cfFlip = async () => {
+  const err = document.getElementById('cf-err');
+  if (!me) { err.textContent = 'Log in first!'; return; }
+  if (!_cfPick) { err.textContent = 'Pick heads or tails!'; return; }
+  if (_cfBet < 1) { err.textContent = 'Enter a bet amount!'; return; }
+  if (_cfBet > (myProfile?.coins||0)) { err.textContent = 'Not enough coins!'; return; }
+  err.textContent = '';
+  // Deduct bet
+  const coins = (myProfile.coins||0) - _cfBet;
+  myProfile.coins = coins;
+  try { await pb.updateUser(me.uid, {coins}); } catch(e){}
+  updateCoinDisplays(coins);
+  // Show flip animation
+  document.getElementById('cf-bet-screen').style.display = 'none';
+  document.getElementById('cf-game-screen').style.display = 'block';
+  const coinEl = document.getElementById('cf-coin');
+  coinEl.className = 'cf-coin flipping';
+  coinEl.textContent = '🪙';
+  // Determine result
+  const result = Math.random() < 0.5 ? 'heads' : 'tails';
+  _cfPending = result === _cfPick ? _cfBet * 2 : 0;
+  setTimeout(() => {
+    coinEl.classList.remove('flipping');
+    coinEl.classList.add(result);
+    coinEl.textContent = result === 'heads' ? '🪙' : '💀';
+    setTimeout(() => {
+      document.getElementById('cf-game-screen').style.display = 'none';
+      document.getElementById('cf-result-screen').style.display = 'block';
+      const won = result === _cfPick;
+      document.getElementById('cf-result-icon').textContent = won ? '🏆' : '💀';
+      const rt = document.getElementById('cf-result-title');
+      rt.className = 'bj-result-title ' + (won ? 'win' : 'lose');
+      rt.textContent = won ? 'YOU WIN!' : 'BUST';
+      document.getElementById('cf-result-amount').textContent = won ? `+🪙 ${_cfBet}` : `-🪙 ${_cfBet}`;
+      if (won) { sfxChord([523,659,784],'sine',0.5,0.15); } else { sfxChord([200,180],'sawtooth',0.3,0.1); }
+    }, 300);
+  }, 1300);
+};
+window.cfClaim = async () => {
+  if (_cfPending > 0) {
+    const coins = (myProfile?.coins||0) + _cfPending;
+    myProfile.coins = coins;
+    try { await pb.updateUser(me.uid, {coins}); } catch(e){}
+    updateCoinDisplays(coins);
+    _cfPending = 0;
+  }
+  cfReset();
+};
+window.cfReset = () => {
+  _cfBet = 0; _cfPick = null; _cfPending = 0;
+  ['cf-bet-screen','cf-bet-input'].forEach(id => { const el=document.getElementById(id); if(el && id.endsWith('screen')) el.style.display='block'; if(el && id.endsWith('input')) el.value=''; });
+  document.getElementById('cf-game-screen').style.display = 'none';
+  document.getElementById('cf-result-screen').style.display = 'none';
+  document.getElementById('cf-btn-heads')?.classList.remove('selected');
+  document.getElementById('cf-btn-tails')?.classList.remove('selected');
+  document.getElementById('cf-err').textContent = '';
+  const el = document.getElementById('cf-balance');
+  if (el) el.textContent = '🪙 ' + (myProfile?.coins||0);
+};
+
+// ── DICE GAME ──
+const DICE_EMOJIS = ['', '⚀','⚁','⚂','⚃','⚄','⚅'];
+let _dcBet = 0, _dcPick = null, _dcPending = 0;
+window.dcSetBet = (n) => { _dcBet = n; const inp = document.getElementById('dc-bet-input'); if(inp) inp.value = n; };
+window.dcSetBetAll = () => { dcSetBet(myProfile?.coins||0); };
+window.dcSyncBet = () => { _dcBet = parseInt(document.getElementById('dc-bet-input')?.value)||0; };
+window.dcPick = (type) => {
+  _dcPick = type;
+  ['high','low','seven'].forEach(t => document.getElementById('dc-btn-'+t)?.classList.toggle('selected', t===type));
+};
+window.dcRoll = async () => {
+  const err = document.getElementById('dc-err');
+  if (!me) { err.textContent = 'Log in first!'; return; }
+  if (!_dcPick) { err.textContent = 'Pick High, Low, or Seven!'; return; }
+  if (_dcBet < 1) { err.textContent = 'Enter a bet amount!'; return; }
+  if (_dcBet > (myProfile?.coins||0)) { err.textContent = 'Not enough coins!'; return; }
+  err.textContent = '';
+  const coins = (myProfile.coins||0) - _dcBet;
+  myProfile.coins = coins;
+  try { await pb.updateUser(me.uid, {coins}); } catch(e){}
+  updateCoinDisplays(coins);
+  document.getElementById('dc-bet-screen').style.display = 'none';
+  document.getElementById('dc-game-screen').style.display = 'block';
+  const d1p = Math.ceil(Math.random()*6), d2p = Math.ceil(Math.random()*6);
+  const d1h = Math.ceil(Math.random()*6), d2h = Math.ceil(Math.random()*6);
+  const pSum = d1p + d2p, hSum = d1h + d2h;
+  // Animate dice
+  ['dc-p1','dc-p2','dc-h1','dc-h2'].forEach(id => { const el=document.getElementById(id); if(el){el.classList.add('rolling'); el.textContent='🎲';} });
+  await new Promise(r => setTimeout(r, 900));
+  document.getElementById('dc-p1').textContent = DICE_EMOJIS[d1p];
+  document.getElementById('dc-p2').textContent = DICE_EMOJIS[d2p];
+  document.getElementById('dc-h1').textContent = DICE_EMOJIS[d1h];
+  document.getElementById('dc-h2').textContent = DICE_EMOJIS[d2h];
+  ['dc-p1','dc-p2','dc-h1','dc-h2'].forEach(id => document.getElementById(id)?.classList.remove('rolling'));
+  await new Promise(r => setTimeout(r, 700));
+  let won = false, mult = 2;
+  if (_dcPick === 'high') { won = pSum >= 8; mult = 2; }
+  else if (_dcPick === 'low') { won = pSum <= 6; mult = 2; }
+  else if (_dcPick === 'seven') { won = pSum === 7; mult = 5; }
+  _dcPending = won ? _dcBet * mult : 0;
+  document.getElementById('dc-game-screen').style.display = 'none';
+  document.getElementById('dc-result-screen').style.display = 'block';
+  document.getElementById('dc-result-icon').textContent = won ? '🏆' : '🎲';
+  const rt = document.getElementById('dc-result-title');
+  rt.className = 'bj-result-title ' + (won ? 'win' : 'lose');
+  rt.textContent = won ? `YOU WIN! (${mult}×)` : 'HOUSE WINS';
+  document.getElementById('dc-result-amount').textContent = won ? `+🪙 ${_dcBet*(mult-1)}` : `-🪙 ${_dcBet}`;
+  document.getElementById('dc-result-detail').textContent = `Your roll: ${pSum} · House roll: ${hSum}`;
+  if (won) sfxChord([523,659,784],'sine',0.5,0.15); else sfxChord([200,180],'sawtooth',0.3,0.1);
+};
+window.dcClaim = async () => {
+  if (_dcPending > 0) {
+    const coins = (myProfile?.coins||0) + _dcPending;
+    myProfile.coins = coins; _dcPending = 0;
+    try { await pb.updateUser(me.uid, {coins}); } catch(e){}
+    updateCoinDisplays(coins);
+  }
+  dcReset();
+};
+window.dcReset = () => {
+  _dcBet = 0; _dcPick = null; _dcPending = 0;
+  document.getElementById('dc-bet-screen').style.display = 'block';
+  document.getElementById('dc-game-screen').style.display = 'none';
+  document.getElementById('dc-result-screen').style.display = 'none';
+  document.getElementById('dc-bet-input').value = '';
+  document.getElementById('dc-err').textContent = '';
+  ['high','low','seven'].forEach(t => document.getElementById('dc-btn-'+t)?.classList.remove('selected'));
+  const el = document.getElementById('dc-balance'); if(el) el.textContent = '🪙 ' + (myProfile?.coins||0);
+};
+
+// ── ROULETTE GAME ──
+const RL_NUMS = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+const RL_COLORS = {0:'green',...Object.fromEntries([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].map(n=>[n,'red'])),...Object.fromEntries([2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35].map(n=>[n,'black']))};
+let _rlBet = 0, _rlPick = null, _rlPending = 0;
+window.rlSetBet = (n) => { _rlBet = n; const inp = document.getElementById('rl-bet-input'); if(inp) inp.value = n; };
+window.rlSetBetAll = () => { rlSetBet(myProfile?.coins||0); };
+window.rlSyncBet = () => { _rlBet = parseInt(document.getElementById('rl-bet-input')?.value)||0; };
+window.rlPick = (color) => {
+  _rlPick = color;
+  ['red','black','green'].forEach(c => document.getElementById('rl-btn-'+c)?.classList.toggle('selected', c===color));
+};
+window.rlSpin = async () => {
+  const err = document.getElementById('rl-err');
+  if (!me) { err.textContent = 'Log in first!'; return; }
+  if (!_rlPick) { err.textContent = 'Pick red, black, or green!'; return; }
+  if (_rlBet < 1) { err.textContent = 'Enter a bet amount!'; return; }
+  if (_rlBet > (myProfile?.coins||0)) { err.textContent = 'Not enough coins!'; return; }
+  err.textContent = '';
+  const coins = (myProfile.coins||0) - _rlBet;
+  myProfile.coins = coins;
+  try { await pb.updateUser(me.uid, {coins}); } catch(e){}
+  updateCoinDisplays(coins);
+  document.getElementById('rl-bet-screen').style.display = 'none';
+  document.getElementById('rl-game-screen').style.display = 'block';
+  // Pick result
+  const roll = Math.random();
+  let resultNum;
+  if (roll < 2/37) resultNum = 0;
+  else {
+    const nonZero = RL_NUMS.filter(n=>n!==0);
+    resultNum = nonZero[Math.floor(Math.random()*nonZero.length)];
+  }
+  const resultColor = RL_COLORS[resultNum];
+  // Build reel
+  const track = document.getElementById('rl-track');
+  track.innerHTML = '';
+  const extended = [];
+  for (let i = 0; i < 80; i++) extended.push(RL_NUMS[i % RL_NUMS.length]);
+  extended.push(resultNum); // ensure result at end
+  extended.forEach(n => {
+    const el = document.createElement('div');
+    el.className = 'roulette-num ' + RL_COLORS[n];
+    el.textContent = n;
+    track.appendChild(el);
+  });
+  // Animate
+  const itemW = 48;
+  const targetIdx = extended.length - 1;
+  const wrapW = document.getElementById('rl-track').parentElement.offsetWidth;
+  const finalX = -(targetIdx * itemW) + (wrapW/2) - 22;
+  track.style.transition = 'none';
+  track.style.transform = 'translateX(0)';
+  await new Promise(r => setTimeout(r, 50));
+  track.style.transition = 'transform 3.5s cubic-bezier(0.17, 0.67, 0.12, 1)';
+  track.style.transform = `translateX(${finalX}px)`;
+  await new Promise(r => setTimeout(r, 3700));
+  document.getElementById('rl-spin-label').textContent = resultColor.toUpperCase() + ' ' + resultNum;
+  await new Promise(r => setTimeout(r, 500));
+  const won = resultColor === _rlPick;
+  const mult = resultColor === 'green' ? 14 : 2;
+  _rlPending = won ? _rlBet * mult : 0;
+  document.getElementById('rl-game-screen').style.display = 'none';
+  document.getElementById('rl-result-screen').style.display = 'block';
+  const icons = {red:'🔴',black:'⚫',green:'🟢'};
+  document.getElementById('rl-result-icon').textContent = won ? '🏆' : icons[resultColor];
+  const rt = document.getElementById('rl-result-title');
+  rt.className = 'bj-result-title ' + (won ? 'win' : 'lose');
+  rt.textContent = won ? 'YOU WIN!' : 'BETTER LUCK NEXT TIME';
+  document.getElementById('rl-result-amount').textContent = won ? `+🪙 ${_rlBet*(mult-1)}` : `-🪙 ${_rlBet}`;
+  document.getElementById('rl-result-detail').textContent = `Ball landed on: ${icons[resultColor]} ${resultNum} (${resultColor.toUpperCase()})`;
+  if (won) sfxChord([523,659,784],'sine',0.5,0.15); else sfxChord([200,180],'sawtooth',0.3,0.1);
+};
+window.rlClaim = async () => {
+  if (_rlPending > 0) {
+    const coins = (myProfile?.coins||0) + _rlPending;
+    myProfile.coins = coins; _rlPending = 0;
+    try { await pb.updateUser(me.uid, {coins}); } catch(e){}
+    updateCoinDisplays(coins);
+  }
+  rlReset();
+};
+window.rlReset = () => {
+  _rlBet = 0; _rlPick = null; _rlPending = 0;
+  document.getElementById('rl-bet-screen').style.display = 'block';
+  document.getElementById('rl-game-screen').style.display = 'none';
+  document.getElementById('rl-result-screen').style.display = 'none';
+  document.getElementById('rl-bet-input').value = '';
+  document.getElementById('rl-err').textContent = '';
+  ['red','black','green'].forEach(c => document.getElementById('rl-btn-'+c)?.classList.remove('selected'));
+  const el = document.getElementById('rl-balance'); if(el) el.textContent = '🪙 ' + (myProfile?.coins||0);
+};
+
+// ── TIPPING ──
+let _tipTargetUid = null, _tipTargetName = '';
+window.openTipModal = (uid, name) => {
+  if (!me) { showToast('Log in to tip!'); return; }
+  if (uid === me?.uid) { showToast("Can't tip yourself!"); return; }
+  _tipTargetUid = uid; _tipTargetName = name;
+  const title = document.getElementById('tip-modal-title');
+  const sub = document.getElementById('tip-modal-sub');
+  if (title) title.textContent = `💸 TIP ${name.toUpperCase()}`;
+  if (sub) sub.textContent = `Your balance: 🪙 ${myProfile?.coins||0}`;
+  document.getElementById('tip-amount-input').value = '';
+  document.getElementById('tip-err').textContent = '';
+  openModal('tip-overlay');
+};
+window.tipSetAmt = (n) => { const inp = document.getElementById('tip-amount-input'); if(inp) inp.value = n; };
+window.doTip = async () => {
+  const amt = parseInt(document.getElementById('tip-amount-input')?.value)||0;
+  const err = document.getElementById('tip-err');
+  if (amt < 1) { err.textContent = 'Enter a tip amount!'; return; }
+  if (amt > (myProfile?.coins||0)) { err.textContent = 'Not enough coins!'; return; }
+  try {
+    const myCoins = (myProfile.coins||0) - amt;
+    myProfile.coins = myCoins;
+    await pb.updateUser(me.uid, {coins: myCoins});
+    updateCoinDisplays(myCoins);
+    // Add to target
+    const target = await pb.getUser(_tipTargetUid);
+    if (target) {
+      const theirCoins = (target.coins||0) + amt;
+      await pb.updateUser(_tipTargetUid, {coins: theirCoins});
+    }
+    closeModal('tip-overlay');
+    showToast(`💸 Tipped ${_tipTargetName} 🪙${amt}!`);
+    addSystemMsg(`💸 ${myProfile.displayName} tipped ${_tipTargetName} 🪙${amt}!`);
+  } catch(e) { err.textContent = 'Tip failed. Try again.'; }
+};
+
+// ── PVP WAGER ──
+let _pvpBet = 0, _pvpPendingChallenge = null;
+window.pvpSetBet = (n) => { _pvpBet = n; const inp = document.getElementById('pvp-bet-input'); if(inp) inp.value = n; pvpUpdatePreview(); };
+window.pvpSetBetAll = () => { pvpSetBet(myProfile?.coins||0); };
+window.pvpSyncBet = () => { _pvpBet = parseInt(document.getElementById('pvp-bet-input')?.value)||0; pvpUpdatePreview(); };
+function pvpUpdatePreview() {
+  const pot = Math.floor(_pvpBet * 2 * 0.95);
+  const el = document.getElementById('pvp-pot-preview'); if(el) el.textContent = `🪙 ${pot}`;
+  const bl = document.getElementById('pvp-balance-label'); if(bl) bl.textContent = `🪙 ${myProfile?.coins||0}`;
+}
+window.pvpChallenge = async () => {
+  const targetName = document.getElementById('pvp-target-input')?.value?.trim();
+  const err = document.getElementById('pvp-err');
+  const berr = document.getElementById('pvp-bet-err');
+  const terr = document.getElementById('pvp-target-err');
+  [err,berr,terr].forEach(e => { if(e) e.textContent=''; });
+  if (!me) { err.textContent = 'Log in first!'; return; }
+  if (!targetName) { terr.textContent = 'Enter a username!'; return; }
+  if (_pvpBet < 10) { berr.textContent = 'Minimum wager is 10 coins!'; return; }
+  if (_pvpBet > (myProfile?.coins||0)) { berr.textContent = 'Not enough coins!'; return; }
+  try {
+    const target = await pb.findUserByUsername(targetName);
+    if (!target) { terr.textContent = 'User not found!'; return; }
+    if (target.uid === me.uid) { terr.textContent = "Can't challenge yourself!"; return; }
+    // Create wager record
+    await pb.createRecord('wagers', {
+      challengerUid: me.uid,
+      challengerName: myProfile.displayName,
+      targetUid: target.uid,
+      targetName: target.displayName,
+      amount: _pvpBet,
+      status: 'pending',
+      ts: Date.now()
+    });
+    showToast(`⚔️ Challenge sent to ${targetName}!`);
+    err.textContent = '';
+    document.getElementById('pvp-target-input').value = '';
+    document.getElementById('pvp-bet-input').value = '';
+    _pvpBet = 0;
+    pvpRefreshChallenges();
+  } catch(e) {
+    err.textContent = 'Could not send challenge. Try again.';
+  }
+};
+async function pvpRefreshChallenges() {
+  if (!me) return;
+  const list = document.getElementById('pvp-challenges-list'); if (!list) return;
+  try {
+    const myWagers = await pb.listRecords('wagers', `challengerUid='${me.uid}'||targetUid='${me.uid}'`, '-ts', 10);
+    if (!myWagers.length) { list.innerHTML = '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;color:var(--muted);text-align:center;padding:16px 0;">No active challenges</div>'; return; }
+    list.innerHTML = myWagers.map(w => {
+      const isChallenger = w.challengerUid === me.uid;
+      const otherName = isChallenger ? w.targetName : w.challengerName;
+      const statusColor = w.status==='pending'?'var(--gold)':w.status==='accepted'?'#4CAF50':'var(--muted)';
+      return `<div style="background:var(--dark3);border:1px solid var(--border);padding:10px 12px;display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:0.9rem;letter-spacing:2px;">${isChallenger?'vs':'FROM'} ${escHtml(otherName)}</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;color:var(--muted);">🪙 ${w.amount} · <span style="color:${statusColor};">${w.status.toUpperCase()}</span></div>
+        </div>
+        ${(!isChallenger && w.status==='pending') ? `<button class="pvp-accept-btn" style="padding:5px 12px;font-size:0.75rem;" onclick="pvpAcceptChallenge('${w.id}','${w.challengerUid}',${w.amount})">ACCEPT</button>` : ''}
+      </div>`;
+    }).join('');
+  } catch(e) {}
+}
+window.pvpAcceptChallenge = async (wagerId, challengerUid, amount) => {
+  if (!me) return;
+  if (amount > (myProfile?.coins||0)) { showToast('Not enough coins to accept!'); return; }
+  try {
+    await pb.patchRecord('wagers', wagerId, {status: 'accepted'});
+    // Coinflip to decide winner
+    const iWin = Math.random() < 0.5;
+    const winnerId = iWin ? me.uid : challengerUid;
+    const loserId = iWin ? challengerUid : me.uid;
+    const pot = Math.floor(amount * 2 * 0.95);
+    // Update winner
+    const winner = await pb.getUser(winnerId);
+    await pb.updateUser(winnerId, {coins: (winner?.coins||0) + pot});
+    // Update loser
+    const loser = await pb.getUser(loserId);
+    await pb.updateUser(loserId, {coins: Math.max(0, (loser?.coins||0) - amount)});
+    // Update my balance
+    if (iWin) { myProfile.coins = (myProfile.coins||0) + pot - amount; }
+    else { myProfile.coins = Math.max(0, (myProfile.coins||0) - amount); }
+    updateCoinDisplays(myProfile.coins);
+    await pb.patchRecord('wagers', wagerId, {status: iWin ? 'won_by_target' : 'won_by_challenger'});
+    showToast(iWin ? `⚔️ You won the wager! +🪙${pot-amount}` : `⚔️ You lost the wager! -🪙${amount}`);
+    addSystemMsg(iWin ? `⚔️ ${myProfile.displayName} won a wager for 🪙${pot}!` : `⚔️ ${myProfile.displayName} lost a wager for 🪙${amount}!`);
+    pvpRefreshChallenges();
+  } catch(e) { showToast('Error processing wager!'); }
+};
+
+// end of new features
 </script>
   <!-- TOAST -->
   <div class="toast" id="toast"></div>
 
-<!-- CASE OPENING — injected at body level so position:fixed works correctly -->
+<!-- TIP MODAL -->
+<div class="modal-overlay" id="tip-overlay" onclick="if(event.target===this)closeModal('tip-overlay')">
+  <div class="modal" style="max-width:300px;">
+    <button class="modal-close" onclick="closeModal('tip-overlay')">✕</button>
+    <div class="auth-header">
+      <div class="auth-title" id="tip-modal-title">💸 TIP USER</div>
+      <div class="auth-sub" id="tip-modal-sub">Send coins to this user</div>
+    </div>
+    <div class="auth-form" style="gap:10px;">
+      <div class="bj-bet-presets">
+        <button class="bj-preset" onclick="tipSetAmt(10)">10</button>
+        <button class="bj-preset" onclick="tipSetAmt(25)">25</button>
+        <button class="bj-preset" onclick="tipSetAmt(50)">50</button>
+        <button class="bj-preset" onclick="tipSetAmt(100)">100</button>
+        <button class="bj-preset" onclick="tipSetAmt(250)">250</button>
+        <button class="bj-preset" onclick="tipSetAmt(500)">500</button>
+      </div>
+      <div class="bj-custom-row">
+        <input class="bj-input" id="tip-amount-input" type="number" min="1" placeholder="Custom amount">
+        <span class="bj-coin-icon">🪙</span>
+      </div>
+      <div class="bj-err" id="tip-err"></div>
+      <button class="auth-btn" onclick="doTip()">SEND TIP 💸</button>
+    </div>
+  </div>
+</div>
+
+<!-- PVP INCOMING WAGER BANNER -->
+<div class="pvp-incoming-banner" id="pvp-incoming-banner">
+  <div class="pvp-banner-title">⚔️ WAGER CHALLENGE</div>
+  <div class="pvp-banner-sub" id="pvp-banner-sub">Someone challenged you to a wager</div>
+  <div class="pvp-banner-btns">
+    <button class="pvp-accept-btn" onclick="pvpAccept()">✓ ACCEPT</button>
+    <button class="pvp-decline-btn" onclick="pvpDecline()">✕ DECLINE</button>
+  </div>
+</div>
+
+
 <div id="case-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:#050505;flex-direction:column;align-items:center;justify-content:center;">
   <canvas id="case-particles" style="position:absolute;inset:0;pointer-events:none;z-index:0;"></canvas>
   <!-- top bar -->
   <div style="position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:center;padding:0 20px;border-bottom:1px solid rgba(255,255,255,0.06);z-index:2;background:rgba(0,0,0,0.4);">
     <span id="case-modal-title" style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:6px;color:#fff;">OPENING CASE</span>
-    <button onclick="if(!window._caseSpinning)closeCaseOverlay()" style="margin-left:auto;background:none;border:none;color:#666;font-size:1.3rem;cursor:pointer;padding:8px;line-height:1;transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#666'">✕</button>
+    <button id="case-close-btn" onclick="closeCaseOverlay()" style="margin-left:auto;background:none;border:1px solid rgba(255,255,255,0.1);color:#888;font-size:1rem;cursor:pointer;padding:6px 12px;line-height:1;transition:color 0.2s,border-color 0.2s;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;" onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='#888';this.style.borderColor='rgba(255,255,255,0.1)'">✕ CLOSE</button>
   </div>
   <!-- PHASE 1: floating case + open button -->
   <div id="case-phase-open" style="display:flex;flex-direction:column;align-items:center;gap:24px;z-index:2;padding-top:20px;">
